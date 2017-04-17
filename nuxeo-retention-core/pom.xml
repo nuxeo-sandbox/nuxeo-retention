@@ -8,8 +8,8 @@
     <artifactId>nuxeo-retention</artifactId>
     <version>9.2-SNAPSHOT</version>
   </parent>
-  <artifactId>nuxeo-retention-service</artifactId>
-  <name>Nuxeo retention service</name>
-  <description>retention service engine</description>
+  <artifactId>nuxeo-retention-core</artifactId>
+  <name>Nuxeo retention core</name>
+  <description>retention core</description>
 
 </project>
