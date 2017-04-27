@@ -19,9 +19,21 @@
   ~
   -->
 
-<fragment version="1">
-  <!-- will contains some stuff -->
-  <install>
-    <!-- useful later -->
-  </install>
-</fragment>
+<xs:schema
+    targetNamespace="http://www.nuxeo.org/ecm/schemas/record/"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:nxs="http://www.nuxeo.org/ecm/schemas/record/">
+
+  <xs:complexType name="retention_rule">
+    <xs:sequence>
+      <xs:element name="rule_id" type="xs:string"/>
+      <xs:element name="cutoff_at" type="xs:date"/>
+      <xs:element name="disposal_at" type="xs:date"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="rules" type="nxs:retention_rule"/>
+  <xs:element name="status" default="unmanaged" type="xs:string"/>
+  <xs:element name="min_cutoff_at" type="xs:date"/>
+  <xs:element name="max_retention_at" type="xs:date"/>
+</xs:schema>
