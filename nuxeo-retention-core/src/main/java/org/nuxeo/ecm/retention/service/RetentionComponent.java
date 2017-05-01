@@ -57,41 +57,38 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public void attachRule(String ruleId, String query, CoreSession session) {
-        // ToDo: check if we need the unrestricted in the service
-        CoreInstance.doPrivileged(
-                session,
-                (CoreSession s) -> {
-                    final WorkManager workManager = Framework.getLocalService(WorkManager.class);
-                    long offset = 0;
-                    List<DocumentModel> nextDocumentsToBeUpdated;
 
-                    CoreQueryDocumentPageProviderDescriptor desc = new CoreQueryDocumentPageProviderDescriptor();
-                    desc.setPattern(query);
-                    Map<String, Serializable> props = new HashMap<String, Serializable>();
-                    props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
+        WorkManager workManager = Framework.getLocalService(WorkManager.class);
+        long offset = 0;
+        List<DocumentModel> nextDocumentsToBeUpdated;
 
-                    @SuppressWarnings("unchecked")
-                    PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(
-                            PageProviderService.class).getPageProvider("", desc, null, null, batchSize, 0L, props);
-                    final long maxResult = pp.getPageSize();
-                    do {
-                        pp.setCurrentPageOffset(offset);
-                        pp.refresh();
-                        nextDocumentsToBeUpdated = pp.getCurrentPage();
-                        if (nextDocumentsToBeUpdated.isEmpty()) {
-                            break;
-                        }
-                        List<String> docIds = nextDocumentsToBeUpdated.stream()
-                                                                      .map(DocumentModel::getId)
-                                                                      .collect(Collectors.toList());
-                        // ToDo: check to see if we really need an worker depending on what we need to process on the
-                        // document later
-                        RetentionRecordUpdateWork work = new RetentionRecordUpdateWork(ruleId);
-                        work.setDocuments(session.getRepositoryName(), docIds);
-                        workManager.schedule(work, WorkManager.Scheduling.IF_NOT_SCHEDULED, true);
-                        offset += maxResult;
-                    } while (nextDocumentsToBeUpdated.size() == maxResult && pp.isNextPageAvailable());
-                });
+        CoreQueryDocumentPageProviderDescriptor desc = new CoreQueryDocumentPageProviderDescriptor();
+        desc.setPattern(query);
+        Map<String, Serializable> props = new HashMap<String, Serializable>();
+        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
+
+        @SuppressWarnings("unchecked")
+        PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(PageProviderService.class)
+                                                                                .getPageProvider("", desc, null, null,
+                                                                                        batchSize, 0L, props);
+        final long maxResult = pp.getPageSize();
+        do {
+            pp.setCurrentPageOffset(offset);
+            pp.refresh();
+            nextDocumentsToBeUpdated = pp.getCurrentPage();
+            if (nextDocumentsToBeUpdated.isEmpty()) {
+                break;
+            }
+            List<String> docIds = nextDocumentsToBeUpdated.stream()
+                                                          .map(DocumentModel::getId)
+                                                          .collect(Collectors.toList());
+            // ToDo: check to see if we really need an worker depending on what we need to process on the
+            // document later
+            RetentionRecordUpdateWork work = new RetentionRecordUpdateWork(ruleId);
+            work.setDocuments(session.getRepositoryName(), docIds);
+            workManager.schedule(work, WorkManager.Scheduling.IF_NOT_SCHEDULED, true);
+            offset += maxResult;
+        } while (nextDocumentsToBeUpdated.size() == maxResult && pp.isNextPageAvailable());
     }
 
     final class CoreQueryDocumentPageProviderDescriptor extends GenericPageProviderDescriptor {
