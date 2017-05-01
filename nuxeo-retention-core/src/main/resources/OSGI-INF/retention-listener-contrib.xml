@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.retention.listeners">
+
+  <extension target="org.nuxeo.ecm.core.event.EventServiceComponent"
+    point="listener">
+    <listener name="retentionRecordCheckerListener"
+      class="org.nuxeo.ecm.retention.listener.RetentionRecordCheckerListener">
+      <event>checkRecordEvent</event> 
+    </listener>
+  </extension>
+
+</component>

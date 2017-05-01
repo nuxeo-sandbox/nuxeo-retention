@@ -25,6 +25,8 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 public interface RetentionService {
 
     public static final String RECORD_FACET = "Record";
+    
+    public static final String CHECK_RECORD_EVENT = "checkRecordEvent";
 
     public static final Long batchSize = 10L;// maybe configurable through a property
 
@@ -47,5 +49,14 @@ public interface RetentionService {
      * @since 9.2
      */
     void attachRule(String ruleId, String query, CoreSession session);
+    
+    /**
+     * Checks a record doc to see if something has to be done
+     * @param doc
+     * @param session
+     * @return
+     * @since 9.2
+     */
+    boolean checkRecord(DocumentModel doc, CoreSession session);
 
 }

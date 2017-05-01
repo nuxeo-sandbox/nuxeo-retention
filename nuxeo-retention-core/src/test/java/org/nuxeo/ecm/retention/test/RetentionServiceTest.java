@@ -30,10 +30,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.event.EventProducer;
+import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.retention.service.RetentionService;
+import org.nuxeo.ecm.retention.work.RetentionRecordCheckerWork;
+import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
@@ -73,15 +77,28 @@ public class RetentionServiceTest {
             doc = session.createDocument(doc);
             docs.add(doc);
         }
-        
+
         session.save();
         service.attachRule(null, "Select * from Folder", session);
-        
+
         waitForWorkers();
         for (DocumentModel documentModel : docs) {
             documentModel = session.getDocument(documentModel.getRef());
             assertTrue(documentModel.hasFacet(RetentionService.RECORD_FACET));
         }
+
+    }
+
+    @Test
+    public void testRecordChecker() throws Exception {
+        DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
+        doc = session.createDocument(doc);
+        service.attachRule(null, doc, session);
+        Framework.getLocalService(EventProducer.class)
+                 .fireEvent(
+                         new DocumentEventContext(doc.getCoreSession(), session.getPrincipal(), doc).newEvent(RetentionService.CHECK_RECORD_EVENT));
+        waitForWorkers();
+        // TO BE continued !!
 
     }
 
@@ -91,7 +108,6 @@ public class RetentionServiceTest {
 
         final boolean allCompleted = workManager.awaitCompletion(10, TimeUnit.SECONDS);
         assertTrue(allCompleted);
-
     }
 
 }

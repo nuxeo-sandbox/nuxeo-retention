@@ -91,6 +91,11 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         } while (nextDocumentsToBeUpdated.size() == maxResult && pp.isNextPageAvailable());
     }
 
+    @Override
+    public boolean checkRecord(DocumentModel doc, CoreSession session) {
+        return false;
+    }
+
     final class CoreQueryDocumentPageProviderDescriptor extends GenericPageProviderDescriptor {
         private static final long serialVersionUID = 1L;
 

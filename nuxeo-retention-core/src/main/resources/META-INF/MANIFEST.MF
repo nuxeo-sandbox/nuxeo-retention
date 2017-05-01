@@ -6,4 +6,5 @@ Bundle-Version: 1.0.0
 Bundle-Name: nuxeo-retention-service
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: org.nuxeo.ecm.retention.service.nuxeo-retention-service;singleton=true
-Nuxeo-Component: OSGI-INF/retention-service-framework.xml
+Nuxeo-Component: OSGI-INF/retention-service-framework.xml,
+ OSGI-INF/retention-listener-contrib.xml
