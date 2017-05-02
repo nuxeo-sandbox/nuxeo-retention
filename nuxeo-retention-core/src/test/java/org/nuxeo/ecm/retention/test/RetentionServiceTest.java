@@ -37,7 +37,6 @@ import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
-import org.nuxeo.runtime.test.runner.LocalDeploy;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
@@ -45,7 +44,6 @@ import com.google.inject.Inject;
 @RunWith(FeaturesRunner.class)
 @Features({ TransactionalFeature.class, CoreFeature.class })
 @Deploy({ "org.nuxeo.ecm.platform.query.api", "org.nuxeo.ecm.retention.service.nuxeo-retention-service" })
-@LocalDeploy("org.nuxeo.ecm.retention.service.nuxeo-retention-service:retention-types-contrib.xml")
 public class RetentionServiceTest {
 
     @Inject
@@ -73,15 +71,24 @@ public class RetentionServiceTest {
             doc = session.createDocument(doc);
             docs.add(doc);
         }
-        
         session.save();
         service.attachRule(null, "Select * from Folder", session);
-        
+
         waitForWorkers();
         for (DocumentModel documentModel : docs) {
             documentModel = session.getDocument(documentModel.getRef());
             assertTrue(documentModel.hasFacet(RetentionService.RECORD_FACET));
         }
+
+    }
+
+    @Test
+    public void testRecordChecker() throws Exception {
+        DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
+        doc = session.createDocument(doc);
+        service.attachRule(null, doc, session);
+        waitForWorkers();
+        // TO BE continued !!
 
     }
 
@@ -91,7 +98,6 @@ public class RetentionServiceTest {
 
         final boolean allCompleted = workManager.awaitCompletion(10, TimeUnit.SECONDS);
         assertTrue(allCompleted);
-
     }
 
 }

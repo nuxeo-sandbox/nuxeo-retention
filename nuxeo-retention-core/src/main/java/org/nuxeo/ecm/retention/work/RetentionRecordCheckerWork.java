@@ -23,19 +23,11 @@ import org.nuxeo.ecm.core.work.AbstractWork;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
-public class RetentionRecordUpdateWork extends AbstractWork {
+public class RetentionRecordCheckerWork extends AbstractWork {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String TITLE = "Retention Record Updater";
-    
-    //ToDo : Queue - Category?
-
-    protected String ruleId;
-
-    public RetentionRecordUpdateWork(String ruleId) {
-        this.ruleId = ruleId;
-    }
+    public static final String TITLE = "Retention record Checker";
 
     @Override
     public String getTitle() {
@@ -45,9 +37,6 @@ public class RetentionRecordUpdateWork extends AbstractWork {
     @Override
     public void work() {
         openSystemSession();
-        for (String string : docIds) {
-            Framework.getService(RetentionService.class).attachRule(ruleId, session.getDocument(new IdRef(string)),
-                    session);
-        }
+        Framework.getService(RetentionService.class).checkRecord(session.getDocument(new IdRef(docId)), session);
     }
 }

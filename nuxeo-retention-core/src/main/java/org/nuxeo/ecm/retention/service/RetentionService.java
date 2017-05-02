@@ -29,7 +29,7 @@ public interface RetentionService {
     public static final Long batchSize = 10L;// maybe configurable through a property
 
     /**
-     * Attaches the given rule to the document using an unrestricted session. 
+     * Attaches the given rule to the document using an unrestricted session.
      * 
      * @param ruleId
      * @param doc
@@ -48,4 +48,13 @@ public interface RetentionService {
      */
     void attachRule(String ruleId, String query, CoreSession session);
 
+    /**
+     * Checks a record doc to see if something has to be done
+     * 
+     * @param doc
+     * @param session
+     * @return
+     * @since 9.2
+     */
+    boolean checkRecord(DocumentModel doc, CoreSession session);
 }

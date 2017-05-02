@@ -19,7 +19,13 @@
 
 package org.nuxeo.ecm.retention.service;
 
+import static org.nuxeo.ecm.core.versioning.VersioningService.DISABLE_AUTO_CHECKOUT;
+import static org.nuxeo.ecm.platform.audit.service.NXAuditEventsService.DISABLE_AUDIT_LOGGER;
+import static org.nuxeo.ecm.platform.dublincore.listener.DublinCoreListener.DISABLE_DUBLINCORE_LISTENER;
+import static org.nuxeo.ecm.platform.ec.notification.NotificationConstants.DISABLE_NOTIFICATION_SERVICE;
+
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,13 +40,16 @@ import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProviderService;
 import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
-import org.nuxeo.ecm.platform.query.core.GenericPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.retention.work.RetentionRecordUpdateWork;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
 public class RetentionComponent extends DefaultComponent implements RetentionService {
+
+    public static List<String> DISABLED_FLAGS = Arrays.asList( //
+            DISABLE_AUDIT_LOGGER, //
+            DISABLE_DUBLINCORE_LISTENER, DISABLE_NOTIFICATION_SERVICE, DISABLE_AUTO_CHECKOUT); // + Others?
 
     public static Log log = LogFactory.getLog(RetentionComponent.class);
 
@@ -92,5 +101,15 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         } while (nextDocumentsToBeUpdated.size() == maxResult && pp.isNextPageAvailable());
     }
 
+    @Override
+    public boolean checkRecord(DocumentModel doc, CoreSession session) {
+        return false;
+    }
 
+    //ToDo: to be called
+    protected void disableListeners(DocumentModel doc) {
+        for (String flag : DISABLED_FLAGS) {
+            doc.putContextData(flag, Boolean.TRUE);
+        }
+    }
 }
