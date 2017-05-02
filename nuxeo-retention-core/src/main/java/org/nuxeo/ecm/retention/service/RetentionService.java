@@ -26,8 +26,6 @@ public interface RetentionService {
 
     public static final String RECORD_FACET = "Record";
 
-    public static final String CHECK_RECORD_EVENT = "checkRecordEvent";
-
     public static final Long batchSize = 10L;// maybe configurable through a property
 
     /**

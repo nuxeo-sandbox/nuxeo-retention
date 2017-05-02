@@ -38,14 +38,8 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
 
     @Override
     public void handleEvent(EventBundle events) {
-        if (!events.containsEventName(RetentionService.CHECK_RECORD_EVENT)) {
-            return;
-        }
         for (Event event : events) {
-            if (RetentionService.CHECK_RECORD_EVENT.equals(event.getName())) {
-                checkRecord(event);
-            }
-
+            checkRecord(event);
         }
 
     }
@@ -57,10 +51,10 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
         }
         DocumentEventContext docEventCtx = (DocumentEventContext) eventCtx;
         DocumentModel doc = docEventCtx.getSourceDocument();
-        if (!doc.hasFacet(RetentionService.RECORD_FACET)) {
+        if (doc == null || !doc.hasFacet(RetentionService.RECORD_FACET)) {
             return;
         }
-
+        // should filter for retention in progress
         RetentionRecordCheckerWork work = new RetentionRecordCheckerWork();
         work.setDocument(doc.getCoreSession().getRepositoryName(), doc.getId());
         Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);

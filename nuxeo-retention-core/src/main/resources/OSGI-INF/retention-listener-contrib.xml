@@ -5,7 +5,6 @@
     point="listener">
     <listener name="retentionRecordCheckerListener"
       class="org.nuxeo.ecm.retention.listener.RetentionRecordCheckerListener">
-      <event>checkRecordEvent</event> 
     </listener>
   </extension>
 
