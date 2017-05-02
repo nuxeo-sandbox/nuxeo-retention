@@ -33,7 +33,7 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProviderService;
-import org.nuxeo.ecm.platform.query.core.GenericPageProviderDescriptor;
+import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.retention.work.RetentionRecordUpdateWork;
 import org.nuxeo.runtime.api.Framework;
@@ -62,7 +62,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         long offset = 0;
         List<DocumentModel> nextDocumentsToBeUpdated;
 
-        CoreQueryDocumentPageProviderDescriptor desc = new CoreQueryDocumentPageProviderDescriptor();
+        CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
         desc.setPattern(query);
         Map<String, Serializable> props = new HashMap<String, Serializable>();
         props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
@@ -91,21 +91,10 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         } while (nextDocumentsToBeUpdated.size() == maxResult && pp.isNextPageAvailable());
     }
 
+
     @Override
     public boolean checkRecord(DocumentModel doc, CoreSession session) {
         return false;
     }
 
-    final class CoreQueryDocumentPageProviderDescriptor extends GenericPageProviderDescriptor {
-        private static final long serialVersionUID = 1L;
-
-        @SuppressWarnings("unchecked")
-        public CoreQueryDocumentPageProviderDescriptor() {
-            try {
-                klass = (Class<PageProvider<?>>) Class.forName(CoreQueryDocumentPageProvider.class.getName());
-            } catch (ClassNotFoundException e) {
-                log.error(e, e);
-            }
-        }
-    }
 }

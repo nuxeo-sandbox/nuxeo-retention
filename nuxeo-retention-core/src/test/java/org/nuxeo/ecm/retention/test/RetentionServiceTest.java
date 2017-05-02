@@ -36,7 +36,6 @@ import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.retention.service.RetentionService;
-import org.nuxeo.ecm.retention.work.RetentionRecordCheckerWork;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
@@ -77,7 +76,6 @@ public class RetentionServiceTest {
             doc = session.createDocument(doc);
             docs.add(doc);
         }
-
         session.save();
         service.attachRule(null, "Select * from Folder", session);
 

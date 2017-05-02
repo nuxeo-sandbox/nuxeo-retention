@@ -19,9 +19,10 @@
   ~
   -->
 
-<fragment version="1">
-  <!-- will contains some stuff -->
-  <install>
-    <!-- useful later -->
-  </install>
-</fragment>
+<component name="org.nuxeo.ecm.retention.adapter.adapters.document">
+
+  <extension target="org.nuxeo.ecm.core.api.DocumentAdapterService" point="adapters">
+    <adapter class="org.nuxeo.ecm.retention.adapter.Record" factory="org.nuxeo.ecm.retention.adapter.RecordFactory"/>
+  </extension>
+
+</component>
