@@ -1,0 +1,20 @@
+<component name="org.nuxeo.ecm.retention.rules.contrib.test">
+
+  <extension target="org.nuxeo.ecm.retention.RetentionService"
+    point="rules">
+    <rule>
+      <id>myTestRuleId</id>
+      <begin-condition docType="File" event="documentUpdated"
+        lifeCycleState="project">
+      </begin-condition>
+      <begin-delay>1d</begin-delay>
+      <begin-action></begin-action>
+      <end-action></end-action>
+      <end-condition event="documentRemoved"
+        lifeCycleState="deleted">
+      </end-condition>
+    </rule>
+  </extension>
+
+
+</component>

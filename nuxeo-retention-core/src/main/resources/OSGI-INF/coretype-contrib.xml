@@ -21,10 +21,14 @@
 <component name="org.nuxeo.retention.coretype">
   <extension point="schema" target="org.nuxeo.ecm.core.schema.TypeService">
     <schema name="record" prefix="rd" src="schema/record.xsd"/>
+    <schema name="retention_rule" prefix="rule" src="schema/retention_rule.xsd"/>
   </extension>
   <extension point="doctype" target="org.nuxeo.ecm.core.schema.TypeService">
     <facet name="Record">
       <schema name="record"/>
+    </facet>
+    <facet name="RetentionRule">
+      <schema name="retention_rule"/>
     </facet>
   </extension>
 </component>

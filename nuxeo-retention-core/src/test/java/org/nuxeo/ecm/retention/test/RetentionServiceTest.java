@@ -19,6 +19,7 @@
 
 package org.nuxeo.ecm.retention.test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -33,10 +34,12 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.core.work.api.WorkManager;
+import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
+import org.nuxeo.runtime.test.runner.LocalDeploy;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
@@ -44,6 +47,7 @@ import com.google.inject.Inject;
 @RunWith(FeaturesRunner.class)
 @Features({ TransactionalFeature.class, CoreFeature.class })
 @Deploy({ "org.nuxeo.ecm.platform.query.api", "org.nuxeo.ecm.retention.service.nuxeo-retention-service" })
+@LocalDeploy("org.nuxeo.ecm.retention.service.nuxeo-retention-service:retention-rules-contrib-test.xml")
 public class RetentionServiceTest {
 
     @Inject
@@ -89,6 +93,33 @@ public class RetentionServiceTest {
         service.attachRule(null, doc, session);
         waitForWorkers();
         // TO BE continued !!
+
+    }
+
+    @Test
+    public void testRules() {
+        // we are deploying a static rule
+        RetentionRule rule = service.getRetentionRule("myTestRuleId", session);
+        assertNotNull(rule);
+        assertEquals("myTestRuleId", rule.getId());
+        assertEquals("File", rule.getBeginCondition().getDocType());
+        assertEquals("deleted", rule.getEndCondition().getLifeCycleState());
+
+        // add a dynamic rule
+        DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
+        doc = session.createDocument(doc);
+        String ruleId = service.createOrUpdateDynamicRuleRuleOnDocument("1d", "beginAction", "endAction", "File",
+                "documentUpdated", "project", "documentRemoved", "deleted", doc, session);
+        assertEquals(ruleId, doc.getId());
+        rule = service.getRetentionRule(ruleId, session);
+        assertEquals("1d", rule.getBeginDelay());
+        assertEquals("beginAction", rule.getBeginAction());
+        assertEquals("endAction", rule.getEndAction());
+        assertEquals("File", rule.getBeginCondition().getDocType());
+        assertEquals("documentUpdated", rule.getBeginCondition().getEvent());
+        assertEquals("project", rule.getBeginCondition().getLifeCycleState());
+        assertEquals("documentRemoved", rule.getEndCondition().getEvent());
+        assertEquals("deleted", rule.getEndCondition().getLifeCycleState());
 
     }
 

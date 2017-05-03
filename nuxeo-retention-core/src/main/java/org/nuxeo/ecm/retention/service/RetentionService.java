@@ -21,10 +21,14 @@ package org.nuxeo.ecm.retention.service;
 
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.NuxeoException;
+import org.nuxeo.ecm.retention.adapter.RetentionRule;
 
 public interface RetentionService {
 
     public static final String RECORD_FACET = "Record";
+
+    public static final String RETENTION_RULE_FACET = "RetentionRule";
 
     public static final Long batchSize = 10L;// maybe configurable through a property
 
@@ -57,4 +61,33 @@ public interface RetentionService {
      * @since 9.2
      */
     boolean checkRecord(DocumentModel doc, CoreSession session);
+
+    /**
+     * Returns a rule based on its id. First, we are trying to find a static rule, if none find, trying to
+     * fetch a dynamic rule persisted on a document based on its id
+     * 
+     * @param ruleId
+     * @return
+     * @since 9.2
+     */
+    RetentionRule getRetentionRule(String ruleId, CoreSession session) throws NuxeoException;
+
+    /**
+     * Creates a dynamic rule persisted on the given document. The ruleId is the if of the document where the rule is
+     * persisted. Returns the rule id.
+     * 
+     * @param doc
+     * @param beginDelay
+     * @param beginAction
+     * @param endAction
+     * @param beginCondType
+     * @param beginCondEvent
+     * @param beginCondState
+     * @param endCondevent
+     * @param endCondState
+     * @since 9.2
+     */
+    String createOrUpdateDynamicRuleRuleOnDocument(String beginDelay, String beginAction, String endAction,
+            String beginCondType, String beginCondEvent, String beginCondState, String endCondevent,
+            String endCondState, DocumentModel doc, CoreSession session);
 }

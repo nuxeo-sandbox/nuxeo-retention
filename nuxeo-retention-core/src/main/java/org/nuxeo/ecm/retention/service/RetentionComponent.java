@@ -36,22 +36,38 @@ import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.CoreInstance;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentNotFoundException;
+import org.nuxeo.ecm.core.api.IdRef;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProviderService;
 import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
+import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.work.RetentionRecordUpdateWork;
 import org.nuxeo.runtime.api.Framework;
+import org.nuxeo.runtime.model.ComponentInstance;
 import org.nuxeo.runtime.model.DefaultComponent;
 
 public class RetentionComponent extends DefaultComponent implements RetentionService {
+
+    public static final String RULES_EP = "rules";
+
+    protected RetentionRulesContributionRegistry registry = new RetentionRulesContributionRegistry();
 
     public static List<String> DISABLED_FLAGS = Arrays.asList( //
             DISABLE_AUDIT_LOGGER, //
             DISABLE_DUBLINCORE_LISTENER, DISABLE_NOTIFICATION_SERVICE, DISABLE_AUTO_CHECKOUT); // + Others?
 
     public static Log log = LogFactory.getLog(RetentionComponent.class);
+
+    @Override
+    public void registerContribution(Object contribution, String extensionPoint, ComponentInstance contributor) {
+        if (RULES_EP.equals(extensionPoint)) {
+            registry.addContribution((RetentionRuleDescriptor) contribution);
+        }
+    }
 
     @Override
     public void attachRule(String ruleId, DocumentModel doc, CoreSession session) {
@@ -106,10 +122,51 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         return false;
     }
 
-    //ToDo: to be called
+    @Override
+    public RetentionRule getRetentionRule(String ruleId, CoreSession session) throws NuxeoException {
+        RetentionRuleDescriptor staticRule = registry.getRetentionRule(ruleId);
+        if (staticRule != null) {
+            return new RetentionRule(staticRule);
+        }
+        DocumentModel dynamicRuleDoc;
+        // trying to fetch a dynamic rule
+        try {
+            dynamicRuleDoc = session.getDocument(new IdRef(ruleId));
+        } catch (DocumentNotFoundException e) {
+            log.error("Can not find dynamic rule with id " + ruleId);
+            throw new NuxeoException(e);
+        }
+        return new RetentionRule(dynamicRuleDoc);
+
+    }
+
+    // ToDo: to be called
     protected void disableListeners(DocumentModel doc) {
         for (String flag : DISABLED_FLAGS) {
             doc.putContextData(flag, Boolean.TRUE);
         }
     }
+
+    @Override
+    public String createOrUpdateDynamicRuleRuleOnDocument(String beginDelay, String beginAction, String endAction,
+            String beginCondType, String beginCondEvent, String beginCondState, String endCondEvent,
+            String endCondState, DocumentModel doc, CoreSession session) {
+        if (!doc.hasFacet(RETENTION_RULE_FACET)) {
+            doc.addFacet(RETENTION_RULE_FACET); // else is just updating an existing rule
+        }
+        doc.setPropertyValue(RetentionRule.RULE_ID_PROPERTY, doc.getId());
+        doc.setPropertyValue(RetentionRule.RULE_BEGIN_DELAY_PROPERTY, beginDelay); // should validate with a regexp?
+        doc.setPropertyValue(RetentionRule.RULE_BEGIN_ACTION_PROPERTY, beginAction);
+        doc.setPropertyValue(RetentionRule.RULE_END_ACTION_PROPERTY, endAction);
+        doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_DOC_TYPE_PROPERTY, beginCondType);
+        doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_EVENT_PROPERTY, beginCondEvent);
+        doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_STATE_PROPERTY, beginCondState);
+        doc.setPropertyValue(RetentionRule.RULE_END_CONDITION_EVENT_PROPERTY, endCondEvent);
+        doc.setPropertyValue(RetentionRule.RULE_END_CONDITION_STATE_PROPERTY, endCondState);
+
+        doc = session.saveDocument(doc);
+        return doc.getId();
+
+    }
+
 }
