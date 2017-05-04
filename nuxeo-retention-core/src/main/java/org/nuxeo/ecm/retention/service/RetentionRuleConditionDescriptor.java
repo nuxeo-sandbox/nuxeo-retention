@@ -28,28 +28,19 @@ import org.nuxeo.ecm.retention.service.Rule.RuleCondition;
 @XObject(value = "condition")
 public class RetentionRuleConditionDescriptor implements RuleCondition {
 
-    @XNode("@docType")
-    protected String docType;
+    @XNode("@expression")
+    protected String expression;
 
     @XNode("@event")
     protected String event;
 
-    @XNode("@lifeCycleState")
-    protected String lifeCycleState;
-
     @Override
-    public String getDocType() {
-        return docType;
+    public String getExpression() {
+        return expression;
     }
 
     @Override
     public String getEvent() {
         return event;
     }
-
-    @Override
-    public String getLifeCycleState() {
-        return lifeCycleState;
-    }
-
 }

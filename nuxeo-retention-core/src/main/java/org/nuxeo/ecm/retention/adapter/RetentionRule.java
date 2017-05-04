@@ -22,6 +22,10 @@ package org.nuxeo.ecm.retention.adapter;
 import java.io.Serializable;
 import java.util.Map;
 
+import org.nuxeo.ecm.automation.OperationContext;
+import org.nuxeo.ecm.automation.core.scripting.Expression;
+import org.nuxeo.ecm.automation.core.scripting.Scripting;
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionRuleConditionDescriptor;
 import org.nuxeo.ecm.retention.service.RetentionRuleDescriptor;
@@ -29,33 +33,37 @@ import org.nuxeo.ecm.retention.service.Rule;
 
 public class RetentionRule implements Rule {
 
-    public static final String RULE_ID_PROPERTY = "rule:rule_id";
+    public static final String RULE_ID_PROPERTY = "rule:ruleId";
 
-    public static final String RULE_BEGIN_CONDITION_PROPERTY = "rule:begin_condition";
+    public static final String RULE_BEGIN_CONDITION_PROPERTY = "rule:beginCondition";
 
-    public static final String RULE_BEGIN_CONDITION_DOC_TYPE_PROPERTY = "rule:begin_condition/docType";
+    public static final String RULE_BEGIN_CONDITION_EXPRESSION_TYPE_PROPERTY = "rule:beginCondition/expression";
 
-    public static final String RULE_BEGIN_CONDITION_EVENT_PROPERTY = "rule:begin_condition/event";
+    public static final String RULE_BEGIN_CONDITION_EVENT_PROPERTY = "rule:beginCondition/event";
 
-    public static final String RULE_BEGIN_CONDITION_STATE_PROPERTY = "rule:begin_condition/lifeCycleState";
+    public static final String RULE_END_CONDITION_PROPERTY = "rule:endCondition";
 
-    public static final String RULE_END_CONDITION_PROPERTY = "rule:end_condition";
+    public static final String RULE_BEGIN_DELAY_PROPERTY = "rule:beginDelayInMillis";
 
-    public static final String RULE_BEGIN_DELAY_PROPERTY = "rule:begin_delay";
+    public static final String RULE_RETENTION_DURATION_PROPERTY = "rule:retentionDurationInMillis";
 
-    public static final String RULE_BEGIN_ACTION_PROPERTY = "rule:begin_action";
+    public static final String RULE_RETENTION_REMINDER_PROPERTY = "rule:retentionReminderInDays";
 
-    public static final String RULE_END_ACTION_PROPERTY = "rule:end_action";
+    public static final String RULE_BEGIN_ACTION_PROPERTY = "rule:beginAction";
 
-    public static final String RULE_END_CONDITION_EVENT_PROPERTY = "rule:end_condition/event";
+    public static final String RULE_END_ACTION_PROPERTY = "rule:endAction";
 
-    public static final String RULE_END_CONDITION_STATE_PROPERTY = "rule:end_condition/lifeCycleState";
+    public static final String RULE_END_CONDITION_EXPRESSION_PROPERTY = "rule:endCondition/expression";
 
     protected String id;
 
     protected RetentionRuleCondition beginCondition;
 
-    protected String beginDelay;
+    protected Long beginDelay;
+
+    protected Long retentionDuration;
+
+    protected int retentionReminder;
 
     protected String beginAction;
 
@@ -66,7 +74,9 @@ public class RetentionRule implements Rule {
     public RetentionRule(RetentionRuleDescriptor ruleDescriptor) {
         this.id = ruleDescriptor.getId();
         this.beginCondition = new RetentionRuleCondition(ruleDescriptor.getBeginCondition());
-        this.beginDelay = ruleDescriptor.getBeginDelay();
+        this.beginDelay = ruleDescriptor.getBeginDelayInMillis();
+        this.retentionDuration = ruleDescriptor.getRetentionDurationInMillis();
+        this.retentionReminder = ruleDescriptor.getRetentionReminderDays();
         this.beginAction = ruleDescriptor.getBeginAction();
         this.endAction = ruleDescriptor.getEndAction();
         this.endCondition = new RetentionRuleCondition(ruleDescriptor.getEndCondition());
@@ -79,7 +89,9 @@ public class RetentionRule implements Rule {
                 (Map<String, Serializable>) doc.getPropertyValue(RULE_BEGIN_CONDITION_PROPERTY));
         this.endCondition = new RetentionRuleCondition(
                 (Map<String, Serializable>) doc.getPropertyValue(RULE_END_CONDITION_PROPERTY));
-        this.beginDelay = (String) doc.getPropertyValue(RULE_BEGIN_DELAY_PROPERTY);
+        this.beginDelay = (Long) doc.getPropertyValue(RULE_BEGIN_DELAY_PROPERTY);
+        this.retentionDuration = (Long) doc.getPropertyValue(RULE_RETENTION_DURATION_PROPERTY);
+        this.retentionReminder = ((Long) doc.getPropertyValue(RULE_RETENTION_REMINDER_PROPERTY)).intValue();
         this.beginAction = (String) doc.getPropertyValue(RULE_BEGIN_ACTION_PROPERTY);
         this.endAction = (String) doc.getPropertyValue(RULE_END_ACTION_PROPERTY);
 
@@ -96,7 +108,7 @@ public class RetentionRule implements Rule {
     }
 
     @Override
-    public String getBeginDelay() {
+    public Long getBeginDelayInMillis() {
         return beginDelay;
     }
 
@@ -115,30 +127,32 @@ public class RetentionRule implements Rule {
         return endCondition;
     }
 
+    @Override
+    public Long getRetentionDurationInMillis() {
+        return retentionDuration;
+    }
+
+    @Override
+    public int getRetentionReminderDays() {
+        return retentionReminder;
+    }
+
+
     public class RetentionRuleCondition implements RuleCondition {
 
         public RetentionRuleCondition(RetentionRuleConditionDescriptor conditionDesc) {
-            this.docType = conditionDesc.getDocType();
+            this.expression = conditionDesc.getExpression();
             this.event = conditionDesc.getEvent();
-            this.lifeCycleState = conditionDesc.getLifeCycleState();
         }
 
         public RetentionRuleCondition(Map<String, Serializable> conditionProperty) {
-            this.docType = (String) conditionProperty.get("docType");
+            this.expression = (String) conditionProperty.get("expression");
             this.event = (String) conditionProperty.get("event");
-            this.lifeCycleState = (String) conditionProperty.get("lifeCycleState");
         }
 
-        protected String docType;
+        protected String expression;
 
         protected String event;
-
-        protected String lifeCycleState;
-
-        @Override
-        public String getDocType() {
-            return docType;
-        }
 
         @Override
         public String getEvent() {
@@ -146,8 +160,8 @@ public class RetentionRule implements Rule {
         }
 
         @Override
-        public String getLifeCycleState() {
-            return lifeCycleState;
+        public String getExpression() {
+            return expression;
         }
 
     }

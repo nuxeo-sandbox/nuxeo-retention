@@ -4,16 +4,17 @@
 
   <xs:complexType name="retention_rule_condition">
     <xs:sequence>
-      <xs:element name="docType" type="xs:string" />
+      <xs:element name="expression" type="xs:string" />
       <xs:element name="event" type="xs:string" />
-      <xs:element name="lifeCycleState" type="xs:string" />
     </xs:sequence>
   </xs:complexType>
 
-  <xs:element name="rule_id" type="xs:string" />
-  <xs:element name="begin_condition" type="nxs:retention_rule_condition" />
-  <xs:element name="end_condition" type="nxs:retention_rule_condition" />
-  <xs:element name="begin_delay" type="xs:string" />
-  <xs:element name="begin_action" type="xs:string" />
-  <xs:element name="end_action" type="xs:string" />
+  <xs:element name="ruleId" type="xs:string" />
+  <xs:element name="beginCondition" type="nxs:retention_rule_condition" />
+  <xs:element name="endCondition" type="nxs:retention_rule_condition" />
+  <xs:element name="beginDelayInMillis" type="xs:long" />
+  <xs:element name="retentionDurationInMillis" type="xs:long" />
+  <xs:element name="retentionReminderInDays" type="xs:integer" />
+  <xs:element name="beginAction" type="xs:string" />
+  <xs:element name="endAction" type="xs:string" />
 </xs:schema>

@@ -76,18 +76,9 @@ public interface RetentionService {
      * Creates a dynamic rule persisted on the given document. The ruleId is the if of the document where the rule is
      * persisted. Returns the rule id.
      * 
-     * @param doc
-     * @param beginDelay
-     * @param beginAction
-     * @param endAction
-     * @param beginCondType
-     * @param beginCondEvent
-     * @param beginCondState
-     * @param endCondevent
-     * @param endCondState
      * @since 9.2
      */
-    String createOrUpdateDynamicRuleRuleOnDocument(String beginDelay, String beginAction, String endAction,
-            String beginCondType, String beginCondEvent, String beginCondState, String endCondevent,
-            String endCondState, DocumentModel doc, CoreSession session);
+    String createOrUpdateDynamicRuleRuleOnDocument(Long beginDelay, Long retentionPeriod, int retentionReminder,
+            String beginAction, String endAction, String beginCondExpression, String beginCondEvent,
+            String endCondExpression, DocumentModel doc, CoreSession session);
 }

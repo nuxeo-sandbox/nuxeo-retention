@@ -56,7 +56,7 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
         }
         // should filter for retention in progress
         RetentionRecordCheckerWork work = new RetentionRecordCheckerWork();
-        work.setDocument(doc.getCoreSession() != null ? doc.getCoreSession().getRepositoryName() : null, doc.getId());
+        work.setDocument(null, doc.getId());
         Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
     }
 }

@@ -27,7 +27,11 @@ public interface Rule {
 
     RuleCondition getBeginCondition();
 
-    String getBeginDelay();
+    Long getBeginDelayInMillis();
+    
+    Long getRetentionDurationInMillis();
+    
+    int getRetentionReminderDays();
 
     String getBeginAction();
 
@@ -37,11 +41,9 @@ public interface Rule {
 
     public interface RuleCondition {
 
-        String getDocType();
+        String getExpression();
 
         String getEvent();
-
-        String getLifeCycleState();
 
     }
 

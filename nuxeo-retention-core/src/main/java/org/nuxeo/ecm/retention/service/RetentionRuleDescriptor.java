@@ -34,9 +34,6 @@ public class RetentionRuleDescriptor implements Rule {
     @XNode("begin-condition")
     protected RetentionRuleConditionDescriptor beginCondition;
 
-    @XNode(value = "begin-delay")
-    protected String beginDelay;
-
     @XNode(value = "begin-action")
     protected String beginAction;
 
@@ -45,6 +42,28 @@ public class RetentionRuleDescriptor implements Rule {
 
     @XNode(value = "end-condition")
     protected RetentionRuleConditionDescriptor endCondition;
+
+    protected Long beginDelay;
+
+    @XNode(value = "begin-delay")
+    public void setBeginDelay(String value) {
+        beginDelay = value == "" ? 0 : Long.valueOf(value);
+
+    }
+
+    protected Long retentionDuration;
+
+    @XNode(value = "retention-duration")
+    public void setRetentionDuration(String value) {
+        retentionDuration = value == "" ? 0 : Long.valueOf(value);
+    }
+
+    protected int retentionReminderDays;
+
+    @XNode(value = "retention-reminder-days")
+    public void setRetentionReminderDays(String value) {
+        retentionReminderDays = value == "" ? 0 : Integer.valueOf(value);
+    }
 
     @Override
     public String getId() {
@@ -57,7 +76,7 @@ public class RetentionRuleDescriptor implements Rule {
     }
 
     @Override
-    public String getBeginDelay() {
+    public Long getBeginDelayInMillis() {
         return beginDelay;
     }
 
@@ -74,6 +93,16 @@ public class RetentionRuleDescriptor implements Rule {
     @Override
     public RetentionRuleConditionDescriptor getEndCondition() {
         return endCondition;
+    }
+
+    @Override
+    public Long getRetentionDurationInMillis() {
+        return retentionDuration;
+    }
+
+    @Override
+    public int getRetentionReminderDays() {
+        return retentionReminderDays;
     }
 
 }

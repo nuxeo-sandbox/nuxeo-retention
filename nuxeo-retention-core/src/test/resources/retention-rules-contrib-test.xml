@@ -4,14 +4,15 @@
     point="rules">
     <rule>
       <id>myTestRuleId</id>
-      <begin-condition docType="File" event="documentUpdated"
-        lifeCycleState="project">
+      <begin-condition event="documentUpdated"
+        expression="document.getType()=='Folder'">
       </begin-condition>
-      <begin-delay>1d</begin-delay>
+      <begin-delay />
+      <retention-duration>100</retention-duration> <!-- duration in miliseconds -->
+      <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action></begin-action>
       <end-action></end-action>
-      <end-condition event="documentRemoved"
-        lifeCycleState="deleted">
+      <end-condition expression="">
       </end-condition>
     </rule>
   </extension>

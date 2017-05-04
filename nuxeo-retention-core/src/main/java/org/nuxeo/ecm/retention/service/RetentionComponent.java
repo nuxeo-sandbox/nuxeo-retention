@@ -33,6 +33,9 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.ecm.automation.OperationContext;
+import org.nuxeo.ecm.automation.core.scripting.Expression;
+import org.nuxeo.ecm.automation.core.scripting.Scripting;
 import org.nuxeo.ecm.core.api.CoreInstance;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -44,6 +47,7 @@ import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProviderService;
 import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
+import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.work.RetentionRecordUpdateWork;
 import org.nuxeo.runtime.api.Framework;
@@ -74,11 +78,21 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         // ToDo: check if we need the unrestricted in the service
         // ToDo: compute min_cutoff_at and max_retention_at
         CoreInstance.doPrivileged(session, (CoreSession s) -> {
-            if (!doc.hasFacet(RECORD_FACET)) {
-                doc.addFacet(RECORD_FACET);
-            }
-            s.saveDocument(doc);
-        });
+            // evaluate beingCondition to see if this
+            // retention rule applies to this document ??
+            // maybe this is not here??
+                RetentionRule rule = getRetentionRule(ruleId, session);
+                Boolean ruleApplies = evaluateConditionExpression(rule.getBeginCondition().getExpression(), doc,
+                        session);
+                if (!ruleApplies) {
+                    return;
+                }
+
+                if (!doc.hasFacet(RECORD_FACET)) {
+                    doc.addFacet(RECORD_FACET);
+                }
+                s.saveDocument(doc);
+            });
     }
 
     @Override
@@ -119,11 +133,16 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public boolean checkRecord(DocumentModel doc, CoreSession session) {
+        Record recod = doc.getAdapter(Record.class);
+
         return false;
     }
 
     @Override
     public RetentionRule getRetentionRule(String ruleId, CoreSession session) throws NuxeoException {
+        if (ruleId == null) {
+            throw new NuxeoException("Can not attch null rule");
+        }
         RetentionRuleDescriptor staticRule = registry.getRetentionRule(ruleId);
         if (staticRule != null) {
             return new RetentionRule(staticRule);
@@ -148,25 +167,45 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public String createOrUpdateDynamicRuleRuleOnDocument(String beginDelay, String beginAction, String endAction,
-            String beginCondType, String beginCondEvent, String beginCondState, String endCondEvent,
-            String endCondState, DocumentModel doc, CoreSession session) {
+    public String createOrUpdateDynamicRuleRuleOnDocument(Long beginDelay, Long retentionPeriod, int retentionReminder,
+            String beginAction, String endAction, String beginCondExpression, String beginCondEvent,
+            String endCondExpression, DocumentModel doc, CoreSession session) {
         if (!doc.hasFacet(RETENTION_RULE_FACET)) {
             doc.addFacet(RETENTION_RULE_FACET); // else is just updating an existing rule
         }
         doc.setPropertyValue(RetentionRule.RULE_ID_PROPERTY, doc.getId());
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_DELAY_PROPERTY, beginDelay); // should validate with a regexp?
+        doc.setPropertyValue(RetentionRule.RULE_RETENTION_DURATION_PROPERTY, retentionPeriod);
+        doc.setPropertyValue(RetentionRule.RULE_RETENTION_REMINDER_PROPERTY, retentionReminder);
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_ACTION_PROPERTY, beginAction);
         doc.setPropertyValue(RetentionRule.RULE_END_ACTION_PROPERTY, endAction);
-        doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_DOC_TYPE_PROPERTY, beginCondType);
+        doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_EXPRESSION_TYPE_PROPERTY, beginCondExpression);
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_EVENT_PROPERTY, beginCondEvent);
-        doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_STATE_PROPERTY, beginCondState);
-        doc.setPropertyValue(RetentionRule.RULE_END_CONDITION_EVENT_PROPERTY, endCondEvent);
-        doc.setPropertyValue(RetentionRule.RULE_END_CONDITION_STATE_PROPERTY, endCondState);
+        doc.setPropertyValue(RetentionRule.RULE_END_CONDITION_EXPRESSION_PROPERTY, endCondExpression);
 
         doc = session.saveDocument(doc);
         return doc.getId();
 
+    }
+
+    protected Boolean evaluateConditionExpression(String expression, DocumentModel doc, CoreSession session) {
+        OperationContext context = getExecutionContext(doc, session);
+        Expression expr = Scripting.newExpression(expression);
+        Object res = expr.eval(context);
+        // if no condition, attach always
+        if (res == null) {
+            return true;
+        }
+
+        return (Boolean) res;
+    }
+
+    protected OperationContext getExecutionContext(DocumentModel doc, CoreSession session) {
+        OperationContext context = new OperationContext(session);
+        context.put("document", doc);
+        context.setCommit(false); // no session save at end
+        context.setInput(doc);
+        return context;
     }
 
 }

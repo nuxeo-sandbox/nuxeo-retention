@@ -21,6 +21,7 @@ package org.nuxeo.ecm.retention.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.test.CoreFeature;
+import org.nuxeo.ecm.automation.test.AutomationFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
@@ -45,7 +46,7 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
 import com.google.inject.Inject;
 
 @RunWith(FeaturesRunner.class)
-@Features({ TransactionalFeature.class, CoreFeature.class })
+@Features({ TransactionalFeature.class, AutomationFeature.class })
 @Deploy({ "org.nuxeo.ecm.platform.query.api", "org.nuxeo.ecm.retention.service.nuxeo-retention-service" })
 @LocalDeploy("org.nuxeo.ecm.retention.service.nuxeo-retention-service:retention-rules-contrib-test.xml")
 public class RetentionServiceTest {
@@ -64,7 +65,7 @@ public class RetentionServiceTest {
         assertNotNull(service);
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
         doc = session.createDocument(doc);
-        service.attachRule(null, doc, session);
+        service.attachRule("myTestRuleId", doc, session);
         doc = session.getDocument(doc.getRef());
         assertTrue(doc.hasFacet(RetentionService.RECORD_FACET));
 
@@ -76,7 +77,7 @@ public class RetentionServiceTest {
             docs.add(doc);
         }
         session.save();
-        service.attachRule(null, "Select * from Folder", session);
+        service.attachRule("myTestRuleId", "Select * from Folder", session);
 
         waitForWorkers();
         for (DocumentModel documentModel : docs) {
@@ -90,7 +91,7 @@ public class RetentionServiceTest {
     public void testRecordChecker() throws Exception {
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
         doc = session.createDocument(doc);
-        service.attachRule(null, doc, session);
+        service.attachRule("myTestRuleId", doc, session);
         waitForWorkers();
         // TO BE continued !!
 
@@ -102,24 +103,19 @@ public class RetentionServiceTest {
         RetentionRule rule = service.getRetentionRule("myTestRuleId", session);
         assertNotNull(rule);
         assertEquals("myTestRuleId", rule.getId());
-        assertEquals("File", rule.getBeginCondition().getDocType());
-        assertEquals("deleted", rule.getEndCondition().getLifeCycleState());
+        assertTrue(0 == rule.getBeginDelayInMillis());
+        assertTrue(100 == rule.getRetentionDurationInMillis());
 
         // add a dynamic rule
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
         doc = session.createDocument(doc);
-        String ruleId = service.createOrUpdateDynamicRuleRuleOnDocument("1d", "beginAction", "endAction", "File",
-                "documentUpdated", "project", "documentRemoved", "deleted", doc, session);
+        String ruleId = service.createOrUpdateDynamicRuleRuleOnDocument(null, null, 0, null, "endAction", null,
+                "documentUpdated", null, doc, session);
         assertEquals(ruleId, doc.getId());
         rule = service.getRetentionRule(ruleId, session);
-        assertEquals("1d", rule.getBeginDelay());
-        assertEquals("beginAction", rule.getBeginAction());
+        assertNull(rule.getBeginAction());
         assertEquals("endAction", rule.getEndAction());
-        assertEquals("File", rule.getBeginCondition().getDocType());
         assertEquals("documentUpdated", rule.getBeginCondition().getEvent());
-        assertEquals("project", rule.getBeginCondition().getLifeCycleState());
-        assertEquals("documentRemoved", rule.getEndCondition().getEvent());
-        assertEquals("deleted", rule.getEndCondition().getLifeCycleState());
 
     }
 
