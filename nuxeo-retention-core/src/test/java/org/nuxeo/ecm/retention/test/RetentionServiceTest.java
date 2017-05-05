@@ -30,9 +30,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.nuxeo.ecm.automation.test.AutomationFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.automation.test.AutomationFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
@@ -44,6 +44,7 @@ import org.nuxeo.runtime.test.runner.LocalDeploy;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
+import com.sun.prism.impl.Disposer.Record;
 
 @RunWith(FeaturesRunner.class)
 @Features({ TransactionalFeature.class, AutomationFeature.class })
@@ -92,7 +93,16 @@ public class RetentionServiceTest {
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
         doc = session.createDocument(doc);
         service.attachRule("myTestRuleId", doc, session);
+        doc = session.getDocument(doc.getRef());
         waitForWorkers();
+        // modify the document to see if the rule is invoked
+        doc.setPropertyValue("dc:title", "Blahhaa");
+        doc = session.saveDocument(doc);
+        waitForWorkers();
+        assertTrue(doc.isLocked());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+
         // TO BE continued !!
 
     }

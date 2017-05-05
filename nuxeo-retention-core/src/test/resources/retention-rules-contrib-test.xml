@@ -1,17 +1,31 @@
 <component name="org.nuxeo.ecm.retention.rules.contrib.test">
 
+
+
+  <extension point="chains"
+    target="org.nuxeo.ecm.core.operation.OperationServiceComponent">
+
+    <chain id="setCustomTitle">
+      <operation id="Document.Update">
+        <param type="properties" name="properties">expr:Context.get("docMetaData")
+        </param>
+      </operation>
+    </chain>
+
+  </extension>
+
   <extension target="org.nuxeo.ecm.retention.RetentionService"
     point="rules">
     <rule>
       <id>myTestRuleId</id>
-      <begin-condition event="documentUpdated"
+      <begin-condition event="documentModified"
         expression="document.getType()=='Folder'">
       </begin-condition>
       <begin-delay />
       <retention-duration>100</retention-duration> <!-- duration in miliseconds -->
       <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
-      <begin-action></begin-action>
-      <end-action></end-action>
+      <begin-action>Document.Lock</begin-action>
+      <end-action>Document.Unlock</end-action>
       <end-condition expression="">
       </end-condition>
     </rule>

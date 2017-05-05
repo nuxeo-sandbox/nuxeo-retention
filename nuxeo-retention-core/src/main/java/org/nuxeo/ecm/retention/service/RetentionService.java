@@ -19,9 +19,13 @@
 
 package org.nuxeo.ecm.retention.service;
 
+import java.util.List;
+import java.util.Map;
+
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.NuxeoException;
+import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 
 public interface RetentionService {
@@ -30,10 +34,14 @@ public interface RetentionService {
 
     public static final String RETENTION_RULE_FACET = "RetentionRule";
 
+    public static final String RETENTION_ACTIVE_STATE = "active";
+
+    public static final String RETENTION_EXPIRED_STATE = "expired";
+
     public static final Long batchSize = 10L;// maybe configurable through a property
 
     /**
-     * Attaches the given rule to the document using an unrestricted session.
+     * Attaches the given rule to the document using an unrestricted session. Does not evaluate the rule
      * 
      * @param ruleId
      * @param doc
@@ -43,7 +51,8 @@ public interface RetentionService {
     void attachRule(String ruleId, DocumentModel doc, CoreSession session);
 
     /**
-     * Performs the give query using an unrestricted session and attaches the given rule to the documents
+     * Performs the give query using an unrestricted session and attaches the given rule to the documents. Does not
+     * evaluate the rule
      * 
      * @param ruleId
      * @param query
@@ -53,18 +62,25 @@ public interface RetentionService {
     void attachRule(String ruleId, String query, CoreSession session);
 
     /**
-     * Checks a record doc to see if something has to be done
+     * Checks a record doc. If any of the rules applies it executes the beginAction. If any event from the list specified matches
      * 
      * @param doc
      * @param session
      * @return
      * @since 9.2
      */
-    boolean checkRecord(DocumentModel doc, CoreSession session);
+    public void evalRules(Record record, List<String> eventId, CoreSession session);
 
     /**
-     * Returns a rule based on its id. First, we are trying to find a static rule, if none find, trying to
-     * fetch a dynamic rule persisted on a document based on its id
+     * Queues a worker to eval the given list
+     * 
+     * @since 9.2
+     */
+    public void checkRules(  Map<String, List<String>> docsToCheckAndEvents);
+
+    /**
+     * Returns a rule based on its id. First, we are trying to find a static rule, if none find, trying to fetch a
+     * dynamic rule persisted on a document based on its id
      * 
      * @param ruleId
      * @return

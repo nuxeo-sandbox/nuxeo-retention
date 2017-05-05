@@ -26,30 +26,35 @@ import static org.nuxeo.ecm.platform.ec.notification.NotificationConstants.DISAB
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jboss.el.ExpressionFactoryImpl;
+import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationContext;
-import org.nuxeo.ecm.automation.core.scripting.Expression;
-import org.nuxeo.ecm.automation.core.scripting.Scripting;
+import org.nuxeo.ecm.automation.OperationException;
 import org.nuxeo.ecm.core.api.CoreInstance;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentNotFoundException;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.NuxeoException;
+import org.nuxeo.ecm.core.api.NuxeoPrincipal;
 import org.nuxeo.ecm.core.work.api.WorkManager;
+import org.nuxeo.ecm.platform.actions.ELActionContext;
+import org.nuxeo.ecm.platform.el.ExpressionContext;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProviderService;
 import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
-import org.nuxeo.ecm.retention.work.RetentionRecordUpdateWork;
+import org.nuxeo.ecm.retention.work.RetentionRecordCheckerWork;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentInstance;
 import org.nuxeo.runtime.model.DefaultComponent;
@@ -73,32 +78,21 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         }
     }
 
+    // this should be invoked with startAction
     @Override
     public void attachRule(String ruleId, DocumentModel doc, CoreSession session) {
-        // ToDo: check if we need the unrestricted in the service
-        // ToDo: compute min_cutoff_at and max_retention_at
         CoreInstance.doPrivileged(session, (CoreSession s) -> {
-            // evaluate beingCondition to see if this
-            // retention rule applies to this document ??
-            // maybe this is not here??
-                RetentionRule rule = getRetentionRule(ruleId, session);
-                Boolean ruleApplies = evaluateConditionExpression(rule.getBeginCondition().getExpression(), doc,
-                        session);
-                if (!ruleApplies) {
-                    return;
-                }
-
-                if (!doc.hasFacet(RECORD_FACET)) {
-                    doc.addFacet(RECORD_FACET);
-                }
-                s.saveDocument(doc);
-            });
+            if (!doc.hasFacet(RECORD_FACET)) {
+                doc.addFacet(RECORD_FACET);
+            }
+            Record record = doc.getAdapter(Record.class);
+            record.addRule(ruleId);
+            record.save(session);
+        });
     }
 
     @Override
     public void attachRule(String ruleId, String query, CoreSession session) {
-
-        WorkManager workManager = Framework.getLocalService(WorkManager.class);
         long offset = 0;
         List<DocumentModel> nextDocumentsToBeUpdated;
 
@@ -119,23 +113,87 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             if (nextDocumentsToBeUpdated.isEmpty()) {
                 break;
             }
-            List<String> docIds = nextDocumentsToBeUpdated.stream()
-                                                          .map(DocumentModel::getId)
-                                                          .collect(Collectors.toList());
-            // ToDo: check to see if we really need an worker depending on what we need to process on the
-            // document later
-            RetentionRecordUpdateWork work = new RetentionRecordUpdateWork(ruleId);
-            work.setDocuments(session.getRepositoryName(), docIds);
-            workManager.schedule(work, WorkManager.Scheduling.IF_NOT_SCHEDULED, true);
+            // this should not be to expensive to be done inline here
+            for (DocumentModel documentModel : nextDocumentsToBeUpdated) {
+                attachRule(ruleId, documentModel, session);
+            }
             offset += maxResult;
         } while (nextDocumentsToBeUpdated.size() == maxResult && pp.isNextPageAvailable());
     }
 
     @Override
-    public boolean checkRecord(DocumentModel doc, CoreSession session) {
-        Record recod = doc.getAdapter(Record.class);
+    public void evalRules(Record record, List<String> events, CoreSession session) {
+        if (record == null) {
+            return; // nothing to do
+        }
+        String retentionStatus = record.getStatus();
+        if (RETENTION_EXPIRED_STATE.equals(retentionStatus)) {
+            // retention expired, nothing to do, should remove the facet?
+            return;
 
-        return false;
+        }
+        // no need to init it for every rule, its the same
+        ELActionContext actionContext = initActionContext(record.getDoc(), session);
+        List<Record.RecordRule> recordRules = record.getRecordRules();
+        for (Record.RecordRule rr : recordRules) {
+            // for every rule on the document;
+            // if cutoff start and disposalDate have been set, and the retention is active only need to check if the
+            // disposal date has been reached
+            if (RETENTION_ACTIVE_STATE.equalsIgnoreCase(retentionStatus) && rr.getCutoffStart() != null
+                    && rr.getDisposalDate() != null) {
+                Calendar disposalDate = rr.getDisposalDate();
+                // disposal date has passed
+                if (disposalDate.before(Calendar.getInstance())) {
+                    // record is still active? if yes execute endAction and set to expired
+                    endRetention(record, getRetentionRule(rr.getRuleId(), session), session);
+                    return; // no need to check other rules? the first one that applies sets the document to
+                            // expired?
+                }
+                continue; // if the dates are already set, no need to inspect the condition
+            }
+
+            RetentionRule rule = getRetentionRule(rr.getRuleId(), session);
+            // if there is no event we can check it
+            Boolean ruleApplies = evaluateConditionExpression(actionContext, rule.getBeginCondition().getExpression(),
+                    record.getDoc(), session);
+            if (rule.getBeginCondition().getEvent() == null) {
+                if (ruleApplies) {
+                    startRetention(record, rule, session);
+                }
+
+            }
+            if (rule.getBeginCondition().getEvent() != null && events.contains(rule.getBeginCondition().getEvent())
+                    && ruleApplies) {
+                startRetention(record, rule, session); // should we check the condition also when we have an event?
+            }
+
+        }
+    }
+
+    @Override
+    public void checkRules(Map<String, List<String>> docsToCheckAndEvents) {
+        RetentionRecordCheckerWork work = new RetentionRecordCheckerWork(docsToCheckAndEvents);
+        Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
+
+    }
+
+    protected void endRetention(Record record, RetentionRule rule, CoreSession session) {
+        executeRuleAction(rule.getEndAction(), record.getDoc(), session);
+        record.setStatus(RETENTION_EXPIRED_STATE);
+        record.save(session);
+    }
+
+    protected void startRetention(Record record, RetentionRule rule, CoreSession session) {
+        Calendar cutoffDate = Calendar.getInstance();
+        if (rule.getBeginDelayInMillis() >= 0) {
+            // add begin delay
+            cutoffDate.setTimeInMillis(cutoffDate.getTimeInMillis() + rule.getBeginDelayInMillis());
+        }
+        Calendar disposalDate = Calendar.getInstance();
+        disposalDate.setTimeInMillis(cutoffDate.getTimeInMillis() + rule.getRetentionDurationInMillis());
+        record.setRuleDatesAndUpdateGlobalRetentionDetails(rule.getId(), cutoffDate, disposalDate);
+        executeRuleAction(rule.getBeginAction(), record.getDoc(), session);
+        record.save(session);
     }
 
     @Override
@@ -188,15 +246,22 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     }
 
-    protected Boolean evaluateConditionExpression(String expression, DocumentModel doc, CoreSession session) {
-        OperationContext context = getExecutionContext(doc, session);
-        Expression expr = Scripting.newExpression(expression);
-        Object res = expr.eval(context);
+    protected ELActionContext initActionContext(DocumentModel doc, CoreSession session) {
+        // handles only filters that can be resolved in this context
+        ELActionContext ctx = new ELActionContext(new ExpressionContext(), new ExpressionFactoryImpl());
+        ctx.setDocumentManager(session);
+        ctx.setCurrentPrincipal((NuxeoPrincipal) session.getPrincipal());
+        ctx.setCurrentDocument(doc);
+        return ctx;
+    }
+
+    protected Boolean evaluateConditionExpression(ELActionContext ctx, String expression, DocumentModel doc,
+            CoreSession session) {
+        Object res = ctx.checkCondition(expression);
         // if no condition, attach always
         if (res == null) {
             return true;
         }
-
         return (Boolean) res;
     }
 
@@ -206,6 +271,21 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         context.setCommit(false); // no session save at end
         context.setInput(doc);
         return context;
+    }
+
+    protected void executeRuleAction(String actionId, DocumentModel doc, CoreSession session) {
+        if (StringUtils.isEmpty(actionId)) {
+            return;
+        }
+        // get base context
+        OperationContext context = getExecutionContext(doc, session);
+        AutomationService automationService = Framework.getLocalService(AutomationService.class);
+        try {
+            automationService.run(context, actionId);
+        } catch (OperationException e) {
+            throw new NuxeoException("Error running chain: " + actionId, e);
+        }
+
     }
 
 }

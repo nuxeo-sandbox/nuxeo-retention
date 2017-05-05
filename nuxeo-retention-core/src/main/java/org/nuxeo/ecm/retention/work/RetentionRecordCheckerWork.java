@@ -18,8 +18,15 @@
  */
 package org.nuxeo.ecm.retention.work;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
+import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.core.work.AbstractWork;
+import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
@@ -29,6 +36,16 @@ public class RetentionRecordCheckerWork extends AbstractWork {
 
     public static final String TITLE = "Retention record Checker";
 
+    protected Map<String, List<String>> docsToCheckAndEvents;
+
+    public RetentionRecordCheckerWork(Map<String, List<String>> docsToCheckAndEvents) {
+        this.docsToCheckAndEvents = docsToCheckAndEvents;
+        List<String> docs = new ArrayList<String>();
+        docs.addAll(docsToCheckAndEvents.keySet());
+        setDocuments(Framework.getService(RepositoryManager.class).getDefaultRepositoryName(), docs);
+
+    }
+
     @Override
     public String getTitle() {
         return TITLE;
@@ -37,6 +54,15 @@ public class RetentionRecordCheckerWork extends AbstractWork {
     @Override
     public void work() {
         openSystemSession();
-        Framework.getService(RetentionService.class).checkRecord(session.getDocument(new IdRef(docId)), session);
+        for (String docId : docIds) {
+            DocumentModel doc = session.getDocument(new IdRef(docId));
+            Record record = doc.getAdapter(Record.class);
+            if (record == null) {
+                continue;
+            }
+            Framework.getService(RetentionService.class).evalRules((Record) doc.getAdapter(Record.class),
+                    docsToCheckAndEvents.get(docId), session);
+        }
+
     }
 }

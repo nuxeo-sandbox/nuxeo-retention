@@ -19,6 +19,11 @@
 
 package org.nuxeo.ecm.retention.listener;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -27,9 +32,7 @@ import org.nuxeo.ecm.core.event.EventBundle;
 import org.nuxeo.ecm.core.event.EventContext;
 import org.nuxeo.ecm.core.event.PostCommitEventListener;
 import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
-import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.retention.service.RetentionService;
-import org.nuxeo.ecm.retention.work.RetentionRecordCheckerWork;
 import org.nuxeo.runtime.api.Framework;
 
 public class RetentionRecordCheckerListener implements PostCommitEventListener {
@@ -38,25 +41,36 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
 
     @Override
     public void handleEvent(EventBundle events) {
+        Map<String, List<String>> docsToCheckAndEvents = new HashMap<String, List<String>>();
         for (Event event : events) {
-            checkRecord(event);
+            EventContext eventCtx = event.getContext();
+            if (!(eventCtx instanceof DocumentEventContext)) {
+                continue;
+            }
+            DocumentEventContext docEventCtx = (DocumentEventContext) eventCtx;
+            DocumentModel doc = docEventCtx.getSourceDocument();
+            if (doc == null || !doc.hasFacet(RetentionService.RECORD_FACET)) {
+                continue;
+            }
+            String docId = doc.getId();
+
+            if (docsToCheckAndEvents.containsKey(docId)) {
+                List<String> eventsToCheck = docsToCheckAndEvents.get(docId);
+                if (!eventsToCheck.contains(event.getName())) {
+                    eventsToCheck.add(event.getName());
+                }
+                docsToCheckAndEvents.put(docId, eventsToCheck);
+            } else {
+                List<String> evs = new ArrayList<String>();
+                evs.add(event.getName());
+                docsToCheckAndEvents.put(docId, evs);
+            }
+
         }
+
+        // ToDo: check how many events max in a bundle
+        Framework.getLocalService(RetentionService.class).checkRules(docsToCheckAndEvents);
 
     }
 
-    protected void checkRecord(Event event) {
-        EventContext eventCtx = event.getContext();
-        if (!(eventCtx instanceof DocumentEventContext)) {
-            return;
-        }
-        DocumentEventContext docEventCtx = (DocumentEventContext) eventCtx;
-        DocumentModel doc = docEventCtx.getSourceDocument();
-        if (doc == null || !doc.hasFacet(RetentionService.RECORD_FACET)) {
-            return;
-        }
-        // should filter for retention in progress
-        RetentionRecordCheckerWork work = new RetentionRecordCheckerWork();
-        work.setDocument(null, doc.getId());
-        Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
-    }
 }
