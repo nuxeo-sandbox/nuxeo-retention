@@ -16,38 +16,21 @@
  * Contributors:
  *     mcedica@nuxeo.com
  */
-package org.nuxeo.ecm.retention.work;
+package org.nuxeo.ecm.retention.listener;
 
-import org.nuxeo.ecm.core.api.IdRef;
-import org.nuxeo.ecm.core.work.AbstractWork;
+import java.util.Date;
+
+import org.nuxeo.ecm.core.event.Event;
+import org.nuxeo.ecm.core.event.EventListener;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
-public class RetentionRecordUpdateWork extends AbstractWork {
-
-    private static final long serialVersionUID = 1L;
-
-    public static final String TITLE = "Retention Record Updater";
-    
-    //ToDo : Queue - Category?
-
-    protected String ruleId;
-
-    public RetentionRecordUpdateWork(String ruleId) {
-        this.ruleId = ruleId;
-    }
+public class RetentionDateCheckerListener implements EventListener {
 
     @Override
-    public String getTitle() {
-        return TITLE;
-    }
-
-    @Override
-    public void work() {
-        openSystemSession();
-        for (String string : docIds) {
-            Framework.getService(RetentionService.class).attachRule(ruleId, session.getDocument(new IdRef(string)),
-                    session);
+    public void handleEvent(Event event) {
+        if (RetentionService.RETENTION_CHECKER_EVENT.equals(event.getName())) {
+            Framework.getLocalService(RetentionService.class).queryDocsAndEvalRulesForDate(new Date());
         }
     }
 }

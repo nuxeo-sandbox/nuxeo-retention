@@ -22,13 +22,55 @@
         expression="document.getType()=='Folder'">
       </begin-condition>
       <begin-delay />
-      <retention-duration>100</retention-duration> <!-- duration in miliseconds -->
+      <retention-duration>10000</retention-duration> <!-- duration in miliseconds -->
       <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
       <end-condition expression="">
       </end-condition>
     </rule>
+
+    <rule>
+      <id>myTestRuleId2</id>
+      <begin-condition event="documentModified"
+        expression="document.isFolder()">
+      </begin-condition>
+      <begin-delay />
+      <retention-duration>10000000</retention-duration> <!-- duration in miliseconds -->
+      <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
+      <begin-action>Document.Lock</begin-action>
+      <end-condition expression="">
+      </end-condition>
+    </rule>
+
+    <rule>
+      <id>retentionOnCreation</id>
+      <begin-condition event="documentCreated"
+        expression="document.getType()=='File'">
+      </begin-condition>
+      <begin-delay />
+      <retention-duration>10000</retention-duration> <!-- duration in miliseconds -->
+      <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
+      <begin-action>Document.Lock</begin-action>
+      <end-action>Document.Unlock</end-action>
+      <end-condition expression="">
+      </end-condition>
+    </rule>
+
+    <rule>
+      <id>retentionWithDelay</id>
+      <begin-condition 
+        expression="document.getType()=='File'">
+      </begin-condition>
+      <begin-delay >1000</begin-delay>
+      <retention-duration>10000</retention-duration> <!-- duration in miliseconds -->
+      <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
+      <begin-action>Document.Lock</begin-action>
+      <end-action>Document.Unlock</end-action>
+      <end-condition expression="">
+      </end-condition>
+    </rule>
+
   </extension>
 
 

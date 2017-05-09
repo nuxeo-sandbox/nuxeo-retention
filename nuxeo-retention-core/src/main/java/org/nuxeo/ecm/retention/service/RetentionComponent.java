@@ -19,17 +19,15 @@
 
 package org.nuxeo.ecm.retention.service;
 
-import static org.nuxeo.ecm.core.versioning.VersioningService.DISABLE_AUTO_CHECKOUT;
-import static org.nuxeo.ecm.platform.audit.service.NXAuditEventsService.DISABLE_AUDIT_LOGGER;
-import static org.nuxeo.ecm.platform.dublincore.listener.DublinCoreListener.DISABLE_DUBLINCORE_LISTENER;
-import static org.nuxeo.ecm.platform.ec.notification.NotificationConstants.DISABLE_NOTIFICATION_SERVICE;
-
 import java.io.Serializable;
-import java.util.Arrays;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -45,6 +43,7 @@ import org.nuxeo.ecm.core.api.DocumentNotFoundException;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.NuxeoPrincipal;
+import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.actions.ELActionContext;
 import org.nuxeo.ecm.platform.el.ExpressionContext;
@@ -55,6 +54,7 @@ import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.work.RetentionRecordCheckerWork;
+import org.nuxeo.ecm.retention.work.RetentionRecordUpdaterWork;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentInstance;
 import org.nuxeo.runtime.model.DefaultComponent;
@@ -65,10 +65,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     protected RetentionRulesContributionRegistry registry = new RetentionRulesContributionRegistry();
 
-    public static List<String> DISABLED_FLAGS = Arrays.asList( //
-            DISABLE_AUDIT_LOGGER, //
-            DISABLE_DUBLINCORE_LISTENER, DISABLE_NOTIFICATION_SERVICE, DISABLE_AUTO_CHECKOUT); // + Others?
-
     public static Log log = LogFactory.getLog(RetentionComponent.class);
 
     @Override
@@ -78,17 +74,32 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         }
     }
 
-    // this should be invoked with startAction
     @Override
-    public void attachRule(String ruleId, DocumentModel doc, CoreSession session) {
-        CoreInstance.doPrivileged(session, (CoreSession s) -> {
-            if (!doc.hasFacet(RECORD_FACET)) {
-                doc.addFacet(RECORD_FACET);
-            }
-            Record record = doc.getAdapter(Record.class);
-            record.addRule(ruleId);
-            record.save(session);
-        });
+    public void attachRule(String ruleId, DocumentModel doc) {
+        CoreInstance.doPrivileged(
+                Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName(),
+                (CoreSession session) -> {
+                    if (!doc.hasFacet(RECORD_FACET)) {
+                        doc.addFacet(RECORD_FACET);
+                    }
+                    Record record = doc.getAdapter(Record.class);
+                    if (record.hasRule(ruleId)) {
+                        return;
+                    }
+
+                    RetentionRule rule = getRetentionRule(ruleId, session);
+                    record.addRule(ruleId);
+                    // start the rule if possible
+                    Boolean ruleApplies = rule.getBeginCondition() != null ? evaluateConditionExpression(
+                            initActionContext(record.getDoc(), session), rule.getBeginCondition().getExpression(),
+                            record.getDoc(), session) : true;
+                    if (rule.getBeginCondition().getEvent() == null) {
+                        if (ruleApplies) {
+                            setRetentionDatesAndStartIfNoDelay(record, rule, false, session);
+                        }
+                    }
+                    record.save(session);
+                });
     }
 
     @Override
@@ -115,7 +126,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             }
             // this should not be to expensive to be done inline here
             for (DocumentModel documentModel : nextDocumentsToBeUpdated) {
-                attachRule(ruleId, documentModel, session);
+                attachRule(ruleId, documentModel);
             }
             offset += maxResult;
         } while (nextDocumentsToBeUpdated.size() == maxResult && pp.isNextPageAvailable());
@@ -139,7 +150,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             // for every rule on the document;
             // if cutoff start and disposalDate have been set, and the retention is active only need to check if the
             // disposal date has been reached
-            if (RETENTION_ACTIVE_STATE.equalsIgnoreCase(retentionStatus) && rr.getCutoffStart() != null
+            if (RETENTION_ACTIVE_STATE.equalsIgnoreCase(record.getStatus()) && rr.getCutoffStart() != null
                     && rr.getDisposalDate() != null) {
                 Calendar disposalDate = rr.getDisposalDate();
                 // disposal date has passed
@@ -153,37 +164,130 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             }
 
             RetentionRule rule = getRetentionRule(rr.getRuleId(), session);
-            // if there is no event we can check it
             Boolean ruleApplies = evaluateConditionExpression(actionContext, rule.getBeginCondition().getExpression(),
                     record.getDoc(), session);
-            if (rule.getBeginCondition().getEvent() == null) {
-                if (ruleApplies) {
-                    startRetention(record, rule, session);
-                }
-
-            }
-            if (rule.getBeginCondition().getEvent() != null && events.contains(rule.getBeginCondition().getEvent())
-                    && ruleApplies) {
-                startRetention(record, rule, session); // should we check the condition also when we have an event?
+            // if either there is an event to match or there is no event
+            if ((ruleApplies && events != null && events.contains(rule.getBeginCondition().getEvent()))
+                    || (ruleApplies && rule.getBeginCondition().getEvent() == null)) {
+                setRetentionDatesAndStartIfNoDelay(record, rule, true, session); // should we check the condition also
+                                                                                 // when
+                // we have an event?
             }
 
         }
     }
 
     @Override
-    public void checkRules(Map<String, List<String>> docsToCheckAndEvents) {
+    public void evalRules(Map<String, List<String>> docsToCheckAndEvents) {
         RetentionRecordCheckerWork work = new RetentionRecordCheckerWork(docsToCheckAndEvents);
+        if (docsToCheckAndEvents.isEmpty()) {
+            return;
+        }
         Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
-
     }
 
-    protected void endRetention(Record record, RetentionRule rule, CoreSession session) {
+    protected void startRetention(List<String> docs) {
+        if (docs.isEmpty()) {
+            return;
+        }
+        RetentionRecordUpdaterWork work = new RetentionRecordUpdaterWork(docs);
+        Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
+    }
+
+    @Override
+    public void queryDocsAndEvalRulesForDate(Date dateToCheck) {
+        // docs in active retention that might have been expired
+        evalRulesForActiveDocs(dateToCheck);
+        // docs not in active retention because of the initial delay
+        startRetentionForUnmanagedDocs(dateToCheck);
+    }
+
+    protected void startRetentionForUnmanagedDocs(Date dateToCheck) {
+        CoreInstance.doPrivileged(
+                Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName(),
+                (CoreSession s) -> {
+                    long offset = 0;
+                    List<DocumentModel> nextDocumentsToBeChecked;
+
+                    CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
+                    SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    String query = String.format("Select * from Document WHERE ecm:mixinType = 'Record' AND "
+                            + " record:status = 'unmanaged' AND record:min_cutoff_at <= TIMESTAMP '%s'",
+                            formater.format(dateToCheck));
+                    desc.setPattern(query);
+                    Map<String, Serializable> props = new HashMap<String, Serializable>();
+                    props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) s);
+
+                    @SuppressWarnings("unchecked")
+                    PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(
+                            PageProviderService.class).getPageProvider("", desc, null, null, batchSize, 0L, props);
+                    final long maxResult = pp.getPageSize();
+                    do {
+                        pp.setCurrentPageOffset(offset);
+                        pp.refresh();
+                        nextDocumentsToBeChecked = pp.getCurrentPage();
+                        if (nextDocumentsToBeChecked.isEmpty()) {
+                            break;
+                        }
+                        List<String> docIds = nextDocumentsToBeChecked.stream()
+                                                                      .map(DocumentModel::getId)
+                                                                      .collect(Collectors.toList());
+
+                        startRetention(docIds);
+                        offset += maxResult;
+                    } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
+
+                });
+    }
+
+    protected void evalRulesForActiveDocs(Date dateToCheck) {
+        CoreInstance.doPrivileged(
+                Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName(),
+                (CoreSession s) -> {
+                    long offset = 0;
+                    List<DocumentModel> nextDocumentsToBeChecked;
+
+                    CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
+                    SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    String query = String.format("Select * from Document WHERE ecm:mixinType = 'Record' AND "
+                            + " record:status = 'active' AND record:max_retention_at <= TIMESTAMP '%s'",
+                            formater.format(dateToCheck));
+                    desc.setPattern(query);
+                    Map<String, Serializable> props = new HashMap<String, Serializable>();
+                    props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) s);
+
+                    @SuppressWarnings("unchecked")
+                    PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(
+                            PageProviderService.class).getPageProvider("", desc, null, null, batchSize, 0L, props);
+                    final long maxResult = pp.getPageSize();
+                    do {
+                        pp.setCurrentPageOffset(offset);
+                        pp.refresh();
+                        nextDocumentsToBeChecked = pp.getCurrentPage();
+                        if (nextDocumentsToBeChecked.isEmpty()) {
+                            break;
+                        }
+                        Map<String, List<String>> map = new HashMap<String, List<String>>();
+                        for (DocumentModel documentModel : nextDocumentsToBeChecked) {
+                            map.put(documentModel.getId(), new ArrayList<String>());
+                        }
+
+                        evalRules(map);
+                        offset += maxResult;
+                    } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
+
+                });
+    }
+
+    @Override
+    public void endRetention(Record record, RetentionRule rule, CoreSession session) {
         executeRuleAction(rule.getEndAction(), record.getDoc(), session);
         record.setStatus(RETENTION_EXPIRED_STATE);
         record.save(session);
     }
 
-    protected void startRetention(Record record, RetentionRule rule, CoreSession session) {
+    protected void setRetentionDatesAndStartIfNoDelay(Record record, RetentionRule rule, boolean save,
+            CoreSession session) {
         Calendar cutoffDate = Calendar.getInstance();
         if (rule.getBeginDelayInMillis() >= 0) {
             // add begin delay
@@ -192,8 +296,24 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         Calendar disposalDate = Calendar.getInstance();
         disposalDate.setTimeInMillis(cutoffDate.getTimeInMillis() + rule.getRetentionDurationInMillis());
         record.setRuleDatesAndUpdateGlobalRetentionDetails(rule.getId(), cutoffDate, disposalDate);
+        if (rule.getBeginDelayInMillis() == 0) {
+            startRetention(record, rule, false, session);
+        }
+
+        if (save) {
+            record.save(session);
+        }
+    }
+
+    @Override
+    public void startRetention(Record record, RetentionRule rule, boolean save, CoreSession session) {
         executeRuleAction(rule.getBeginAction(), record.getDoc(), session);
-        record.save(session);
+        if (!RETENTION_ACTIVE_STATE.equals(record.getStatus())) {
+            record.setStatus(RETENTION_ACTIVE_STATE);
+            if (save) {
+                record.save(session);
+            }
+        }
     }
 
     @Override
@@ -215,13 +335,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         }
         return new RetentionRule(dynamicRuleDoc);
 
-    }
-
-    // ToDo: to be called
-    protected void disableListeners(DocumentModel doc) {
-        for (String flag : DISABLED_FLAGS) {
-            doc.putContextData(flag, Boolean.TRUE);
-        }
     }
 
     @Override
@@ -257,6 +370,9 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     protected Boolean evaluateConditionExpression(ELActionContext ctx, String expression, DocumentModel doc,
             CoreSession session) {
+        if (StringUtils.isEmpty(expression)) {
+            return true;
+        }
         Object res = ctx.checkCondition(expression);
         // if no condition, attach always
         if (res == null) {

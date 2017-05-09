@@ -18,32 +18,29 @@
  */
 package org.nuxeo.ecm.retention.work;
 
-import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
-import java.util.Map;
 
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
+import org.nuxeo.ecm.core.repository.RepositoryService;
 import org.nuxeo.ecm.core.work.AbstractWork;
 import org.nuxeo.ecm.retention.adapter.Record;
+import org.nuxeo.ecm.retention.adapter.Record.RecordRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
-public class RetentionRecordCheckerWork extends AbstractWork {
+public class RetentionRecordUpdaterWork extends AbstractWork {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String TITLE = "Retention record Checker";
+    public static final String TITLE = "Retention Record Updater";
 
-    protected Map<String, List<String>> docsToCheckAndEvents;
+    // ToDo : Queue - Category?
 
-    public RetentionRecordCheckerWork(Map<String, List<String>> docsToCheckAndEvents) {
-        this.docsToCheckAndEvents = docsToCheckAndEvents;
-        List<String> docs = new ArrayList<String>();
-        docs.addAll(docsToCheckAndEvents.keySet());
+    public RetentionRecordUpdaterWork(List<String> docs) {
         setDocuments(Framework.getService(RepositoryManager.class).getDefaultRepositoryName(), docs);
-
     }
 
     @Override
@@ -54,15 +51,23 @@ public class RetentionRecordCheckerWork extends AbstractWork {
     @Override
     public void work() {
         openSystemSession();
+        RetentionService service = Framework.getService(RetentionService.class);
         for (String string : docIds) {
             DocumentModel doc = session.getDocument(new IdRef(string));
             Record record = doc.getAdapter(Record.class);
             if (record == null) {
                 continue;
             }
-            Framework.getService(RetentionService.class).evalRules((Record) doc.getAdapter(Record.class),
-                    docsToCheckAndEvents.get(string), session);
-        }
 
+            Calendar now = Calendar.getInstance();
+            List<RecordRule> rules = record.getRecordRules();
+            for (RecordRule recordRule : rules) {
+                if (recordRule.getCutoffStart().before(now)) {
+                    service.startRetention(record, service.getRetentionRule(recordRule.getRuleId(), session), true,
+                            session);
+
+                }
+            }
+        }
     }
 }

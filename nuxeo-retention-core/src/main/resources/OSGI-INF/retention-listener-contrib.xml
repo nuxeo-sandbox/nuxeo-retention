@@ -6,6 +6,12 @@
     <listener name="retentionRecordCheckerListener"
       class="org.nuxeo.ecm.retention.listener.RetentionRecordCheckerListener">
     </listener>
+
+    <listener name="retentionDateCheckerListener" postCommit="false"
+      async="false"
+      class="org.nuxeo.ecm.retention.listener.RetentionDateCheckerListener">
+      <event>checkRetentionEvent</event>
+    </listener>
   </extension>
 
 </component>

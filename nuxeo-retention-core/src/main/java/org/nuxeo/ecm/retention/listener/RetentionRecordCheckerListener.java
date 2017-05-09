@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.event.DocumentEventTypes;
 import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventBundle;
 import org.nuxeo.ecm.core.event.EventContext;
@@ -42,7 +43,23 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
     @Override
     public void handleEvent(EventBundle events) {
         Map<String, List<String>> docsToCheckAndEvents = new HashMap<String, List<String>>();
+        String ignoreId = null;
+        if (events.containsEventName(RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT)) {
+            for (Event event : events) {
+                if (RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT.equals(event.getName())) {
+                    ignoreId = ((DocumentEventContext) event.getContext()).getSourceDocument().getId();
+                }
+            }
+        }
         for (Event event : events) {
+            if (RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT.equals(event.getName())) {
+                continue;
+            }
+            if (DocumentEventTypes.DOCUMENT_REMOVED.equals(event.getName())) {
+                // is too late for retention, this will later trigger a document not found exception
+                continue;
+
+            }
             EventContext eventCtx = event.getContext();
             if (!(eventCtx instanceof DocumentEventContext)) {
                 continue;
@@ -53,6 +70,13 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
                 continue;
             }
             String docId = doc.getId();
+            // avoid triggering the retention by the first 'documentModified' triggered when the rule is attached to the
+            // document
+            // a better solution?
+            if (ignoreId != null && ignoreId.equals(docId)
+                    && DocumentEventTypes.DOCUMENT_UPDATED.equals(event.getName())) {
+                continue;
+            }
 
             if (docsToCheckAndEvents.containsKey(docId)) {
                 List<String> eventsToCheck = docsToCheckAndEvents.get(docId);
@@ -67,10 +91,12 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
             }
 
         }
+        if (docsToCheckAndEvents.isEmpty()) {
+            return;
+        }
 
         // ToDo: check how many events max in a bundle
-        Framework.getLocalService(RetentionService.class).checkRules(docsToCheckAndEvents);
+        Framework.getLocalService(RetentionService.class).evalRules(docsToCheckAndEvents);
 
     }
-
 }

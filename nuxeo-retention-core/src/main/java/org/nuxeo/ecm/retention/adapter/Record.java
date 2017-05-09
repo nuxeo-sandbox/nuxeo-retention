@@ -20,16 +20,27 @@
 
 package org.nuxeo.ecm.retention.adapter;
 
-import org.nuxeo.ecm.core.api.CoreSession;
-import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.DocumentRef;
+import static org.nuxeo.ecm.core.versioning.VersioningService.DISABLE_AUTO_CHECKOUT;
+import static org.nuxeo.ecm.platform.audit.service.NXAuditEventsService.DISABLE_AUDIT_LOGGER;
+import static org.nuxeo.ecm.platform.dublincore.listener.DublinCoreListener.DISABLE_DUBLINCORE_LISTENER;
+import static org.nuxeo.ecm.platform.ec.notification.NotificationConstants.DISABLE_NOTIFICATION_SERVICE;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.nuxeo.ecm.core.api.CoreSession;
+import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentRef;
+import org.nuxeo.ecm.core.event.EventService;
+import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
+import org.nuxeo.ecm.core.event.impl.EventImpl;
+import org.nuxeo.ecm.retention.service.RetentionService;
+import org.nuxeo.runtime.api.Framework;
 
 /**
  * // Basic methods // // Note that we voluntarily expose only a subset of the DocumentModel API in this adapter. // You
@@ -46,6 +57,10 @@ public class Record {
     public static final String RECORD_MAX_RETENTION_AT = "record:max_retention_at";
 
     public static final String RETENTION_RULES = "record:rules";
+
+    public static List<String> DISABLED_FLAGS = Arrays.asList( //
+            DISABLE_AUDIT_LOGGER, //
+            DISABLE_DUBLINCORE_LISTENER, DISABLE_NOTIFICATION_SERVICE, DISABLE_AUTO_CHECKOUT); // + Others?
 
     protected final DocumentModel doc;
 
@@ -103,11 +118,26 @@ public class Record {
     @SuppressWarnings("unchecked")
     public void addRule(String ruleId) {
         List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
+        for (Map<String, Serializable> map : rr) {
+            if (ruleId.equals(map.get("rule_id"))) {
+                return; // no need to add it
+            }
+        }
         Map<String, Serializable> r = new HashMap<String, Serializable>();
         r.put("rule_id", ruleId);
         rr.add(r);
         doc.setPropertyValue(RETENTION_RULES, (Serializable) rr);
+    }
 
+    @SuppressWarnings("unchecked")
+    public boolean hasRule(String ruleId) {
+        List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
+        for (Map<String, Serializable> map : rr) {
+            if (ruleId.equals(map.get("rule_id"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SuppressWarnings("unchecked")
@@ -144,7 +174,27 @@ public class Record {
     }
 
     public void save(CoreSession session) {
+        disableListeners(doc, session);
         session.saveDocument(doc);
+        enableListeners(doc);
+    }
+
+    protected void disableListeners(DocumentModel doc, CoreSession session) {
+        for (String flag : DISABLED_FLAGS) {
+            doc.putContextData(flag, Boolean.TRUE);
+        }
+        // in case we had a retentionRule triggered by a 'documentModified', this is the only way to have
+        // documentModfified ignored in that bundle
+        // a better solution
+        ((EventService) Framework.getService(EventService.class)).fireEvent(new EventImpl(
+                RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT, new DocumentEventContext(session, null, doc)));
+    }
+
+    protected void enableListeners(DocumentModel doc) {
+        for (String flag : DISABLED_FLAGS) {
+            doc.putContextData(flag, null);
+        }
+
     }
 
     public class RecordRule {

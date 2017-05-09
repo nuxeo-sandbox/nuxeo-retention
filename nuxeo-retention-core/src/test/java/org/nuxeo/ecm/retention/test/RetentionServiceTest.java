@@ -20,6 +20,7 @@
 package org.nuxeo.ecm.retention.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -33,10 +34,25 @@ import org.junit.runner.RunWith;
 import org.nuxeo.ecm.automation.test.AutomationFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentModelList;
+import org.nuxeo.ecm.core.api.DocumentSecurityException;
+import org.nuxeo.ecm.core.api.security.ACE;
+import org.nuxeo.ecm.core.api.security.ACL;
+import org.nuxeo.ecm.core.api.security.ACP;
+import org.nuxeo.ecm.core.api.security.SecurityConstants;
+import org.nuxeo.ecm.core.event.EventService;
+import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
+import org.nuxeo.ecm.core.test.CoreFeature;
+import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
+import org.nuxeo.ecm.core.test.annotations.Granularity;
+import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.core.work.api.WorkManager;
+import org.nuxeo.ecm.platform.usermanager.UserManager;
+import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
+import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
@@ -44,12 +60,12 @@ import org.nuxeo.runtime.test.runner.LocalDeploy;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
-import com.sun.prism.impl.Disposer.Record;
 
 @RunWith(FeaturesRunner.class)
 @Features({ TransactionalFeature.class, AutomationFeature.class })
 @Deploy({ "org.nuxeo.ecm.platform.query.api", "org.nuxeo.ecm.retention.service.nuxeo-retention-service" })
 @LocalDeploy("org.nuxeo.ecm.retention.service.nuxeo-retention-service:retention-rules-contrib-test.xml")
+@RepositoryConfig(init = DefaultRepositoryInit.class, cleanup = Granularity.METHOD)
 public class RetentionServiceTest {
 
     @Inject
@@ -61,26 +77,31 @@ public class RetentionServiceTest {
     @Inject
     WorkManager workManager;
 
+    @Inject
+    UserManager userManager;
+
+    @Inject
+    CoreFeature settings;
+
     @Test
     public void testRetentionService() throws InterruptedException {
-        assertNotNull(service);
-        DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
-        doc = session.createDocument(doc);
-        service.attachRule("myTestRuleId", doc, session);
-        doc = session.getDocument(doc.getRef());
-        assertTrue(doc.hasFacet(RetentionService.RECORD_FACET));
-
         List<DocumentModel> docs = new ArrayList<DocumentModel>();
-
+        DocumentModel doc;
         for (int i = 0; i < 5; i++) {
             doc = session.createDocumentModel("/", "root", "Folder");
             doc = session.createDocument(doc);
             docs.add(doc);
         }
         session.save();
-        service.attachRule("myTestRuleId", "Select * from Folder", session);
+        service.attachRule("myTestRuleId2", "Select * from Folder", session);
+        DocumentModelList folders = session.query("Select * from Folder");
+        for (DocumentModel f : folders) {
+            f.setPropertyValue("dc:title", "blah");
+            f = session.saveDocument(f);
+        }
 
         waitForWorkers();
+        session.save();
         for (DocumentModel documentModel : docs) {
             documentModel = session.getDocument(documentModel.getRef());
             assertTrue(documentModel.hasFacet(RetentionService.RECORD_FACET));
@@ -89,10 +110,12 @@ public class RetentionServiceTest {
     }
 
     @Test
-    public void testRecordChecker() throws Exception {
+    public void testStartRetentionOnModifiedEvent() throws Exception {
+        RetentionRule rule = service.getRetentionRule("myTestRuleId", session);
+        assertNotNull(rule);
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
         doc = session.createDocument(doc);
-        service.attachRule("myTestRuleId", doc, session);
+        service.attachRule(rule.getId(), doc);
         doc = session.getDocument(doc.getRef());
         waitForWorkers();
         // modify the document to see if the rule is invoked
@@ -102,8 +125,72 @@ public class RetentionServiceTest {
         assertTrue(doc.isLocked());
         Record record = doc.getAdapter(Record.class);
         assertNotNull(record);
+        assertEquals("active", record.getStatus());
+        // wait for the retention to end
+        Thread.sleep(rule.getRetentionDurationInMillis() + 1000);
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT,
+                new DocumentEventContext(session, null, doc));
+        waitForWorkers();
+        doc = session.getDocument(doc.getRef());
+        record = doc.getAdapter(Record.class);
+        assertFalse(doc.isLocked());
+        assertEquals("expired", record.getStatus());
+    }
 
-        // TO BE continued !!
+    @Test
+    public void testStartRetentionOnCreationEvent() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreation", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertTrue(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+    }
+
+    @Test
+    public void testStartRetentionWithDelay() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionWithDelay", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        session.save();
+
+        CoreSession sessionAsJdoe = settings.openCoreSession("jdoe");
+        ACP acp = doc.getACP();
+        ACL localACL = acp.getOrCreateACL(ACL.LOCAL_ACL);
+        localACL.add(new ACE("jdoe", SecurityConstants.READ_WRITE, true));
+        doc.setACP(acp, true);
+        doc = session.saveDocument(doc);
+        doc.setPropertyValue("dc:title", "ddd");
+
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        doc = sessionAsJdoe.saveDocument(doc);
+
+        Thread.sleep(rule.getBeginDelayInMillis() + 1000);
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT,
+                new DocumentEventContext(session, null, doc));
+
+        waitForWorkers();
+        doc = session.getDocument(doc.getRef());
+        assertTrue(doc.isLocked());
+        record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+        Exception e = null;
+        try {
+            doc = sessionAsJdoe.saveDocument(doc);
+        } catch (DocumentSecurityException e1) {
+            e = e1;
+        }
+        assertNotNull(e);
+        sessionAsJdoe.close();
 
     }
 
@@ -114,7 +201,7 @@ public class RetentionServiceTest {
         assertNotNull(rule);
         assertEquals("myTestRuleId", rule.getId());
         assertTrue(0 == rule.getBeginDelayInMillis());
-        assertTrue(100 == rule.getRetentionDurationInMillis());
+        assertTrue(10000 == rule.getRetentionDurationInMillis());
 
         // add a dynamic rule
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
@@ -133,7 +220,7 @@ public class RetentionServiceTest {
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
 
-        final boolean allCompleted = workManager.awaitCompletion(10, TimeUnit.SECONDS);
+        final boolean allCompleted = workManager.awaitCompletion(100, TimeUnit.SECONDS);
         assertTrue(allCompleted);
     }
 
