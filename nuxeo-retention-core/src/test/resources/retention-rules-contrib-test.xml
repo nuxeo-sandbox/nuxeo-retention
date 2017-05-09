@@ -59,12 +59,24 @@
 
     <rule>
       <id>retentionWithDelay</id>
-      <begin-condition 
-        expression="document.getType()=='File'">
+      <begin-condition expression="document.getType()=='File'">
       </begin-condition>
-      <begin-delay >1000</begin-delay>
+      <begin-delay>1000</begin-delay>
       <retention-duration>10000</retention-duration> <!-- duration in miliseconds -->
       <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
+      <begin-action>Document.Lock</begin-action>
+      <end-action>Document.Unlock</end-action>
+      <end-condition expression="">
+      </end-condition>
+    </rule>
+
+    <rule>
+      <id>retentionWithReminder</id>
+      <begin-condition expression="document.getType()=='File'">
+      </begin-condition>
+      <begin-delay></begin-delay>
+      <retention-duration>259200000</retention-duration> <!-- duration in miliseconds --> <!-- 3 days -->
+      <retention-reminder-days>2</retention-reminder-days>  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
       <end-condition expression="">

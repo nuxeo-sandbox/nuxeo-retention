@@ -30,5 +30,6 @@
   <xs:element name="rules" type="nxs:retention_rules" />
   <xs:element name="status" default="unmanaged" type="xs:string" />
   <xs:element name="min_cutoff_at" type="xs:date" />
+  <xs:element name="reminder_start_date" type="xs:date" />
   <xs:element name="max_retention_at" type="xs:date" />
 </xs:schema>

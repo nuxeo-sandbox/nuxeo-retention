@@ -259,6 +259,32 @@ public class RetentionServiceTest {
 
     }
 
+    @Test
+    public void testRetentionReminder() throws Exception {
+        // we are deploying a static rule
+        RetentionRule rule = service.getRetentionRule("retentionWithReminder", session);
+        assertNotNull(rule);
+        assertEquals("retentionWithReminder", rule.getId());
+        assertTrue(0 == rule.getBeginDelayInMillis());
+        assertTrue(2 == rule.getRetentionReminderDays());
+
+        DocumentModel file = session.createDocumentModel("/", "root", "File");
+        file = session.createDocument(file);
+        service.attachRule(rule.getId(), file);
+        session.save();
+
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT,
+                new DocumentEventContext(session, null, file));
+
+        waitForWorkers();
+        file = session.getDocument(file.getRef());
+        Record record = file.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+        assertTrue(record.getReminderStartDate().after(record.getMinCutoffAt()));
+
+    }
+
     protected void waitForWorkers() throws InterruptedException {
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();

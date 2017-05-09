@@ -208,7 +208,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 (CoreSession s) -> {
                     long offset = 0;
                     List<DocumentModel> nextDocumentsToBeChecked;
-                    //ToDO move to external PP to use ES?
+                    // ToDO move to external PP to use ES?
                     CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
                     SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     String query = String.format("Select * from Document WHERE ecm:mixinType = 'Record' AND "
@@ -246,7 +246,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 (CoreSession s) -> {
                     long offset = 0;
                     List<DocumentModel> nextDocumentsToBeChecked;
-                    //ToDO move to external PP to use ES?
+                    // ToDO move to external PP to use ES?
                     CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
                     SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     String query = String.format("Select * from Document WHERE ecm:mixinType = 'Record' AND "
@@ -289,13 +289,25 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     protected void setRetentionDatesAndStartIfNoDelay(Record record, RetentionRule rule, boolean save,
             CoreSession session) {
         Calendar cutoffDate = Calendar.getInstance();
+        Calendar startReminderDate = null;
         if (rule.getBeginDelayInMillis() >= 0) {
             // add begin delay
             cutoffDate.setTimeInMillis(cutoffDate.getTimeInMillis() + rule.getBeginDelayInMillis());
         }
         Calendar disposalDate = Calendar.getInstance();
         disposalDate.setTimeInMillis(cutoffDate.getTimeInMillis() + rule.getRetentionDurationInMillis());
-        record.setRuleDatesAndUpdateGlobalRetentionDetails(rule.getId(), cutoffDate, disposalDate);
+
+        if (rule.getRetentionReminderDays() > 0) {
+            long retentionStartDateMillis = disposalDate.getTimeInMillis() - rule.getRetentionReminderDays() * 24 * 60
+                    * 60 * 1000;
+            if (retentionStartDateMillis > 0) {
+                startReminderDate = Calendar.getInstance();
+                startReminderDate.setTimeInMillis(retentionStartDateMillis);
+            }
+            // the reminder starts at the disposalDate - retentionReminder days
+        }
+
+        record.setRuleDatesAndUpdateGlobalRetentionDetails(rule.getId(), cutoffDate, disposalDate, startReminderDate);
         if (rule.getBeginDelayInMillis() == 0) {
             startRetention(record, rule, false, session);
         }

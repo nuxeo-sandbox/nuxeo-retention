@@ -42,12 +42,6 @@ import org.nuxeo.ecm.core.event.impl.EventImpl;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
-/**
- * // Basic methods // // Note that we voluntarily expose only a subset of the DocumentModel API in this adapter. // You
- * may wish to complete it without exposing everything! // For instance to avoid letting people change the document
- * state using your adapter, // because this would be handled through workflows / buttons / events in your application.
- * //
- */
 public class Record {
 
     public static final String STATUS_FIELD = "record:status";
@@ -55,6 +49,8 @@ public class Record {
     public static final String MIN_CUTOFF_AT = "record:min_cutoff_at";
 
     public static final String RECORD_MAX_RETENTION_AT = "record:max_retention_at";
+
+    public static final String RETENTION_REMINDER_START_DATE = "record:reminder_start_date";
 
     public static final String RETENTION_RULES = "record:rules";
 
@@ -115,6 +111,10 @@ public class Record {
         doc.setPropertyValue(RECORD_MAX_RETENTION_AT, maxRetentionDate);
     }
 
+    public Calendar getReminderStartDate() {
+        return (Calendar) doc.getPropertyValue(RETENTION_REMINDER_START_DATE);
+    }
+
     @SuppressWarnings("unchecked")
     public void addRule(String ruleId) {
         List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
@@ -151,7 +151,8 @@ public class Record {
     }
 
     @SuppressWarnings("unchecked")
-    public void setRuleDatesAndUpdateGlobalRetentionDetails(String ruleId, Calendar cutoff, Calendar disposal) {
+    public void setRuleDatesAndUpdateGlobalRetentionDetails(String ruleId, Calendar cutoff, Calendar disposal,
+            Calendar retentionExpireReminderStartDate) {
         Calendar min_cutoff_at = getMinCutoffAt();
         Calendar max_retention_at = getMaxRetentionAt();
 
@@ -167,6 +168,9 @@ public class Record {
                     max_retention_at = disposal;
                 }
             }
+        }
+        if (retentionExpireReminderStartDate != null) {
+            doc.setPropertyValue(RETENTION_REMINDER_START_DATE, retentionExpireReminderStartDate);
         }
         doc.setPropertyValue(MIN_CUTOFF_AT, min_cutoff_at);
         doc.setPropertyValue(RECORD_MAX_RETENTION_AT, disposal);
