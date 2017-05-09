@@ -22,10 +22,6 @@ package org.nuxeo.ecm.retention.adapter;
 import java.io.Serializable;
 import java.util.Map;
 
-import org.nuxeo.ecm.automation.OperationContext;
-import org.nuxeo.ecm.automation.core.scripting.Expression;
-import org.nuxeo.ecm.automation.core.scripting.Scripting;
-import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionRuleConditionDescriptor;
 import org.nuxeo.ecm.retention.service.RetentionRuleDescriptor;
@@ -109,7 +105,7 @@ public class RetentionRule implements Rule {
 
     @Override
     public Long getBeginDelayInMillis() {
-        return beginDelay;
+        return beginDelay == null ? 0 : beginDelay;
     }
 
     @Override
@@ -136,7 +132,6 @@ public class RetentionRule implements Rule {
     public int getRetentionReminderDays() {
         return retentionReminder;
     }
-
 
     public class RetentionRuleCondition implements RuleCondition {
 

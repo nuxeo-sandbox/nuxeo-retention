@@ -25,12 +25,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.nuxeo.ecm.automation.AutomationService;
+import org.nuxeo.ecm.automation.OperationContext;
 import org.nuxeo.ecm.automation.test.AutomationFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -51,6 +56,7 @@ import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.usermanager.UserManager;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
+import org.nuxeo.ecm.retention.rest.CreateRetentionRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
@@ -82,6 +88,9 @@ public class RetentionServiceTest {
 
     @Inject
     CoreFeature settings;
+
+    @Inject
+    AutomationService automationService;
 
     @Test
     public void testRetentionService() throws InterruptedException {
@@ -213,6 +222,40 @@ public class RetentionServiceTest {
         assertNull(rule.getBeginAction());
         assertEquals("endAction", rule.getEndAction());
         assertEquals("documentUpdated", rule.getBeginCondition().getEvent());
+
+    }
+
+    @Test
+    public void testRetentionOperations() throws Exception {
+        DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
+        doc = session.createDocument(doc);
+
+        OperationContext ctx = new OperationContext();
+        ctx.setInput(doc);
+        ctx.setCoreSession(session);
+        Map<String, Serializable> params = new HashMap<String, Serializable>();
+        params.put("retentionPeriod", 1000000L);
+        params.put("beginAction", "Document.Lock");
+
+        String ruleId = (String) automationService.run(ctx, CreateRetentionRule.ID, params);
+        assertEquals(ruleId, doc.getId());
+
+        RetentionRule rule = service.getRetentionRule(ruleId, session);
+        assertNotNull(rule);
+        DocumentModel file = session.createDocumentModel("/", "root", "File");
+        file = session.createDocument(file);
+        service.attachRule(rule.getId(), file);
+        session.save();
+
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT,
+                new DocumentEventContext(session, null, doc));
+
+        waitForWorkers();
+        file = session.getDocument(file.getRef());
+        assertTrue(file.isLocked());
+        Record record = file.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
 
     }
 

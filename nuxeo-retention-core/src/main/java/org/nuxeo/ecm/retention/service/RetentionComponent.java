@@ -208,7 +208,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 (CoreSession s) -> {
                     long offset = 0;
                     List<DocumentModel> nextDocumentsToBeChecked;
-
+                    //ToDO move to external PP to use ES?
                     CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
                     SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     String query = String.format("Select * from Document WHERE ecm:mixinType = 'Record' AND "
@@ -246,7 +246,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 (CoreSession s) -> {
                     long offset = 0;
                     List<DocumentModel> nextDocumentsToBeChecked;
-
+                    //ToDO move to external PP to use ES?
                     CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
                     SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     String query = String.format("Select * from Document WHERE ecm:mixinType = 'Record' AND "
