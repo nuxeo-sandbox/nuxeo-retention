@@ -35,9 +35,9 @@ public interface RetentionService {
 
     public static final String RETENTION_RULE_FACET = "RetentionRule";
 
-    public static final String RETENTION_ACTIVE_STATE = "active";
-
-    public static final String RETENTION_EXPIRED_STATE = "expired";
+    public static enum RETENTION_STATE {
+        active, expired, unmanaged
+    };
 
     public static final Long batchSize = 10L;// maybe configurable through a property
 
@@ -114,7 +114,7 @@ public interface RetentionService {
      * 
      * @since 9.2
      */
-    String createOrUpdateDynamicRuleRuleOnDocument(Long beginDelay, Long retentionPeriod, int retentionReminder,
+    String createOrUpdateDynamicRuleOnDocument(Long beginDelay, Long retentionPeriod, int retentionReminder,
             String beginAction, String endAction, String beginCondExpression, String beginCondEvent,
             String endCondExpression, DocumentModel doc, CoreSession session);
 }

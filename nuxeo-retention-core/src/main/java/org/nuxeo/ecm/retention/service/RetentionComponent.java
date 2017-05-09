@@ -138,7 +138,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             return; // nothing to do
         }
         String retentionStatus = record.getStatus();
-        if (RETENTION_EXPIRED_STATE.equals(retentionStatus)) {
+        if (RETENTION_STATE.expired.name().equals(retentionStatus)) {
             // retention expired, nothing to do, should remove the facet?
             return;
 
@@ -150,7 +150,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             // for every rule on the document;
             // if cutoff start and disposalDate have been set, and the retention is active only need to check if the
             // disposal date has been reached
-            if (RETENTION_ACTIVE_STATE.equalsIgnoreCase(record.getStatus()) && rr.getCutoffStart() != null
+            if (RETENTION_STATE.active.name().equalsIgnoreCase(record.getStatus()) && rr.getCutoffStart() != null
                     && rr.getDisposalDate() != null) {
                 Calendar disposalDate = rr.getDisposalDate();
                 // disposal date has passed
@@ -282,7 +282,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     @Override
     public void endRetention(Record record, RetentionRule rule, CoreSession session) {
         executeRuleAction(rule.getEndAction(), record.getDoc(), session);
-        record.setStatus(RETENTION_EXPIRED_STATE);
+        record.setStatus(RETENTION_STATE.expired.name());
         record.save(session);
     }
 
@@ -320,8 +320,8 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     @Override
     public void startRetention(Record record, RetentionRule rule, boolean save, CoreSession session) {
         executeRuleAction(rule.getBeginAction(), record.getDoc(), session);
-        if (!RETENTION_ACTIVE_STATE.equals(record.getStatus())) {
-            record.setStatus(RETENTION_ACTIVE_STATE);
+        if (!RETENTION_STATE.active.name().equals(record.getStatus())) {
+            record.setStatus(RETENTION_STATE.active.name());
             if (save) {
                 record.save(session);
             }
@@ -350,7 +350,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public String createOrUpdateDynamicRuleRuleOnDocument(Long beginDelay, Long retentionPeriod, int retentionReminder,
+    public String createOrUpdateDynamicRuleOnDocument(Long beginDelay, Long retentionPeriod, int retentionReminder,
             String beginAction, String endAction, String beginCondExpression, String beginCondEvent,
             String endCondExpression, DocumentModel doc, CoreSession session) {
         if (!doc.hasFacet(RETENTION_RULE_FACET)) {

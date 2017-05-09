@@ -26,12 +26,12 @@ import static org.nuxeo.ecm.platform.dublincore.listener.DublinCoreListener.DISA
 import static org.nuxeo.ecm.platform.ec.notification.NotificationConstants.DISABLE_NOTIFICATION_SERVICE;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -132,22 +132,14 @@ public class Record {
     @SuppressWarnings("unchecked")
     public boolean hasRule(String ruleId) {
         List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
-        for (Map<String, Serializable> map : rr) {
-            if (ruleId.equals(map.get("rule_id"))) {
-                return true;
-            }
-        }
-        return false;
+        return rr.stream().filter((rule) -> ruleId.equals(rule.get("rule_id"))).findFirst().isPresent();
+
     }
 
     @SuppressWarnings("unchecked")
     public List<RecordRule> getRecordRules() {
-        List<RecordRule> rules = new ArrayList<RecordRule>();
         List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
-        for (Map<String, Serializable> map : rr) {
-            rules.add(new RecordRule(map));
-        }
-        return rules;
+        return rr.stream().map(rule -> new RecordRule(rule)).collect(Collectors.toList());
     }
 
     @SuppressWarnings("unchecked")

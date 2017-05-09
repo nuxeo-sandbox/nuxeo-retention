@@ -215,7 +215,7 @@ public class RetentionServiceTest {
         // add a dynamic rule
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
         doc = session.createDocument(doc);
-        String ruleId = service.createOrUpdateDynamicRuleRuleOnDocument(null, null, 0, null, "endAction", null,
+        String ruleId = service.createOrUpdateDynamicRuleOnDocument(null, null, 0, null, "endAction", null,
                 "documentUpdated", null, doc, session);
         assertEquals(ruleId, doc.getId());
         rule = service.getRetentionRule(ruleId, session);

@@ -22,6 +22,7 @@ package org.nuxeo.ecm.retention.service;
  * 
  * @since 9.2
  */
+import org.apache.commons.lang.StringUtils;
 import org.nuxeo.common.xmap.annotation.XNode;
 import org.nuxeo.common.xmap.annotation.XObject;
 
@@ -47,7 +48,7 @@ public class RetentionRuleDescriptor implements Rule {
 
     @XNode(value = "begin-delay")
     public void setBeginDelay(String value) {
-        beginDelay = value == "" ? 0 : Long.valueOf(value);
+        beginDelay = StringUtils.isBlank(value) ? 0 : Long.valueOf(value);
 
     }
 
@@ -55,14 +56,14 @@ public class RetentionRuleDescriptor implements Rule {
 
     @XNode(value = "retention-duration")
     public void setRetentionDuration(String value) {
-        retentionDuration = value == "" ? 0 : Long.valueOf(value);
+        retentionDuration = StringUtils.isBlank(value) ? 0 : Long.valueOf(value);
     }
 
     protected int retentionReminderDays;
 
     @XNode(value = "retention-reminder-days")
     public void setRetentionReminderDays(String value) {
-        retentionReminderDays = value == "" ? 0 : Integer.valueOf(value);
+        retentionReminderDays = StringUtils.isBlank(value) ? 0 : Integer.valueOf(value);
     }
 
     @Override

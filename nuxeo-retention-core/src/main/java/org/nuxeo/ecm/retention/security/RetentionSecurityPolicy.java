@@ -29,12 +29,12 @@ import org.nuxeo.ecm.core.query.sql.model.SQLQuery;
 import org.nuxeo.ecm.core.security.AbstractSecurityPolicy;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.service.RetentionService;
+import org.nuxeo.ecm.retention.service.RetentionService.RETENTION_STATE;
 
 /**
  * Security policy that blocks WRITE permission on a document while in retention
  */
 public class RetentionSecurityPolicy extends AbstractSecurityPolicy {
-
 
     @Override
     public Access checkPermission(Document doc, ACP mergedAcp, Principal principal, String permission,
@@ -45,7 +45,7 @@ public class RetentionSecurityPolicy extends AbstractSecurityPolicy {
             return access;
         }
         if (doc.hasFacet(RetentionService.RECORD_FACET)) {
-            if ("active".equals((String) doc.getPropertyValue(Record.STATUS_FIELD))) {
+            if (RETENTION_STATE.active.name().equals((String) doc.getPropertyValue(Record.STATUS_FIELD))) {
                 access = Access.DENY;
             }
         }
@@ -61,6 +61,5 @@ public class RetentionSecurityPolicy extends AbstractSecurityPolicy {
     public SQLQuery.Transformer getQueryTransformer(String repositoryName) {
         return SQLQuery.Transformer.IDENTITY;
     }
-
 
 }
