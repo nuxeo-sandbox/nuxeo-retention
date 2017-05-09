@@ -8,7 +8,7 @@
     </listener>
 
     <listener name="retentionDateCheckerListener" postCommit="false"
-      async="false"
+      async="true"
       class="org.nuxeo.ecm.retention.listener.RetentionDateCheckerListener">
       <event>checkRetentionEvent</event>
     </listener>
