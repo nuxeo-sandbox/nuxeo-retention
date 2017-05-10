@@ -41,13 +41,13 @@ import org.jboss.el.ExpressionFactoryImpl;
 import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationContext;
 import org.nuxeo.ecm.automation.OperationException;
-import org.nuxeo.ecm.core.api.CoreInstance;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentNotFoundException;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.NuxeoPrincipal;
+import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.actions.ELActionContext;
@@ -81,30 +81,34 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public void attachRule(String ruleId, DocumentModel doc) {
-        CoreInstance.doPrivileged(
-                Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName(),
-                (CoreSession session) -> {
-                    if (!doc.hasFacet(RECORD_FACET)) {
-                        doc.addFacet(RECORD_FACET);
-                    }
-                    Record record = doc.getAdapter(Record.class);
-                    if (record.hasRule(ruleId)) {
-                        return;
-                    }
+        new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
 
-                    RetentionRule rule = getRetentionRule(ruleId, session);
-                    record.addRule(ruleId);
-                    // start the rule if possible
-                    Boolean ruleApplies = rule.getBeginCondition() != null ? evaluateConditionExpression(
-                            initActionContext(record.getDoc(), session), rule.getBeginCondition().getExpression(),
-                            record.getDoc(), session) : true;
-                    if (rule.getBeginCondition().getEvent() == null) {
-                        if (ruleApplies) {
-                            setRetentionDatesAndStartIfNoDelay(record, rule, false, session);
-                        }
+            @Override
+            public void run() {
+                if (!doc.hasFacet(RECORD_FACET)) {
+                    doc.addFacet(RECORD_FACET);
+                }
+                Record record = doc.getAdapter(Record.class);
+                if (record.hasRule(ruleId)) {
+                    return;
+                }
+
+                RetentionRule rule = getRetentionRule(ruleId, session);
+                record.addRule(ruleId);
+                // start the rule if possible
+                Boolean ruleApplies = rule.getBeginCondition() != null ? evaluateConditionExpression(
+                        initActionContext(record.getDoc(), session), rule.getBeginCondition().getExpression(),
+                        record.getDoc(), session) : true;
+                if (rule.getBeginCondition().getEvent() == null) {
+                    if (ruleApplies) {
+                        setRetentionDatesAndStartIfNoDelay(record, rule, false, session);
                     }
-                    record.save(session);
-                });
+                }
+                record.save(session);
+            }
+
+        }.runUnrestricted();
+
     }
 
     @Override
@@ -218,47 +222,50 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     protected void evalRules(Date dateToCheck, String providerName, boolean activeRetention) {
-        CoreInstance.doPrivileged(
-                Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName(),
-                (CoreSession s) -> {
-                    long offset = 0;
-                    List<DocumentModel> nextDocumentsToBeChecked;
 
-                    Map<String, Serializable> props = new HashMap<String, Serializable>();
-                    props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) s);
-                    Object[] params = new Object[1];
-                    params[0] = new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck);
-                    props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) s);
+        new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
 
-                    @SuppressWarnings("unchecked")
-                    PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(
-                            PageProviderService.class).getPageProvider(providerName, null, null, batchSize, 0L, props,
-                            params);
-                    long maxResult = pp.getPageSize();
-                    do {
-                        pp.setCurrentPageOffset(offset);
-                        pp.refresh();
-                        nextDocumentsToBeChecked = pp.getCurrentPage();
-                        if (nextDocumentsToBeChecked.isEmpty()) {
-                            break;
-                        }
-                        Map<String, List<String>> map = new HashMap<String, List<String>>();
-                        for (DocumentModel documentModel : nextDocumentsToBeChecked) {
-                            map.put(documentModel.getId(), new ArrayList<String>());
-                        }
+            @Override
+            public void run() {
+                long offset = 0;
+                List<DocumentModel> nextDocumentsToBeChecked;
 
-                        if (activeRetention) {
-                            evalRules(map, dateToCheck);
-                        } else {
-                            startRetention(
-                                    nextDocumentsToBeChecked.stream()
-                                                            .map(DocumentModel::getId)
-                                                            .collect(Collectors.toList()), dateToCheck);
-                        }
-                        offset += maxResult;
-                    } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
+                Map<String, Serializable> props = new HashMap<String, Serializable>();
+                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
+                Object[] params = new Object[1];
+                params[0] = new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck);
+                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
 
-                });
+                @SuppressWarnings("unchecked")
+                PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(
+                        PageProviderService.class).getPageProvider(providerName, null, batchSize, 0L, props, params);
+                long maxResult = pp.getPageSize();
+                do {
+                    pp.setCurrentPageOffset(offset);
+                    pp.refresh();
+                    nextDocumentsToBeChecked = pp.getCurrentPage();
+                    if (nextDocumentsToBeChecked.isEmpty()) {
+                        break;
+                    }
+                    Map<String, List<String>> map = new HashMap<String, List<String>>();
+                    for (DocumentModel documentModel : nextDocumentsToBeChecked) {
+                        map.put(documentModel.getId(), new ArrayList<String>());
+                    }
+
+                    if (activeRetention) {
+                        evalRules(map, dateToCheck);
+                    } else {
+                        startRetention(
+                                nextDocumentsToBeChecked.stream()
+                                                        .map(DocumentModel::getId)
+                                                        .collect(Collectors.toList()), dateToCheck);
+                    }
+                    offset += maxResult;
+                } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
+
+            }
+        }.runUnrestricted();
+
     }
 
     @Override

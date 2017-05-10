@@ -25,7 +25,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -252,7 +251,7 @@ public class RetentionServiceTest {
         OperationContext ctx = new OperationContext();
         ctx.setInput(doc);
         ctx.setCoreSession(session);
-        Map<String, Serializable> params = new HashMap<String, Serializable>();
+        Map<String, Object> params = new HashMap<String, Object>();
         params.put("retentionPeriod", "2M3D");
         params.put("beginAction", "Document.Lock");
 
