@@ -20,26 +20,43 @@
 
 package org.nuxeo.ecm.retention.adapter;
 
+import static org.nuxeo.ecm.core.versioning.VersioningService.DISABLE_AUTO_CHECKOUT;
+import static org.nuxeo.ecm.platform.audit.service.NXAuditEventsService.DISABLE_AUDIT_LOGGER;
+import static org.nuxeo.ecm.platform.dublincore.listener.DublinCoreListener.DISABLE_DUBLINCORE_LISTENER;
+import static org.nuxeo.ecm.platform.ec.notification.NotificationConstants.DISABLE_NOTIFICATION_SERVICE;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
+import org.nuxeo.ecm.core.event.EventService;
+import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
+import org.nuxeo.ecm.core.event.impl.EventImpl;
+import org.nuxeo.ecm.retention.service.RetentionService;
+import org.nuxeo.runtime.api.Framework;
 
-import java.util.Calendar;
-
-/**
- // Basic methods
- //
- // Note that we voluntarily expose only a subset of the DocumentModel API in this adapter.
- // You may wish to complete it without exposing everything!
- // For instance to avoid letting people change the document state using your adapter,
- // because this would be handled through workflows / buttons / events in your application.
- //
- */
 public class Record {
+
     public static final String STATUS_FIELD = "record:status";
 
     public static final String MIN_CUTOFF_AT = "record:min_cutoff_at";
 
     public static final String RECORD_MAX_RETENTION_AT = "record:max_retention_at";
+
+    public static final String RETENTION_REMINDER_START_DATE = "record:reminder_start_date";
+
+    public static final String RETENTION_RULES = "record:rules";
+
+    public static List<String> DISABLED_FLAGS = Arrays.asList( //
+            DISABLE_AUDIT_LOGGER, //
+            DISABLE_DUBLINCORE_LISTENER, DISABLE_NOTIFICATION_SERVICE, DISABLE_AUTO_CHECKOUT); // + Others?
 
     protected final DocumentModel doc;
 
@@ -64,8 +81,8 @@ public class Record {
         return doc.getPathAsString();
     }
 
-    public String getState() {
-        return doc.getCurrentLifeCycleState();
+    public DocumentModel getDoc() {
+        return doc;
     }
 
     // Metadata get / set
@@ -92,5 +109,115 @@ public class Record {
 
     public void setMaxRetentionAt(Calendar maxRetentionDate) {
         doc.setPropertyValue(RECORD_MAX_RETENTION_AT, maxRetentionDate);
+    }
+
+    public Calendar getReminderStartDate() {
+        return (Calendar) doc.getPropertyValue(RETENTION_REMINDER_START_DATE);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void addRule(String ruleId) {
+        List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
+        for (Map<String, Serializable> map : rr) {
+            if (ruleId.equals(map.get("rule_id"))) {
+                return; // no need to add it
+            }
+        }
+        Map<String, Serializable> r = new HashMap<String, Serializable>();
+        r.put("rule_id", ruleId);
+        rr.add(r);
+        doc.setPropertyValue(RETENTION_RULES, (Serializable) rr);
+    }
+
+    @SuppressWarnings("unchecked")
+    public boolean hasRule(String ruleId) {
+        List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
+        return rr.stream().filter((rule) -> ruleId.equals(rule.get("rule_id"))).findFirst().isPresent();
+
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<RecordRule> getRecordRules() {
+        List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
+        return rr.stream().map(rule -> new RecordRule(rule)).collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("unchecked")
+    public void setRuleDatesAndUpdateGlobalRetentionDetails(String ruleId, Calendar cutoff, Calendar disposal,
+            Calendar retentionExpireReminderStartDate) {
+        Calendar min_cutoff_at = getMinCutoffAt();
+        Calendar max_retention_at = getMaxRetentionAt();
+
+        List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
+        for (Map<String, Serializable> map : rr) {
+            if (ruleId.equals(map.get("rule_id"))) {
+                map.put("cutoff_at", cutoff);
+                map.put("disposal_at", disposal);
+                if (min_cutoff_at == null || cutoff.before(min_cutoff_at)) {
+                    min_cutoff_at = cutoff;
+                }
+                if (max_retention_at == null || disposal.after(max_retention_at)) {
+                    max_retention_at = disposal;
+                }
+            }
+        }
+        if (retentionExpireReminderStartDate != null) {
+            doc.setPropertyValue(RETENTION_REMINDER_START_DATE, retentionExpireReminderStartDate);
+        }
+        doc.setPropertyValue(MIN_CUTOFF_AT, min_cutoff_at);
+        doc.setPropertyValue(RECORD_MAX_RETENTION_AT, disposal);
+        doc.setPropertyValue(RETENTION_RULES, (Serializable) rr);
+    }
+
+    public void save(CoreSession session) {
+        disableListeners(doc, session);
+        session.saveDocument(doc);
+        enableListeners(doc);
+    }
+
+    protected void disableListeners(DocumentModel doc, CoreSession session) {
+        for (String flag : DISABLED_FLAGS) {
+            doc.putContextData(flag, Boolean.TRUE);
+        }
+        // in case we had a retentionRule triggered by a 'documentModified', this is the only way to have
+        // documentModfified ignored in that bundle
+        // a better solution
+        ((EventService) Framework.getService(EventService.class)).fireEvent(new EventImpl(
+                RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT, new DocumentEventContext(session, null, doc)));
+    }
+
+    protected void enableListeners(DocumentModel doc) {
+        for (String flag : DISABLED_FLAGS) {
+            doc.putContextData(flag, null);
+        }
+
+    }
+
+    public class RecordRule {
+
+        String ruleId;
+
+        Calendar cutoffStart;
+
+        Calendar disposalDate;
+
+        public RecordRule(Map<String, Serializable> ruleProperty) {
+            this.ruleId = (String) ruleProperty.get("rule_id");
+            this.cutoffStart = (Calendar) ruleProperty.get("cutoff_at");
+            this.disposalDate = (Calendar) ruleProperty.get("disposal_at");
+        }
+
+        public String getRuleId() {
+            return ruleId;
+        }
+
+        public Calendar getCutoffStart() {
+            return cutoffStart;
+        }
+
+        public Calendar getDisposalDate() {
+            return disposalDate;
+        }
+
     }
 }

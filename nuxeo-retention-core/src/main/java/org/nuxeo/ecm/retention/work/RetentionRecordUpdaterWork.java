@@ -18,36 +18,32 @@
  */
 package org.nuxeo.ecm.retention.work;
 
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.List;
-import java.util.Map;
+import java.util.Date;
 
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.core.work.AbstractWork;
 import org.nuxeo.ecm.retention.adapter.Record;
+import org.nuxeo.ecm.retention.adapter.Record.RecordRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
-public class RetentionRecordCheckerWork extends AbstractWork {
+public class RetentionRecordUpdaterWork extends AbstractWork {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String TITLE = "Retention record Checker";
+    public static final String TITLE = "Retention Record Updater";
 
-    protected Map<String, List<String>> docsToCheckAndEvents;
+    protected Date maxCutOffDate;
 
-    protected Date dateToCheck;
+    // ToDo : Queue - Category?
 
-    public RetentionRecordCheckerWork(Map<String, List<String>> docsToCheckAndEvents, Date dateTocheck) {
-        this.docsToCheckAndEvents = docsToCheckAndEvents;
-        List<String> docs = new ArrayList<String>();
-        docs.addAll(docsToCheckAndEvents.keySet());
+    public RetentionRecordUpdaterWork(List<String> docs, Date maxCutOffDate) {
         setDocuments(Framework.getService(RepositoryManager.class).getDefaultRepositoryName(), docs);
-        this.dateToCheck = dateTocheck;
-
+        this.maxCutOffDate = maxCutOffDate;
     }
 
     @Override
@@ -58,15 +54,24 @@ public class RetentionRecordCheckerWork extends AbstractWork {
     @Override
     public void work() {
         openSystemSession();
+        RetentionService service = Framework.getService(RetentionService.class);
         for (String string : docIds) {
             DocumentModel doc = session.getDocument(new IdRef(string));
             Record record = doc.getAdapter(Record.class);
             if (record == null) {
                 continue;
             }
-            Framework.getService(RetentionService.class).evalRules((Record) doc.getAdapter(Record.class),
-                    docsToCheckAndEvents.get(string), dateToCheck, session);
-        }
 
+            Calendar maxCutOff = Calendar.getInstance();
+            maxCutOff.setTime(maxCutOffDate);
+            List<RecordRule> rules = record.getRecordRules();
+            for (RecordRule recordRule : rules) {
+                if (recordRule.getCutoffStart().before(maxCutOff)) {
+                    service.startRetention(record, service.getRetentionRule(recordRule.getRuleId(), session), true,
+                            session);
+
+                }
+            }
+        }
     }
 }

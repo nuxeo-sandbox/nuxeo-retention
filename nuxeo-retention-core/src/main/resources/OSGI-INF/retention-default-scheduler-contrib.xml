@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.retention.scheduler.config">
+ 
+  <extension
+    target="org.nuxeo.ecm.platform.scheduler.core.service.SchedulerRegistryService"
+    point="schedule">
+
+    <schedule id="retentionScheduler">
+      <eventId>checkRetentionEvent</eventId>
+      <eventCategory>retention</eventCategory>
+      <!-- every day at 11.59 PM -->
+      <cronExpression>0 59 23 * * ?</cronExpression>
+    </schedule>
+
+  </extension>
+
+</component>
