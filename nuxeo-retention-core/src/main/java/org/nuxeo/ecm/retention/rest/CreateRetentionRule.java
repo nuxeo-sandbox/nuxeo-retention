@@ -31,11 +31,11 @@ public class CreateRetentionRule {
 
     public static final String ID = "Retention.CreateRule";
 
-    @Param(name = "beginDelay", required = false)
-    protected Long beginDelay;
+    @Param(name = "beginDelayPeriod", required = false)
+    protected String beginDelayPeriod;
 
     @Param(name = "retentionPeriod")
-    protected Long retentionPeriod;
+    protected String retentionPeriod;
 
     @Param(name = "retentionReminder", required = false)
     protected int retentionReminder;
@@ -63,7 +63,7 @@ public class CreateRetentionRule {
 
     @OperationMethod
     public String createRetentionRule(DocumentModel doc) {
-        return retentionService.createOrUpdateDynamicRuleOnDocument(beginDelay, retentionPeriod, retentionReminder,
+        return retentionService.createOrUpdateDynamicRuleOnDocument(beginDelayPeriod, retentionPeriod, retentionReminder,
                 beginAction, endAction, beginCondExpression, beginCondEvent, endCondExpression, doc, session);
 
     }

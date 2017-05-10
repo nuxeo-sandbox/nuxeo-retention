@@ -29,8 +29,13 @@ public class RetentionDateCheckerListener implements EventListener {
 
     @Override
     public void handleEvent(Event event) {
+        Date dateToCheck = new Date();
+        // workaround for tests
+        if (event.getContext().getProperty("DATE_TO_CHECK") != null) {
+            dateToCheck = (Date) event.getContext().getProperty("DATE_TO_CHECK");
+        }
         if (RetentionService.RETENTION_CHECKER_EVENT.equals(event.getName())) {
-            Framework.getLocalService(RetentionService.class).queryDocsAndEvalRulesForDate(new Date());
+            Framework.getLocalService(RetentionService.class).queryDocsAndEvalRulesForDate(dateToCheck);
         }
     }
 }

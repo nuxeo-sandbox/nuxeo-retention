@@ -27,9 +27,9 @@ public interface Rule {
 
     RuleCondition getBeginCondition();
 
-    Long getBeginDelayInMillis();
+    String getBeginDelay();
     
-    Long getRetentionDurationInMillis();
+    String getRetentionDuration();
     
     int getRetentionReminderDays();
 

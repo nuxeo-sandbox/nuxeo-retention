@@ -20,14 +20,22 @@
 package org.nuxeo.ecm.retention.adapter;
 
 import java.io.Serializable;
+import java.time.Period;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.retention.service.RetentionRuleConditionDescriptor;
 import org.nuxeo.ecm.retention.service.RetentionRuleDescriptor;
 import org.nuxeo.ecm.retention.service.Rule;
 
 public class RetentionRule implements Rule {
+
+    public static final Log log = LogFactory.getLog(RetentionRule.class);
 
     public static final String RULE_ID_PROPERTY = "rule:ruleId";
 
@@ -39,9 +47,9 @@ public class RetentionRule implements Rule {
 
     public static final String RULE_END_CONDITION_PROPERTY = "rule:endCondition";
 
-    public static final String RULE_BEGIN_DELAY_PROPERTY = "rule:beginDelayInMillis";
+    public static final String RULE_BEGIN_DELAY_PERIOD_PROPERTY = "rule:beginDelayPeriod";
 
-    public static final String RULE_RETENTION_DURATION_PROPERTY = "rule:retentionDurationInMillis";
+    public static final String RULE_RETENTION_DURATION_PERIOD_PROPERTY = "rule:retentionDurationPeriod";
 
     public static final String RULE_RETENTION_REMINDER_PROPERTY = "rule:retentionReminderInDays";
 
@@ -55,9 +63,9 @@ public class RetentionRule implements Rule {
 
     protected RetentionRuleCondition beginCondition;
 
-    protected Long beginDelay;
+    protected Period beginDelay;
 
-    protected Long retentionDuration;
+    protected Period retentionDuration;
 
     protected int retentionReminder;
 
@@ -70,8 +78,8 @@ public class RetentionRule implements Rule {
     public RetentionRule(RetentionRuleDescriptor ruleDescriptor) {
         this.id = ruleDescriptor.getId();
         this.beginCondition = new RetentionRuleCondition(ruleDescriptor.getBeginCondition());
-        this.beginDelay = ruleDescriptor.getBeginDelayInMillis();
-        this.retentionDuration = ruleDescriptor.getRetentionDurationInMillis();
+        this.beginDelay = parsePeriod(ruleDescriptor.getBeginDelay());
+        this.retentionDuration = parsePeriod(ruleDescriptor.getRetentionDuration());
         this.retentionReminder = ruleDescriptor.getRetentionReminderDays();
         this.beginAction = ruleDescriptor.getBeginAction();
         this.endAction = ruleDescriptor.getEndAction();
@@ -85,8 +93,8 @@ public class RetentionRule implements Rule {
                 (Map<String, Serializable>) doc.getPropertyValue(RULE_BEGIN_CONDITION_PROPERTY));
         this.endCondition = new RetentionRuleCondition(
                 (Map<String, Serializable>) doc.getPropertyValue(RULE_END_CONDITION_PROPERTY));
-        this.beginDelay = (Long) doc.getPropertyValue(RULE_BEGIN_DELAY_PROPERTY);
-        this.retentionDuration = (Long) doc.getPropertyValue(RULE_RETENTION_DURATION_PROPERTY);
+        this.beginDelay = parsePeriod((String) doc.getPropertyValue(RULE_BEGIN_DELAY_PERIOD_PROPERTY));
+        this.retentionDuration = parsePeriod((String) doc.getPropertyValue(RULE_RETENTION_DURATION_PERIOD_PROPERTY));
         this.retentionReminder = ((Long) doc.getPropertyValue(RULE_RETENTION_REMINDER_PROPERTY)).intValue();
         this.beginAction = (String) doc.getPropertyValue(RULE_BEGIN_ACTION_PROPERTY);
         this.endAction = (String) doc.getPropertyValue(RULE_END_ACTION_PROPERTY);
@@ -104,8 +112,12 @@ public class RetentionRule implements Rule {
     }
 
     @Override
-    public Long getBeginDelayInMillis() {
-        return beginDelay == null ? 0 : beginDelay;
+    public String getBeginDelay() {
+        return beginDelay.toString();
+    }
+
+    public Period getBeginDealyAsPeriod() {
+        return beginDelay;
     }
 
     @Override
@@ -124,13 +136,31 @@ public class RetentionRule implements Rule {
     }
 
     @Override
-    public Long getRetentionDurationInMillis() {
+    public String getRetentionDuration() {
+        return retentionDuration.toString();
+    }
+
+    public Period getRetentionDurationAsPeriod() {
         return retentionDuration;
     }
 
     @Override
     public int getRetentionReminderDays() {
         return retentionReminder;
+    }
+
+    // ToDo - validate regexp?
+    protected Period parsePeriod(String retentionPeriod) {
+        if (StringUtils.isBlank(retentionPeriod)) {
+            return Period.ZERO;
+        }
+        // this has to match a format like 1Y2M3D
+        retentionPeriod = retentionPeriod.startsWith("P") ? retentionPeriod : "P" + retentionPeriod;
+        try {
+            return Period.parse(retentionPeriod);
+        } catch (DateTimeParseException e) {
+            throw new NuxeoException("Invalid retention duration: " + retentionPeriod, e);
+        }
     }
 
     public class RetentionRuleCondition implements RuleCondition {

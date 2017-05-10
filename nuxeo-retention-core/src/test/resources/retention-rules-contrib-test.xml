@@ -22,7 +22,7 @@
         expression="document.getType()=='Folder'">
       </begin-condition>
       <begin-delay />
-      <retention-duration>10000</retention-duration> <!-- duration in miliseconds -->
+      <retention-duration>1Y2M4D</retention-duration> 
       <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
@@ -36,7 +36,7 @@
         expression="document.isFolder()">
       </begin-condition>
       <begin-delay />
-      <retention-duration>10000000</retention-duration> <!-- duration in miliseconds -->
+      <retention-duration>1Y2M4D</retention-duration> 
       <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-condition expression="">
@@ -49,7 +49,7 @@
         expression="document.getType()=='File'">
       </begin-condition>
       <begin-delay />
-      <retention-duration>10000</retention-duration> <!-- duration in miliseconds -->
+      <retention-duration>P1Y2M4D</retention-duration> <!-- duration in miliseconds -->
       <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
@@ -61,8 +61,8 @@
       <id>retentionWithDelay</id>
       <begin-condition expression="document.getType()=='File'">
       </begin-condition>
-      <begin-delay>1000</begin-delay>
-      <retention-duration>10000</retention-duration> <!-- duration in miliseconds -->
+      <begin-delay>1D</begin-delay>
+      <retention-duration>P1D</retention-duration> 
       <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
@@ -75,7 +75,7 @@
       <begin-condition expression="document.getType()=='File'">
       </begin-condition>
       <begin-delay></begin-delay>
-      <retention-duration>259200000</retention-duration> <!-- duration in miliseconds --> <!-- 3 days -->
+      <retention-duration>P1Y</retention-duration> <!-- duration in miliseconds --> <!-- 3 days -->
       <retention-reminder-days>2</retention-reminder-days>  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>

@@ -21,9 +21,14 @@ package org.nuxeo.ecm.retention.service;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +138,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public void evalRules(Record record, List<String> events, CoreSession session) {
+    public void evalRules(Record record, List<String> events, Date dateToCheck, CoreSession session) {
         if (record == null) {
             return; // nothing to do
         }
@@ -152,9 +157,11 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             // disposal date has been reached
             if (RETENTION_STATE.active.name().equalsIgnoreCase(record.getStatus()) && rr.getCutoffStart() != null
                     && rr.getDisposalDate() != null) {
-                Calendar disposalDate = rr.getDisposalDate();
                 // disposal date has passed
-                if (disposalDate.before(Calendar.getInstance())) {
+                Calendar maxCutOff = Calendar.getInstance();
+                maxCutOff.setTime(dateToCheck);
+
+                if (rr.getDisposalDate().before(maxCutOff)) {
                     // record is still active? if yes execute endAction and set to expired
                     endRetention(record, getRetentionRule(rr.getRuleId(), session), session);
                     return; // no need to check other rules? the first one that applies sets the document to
@@ -178,19 +185,19 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public void evalRules(Map<String, List<String>> docsToCheckAndEvents) {
-        RetentionRecordCheckerWork work = new RetentionRecordCheckerWork(docsToCheckAndEvents);
+    public void evalRules(Map<String, List<String>> docsToCheckAndEvents, Date dateToCheck) {
+        RetentionRecordCheckerWork work = new RetentionRecordCheckerWork(docsToCheckAndEvents, dateToCheck);
         if (docsToCheckAndEvents.isEmpty()) {
             return;
         }
         Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
     }
 
-    protected void startRetention(List<String> docs) {
+    protected void startRetention(List<String> docs, Date maxCutoffDate) {
         if (docs.isEmpty()) {
             return;
         }
-        RetentionRecordUpdaterWork work = new RetentionRecordUpdaterWork(docs);
+        RetentionRecordUpdaterWork work = new RetentionRecordUpdaterWork(docs, maxCutoffDate);
         Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
     }
 
@@ -233,7 +240,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                                                                       .map(DocumentModel::getId)
                                                                       .collect(Collectors.toList());
 
-                        startRetention(docIds);
+                        startRetention(docIds, dateToCheck);
                         offset += maxResult;
                     } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
 
@@ -272,7 +279,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                             map.put(documentModel.getId(), new ArrayList<String>());
                         }
 
-                        evalRules(map);
+                        evalRules(map, dateToCheck);
                         offset += maxResult;
                     } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
 
@@ -288,27 +295,32 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     protected void setRetentionDatesAndStartIfNoDelay(Record record, RetentionRule rule, boolean save,
             CoreSession session) {
-        Calendar cutoffDate = Calendar.getInstance();
-        Calendar startReminderDate = null;
-        if (rule.getBeginDelayInMillis() >= 0) {
-            // add begin delay
-            cutoffDate.setTimeInMillis(cutoffDate.getTimeInMillis() + rule.getBeginDelayInMillis());
+        LocalDateTime cutoffDate = LocalDateTime.now();
+        LocalDateTime startReminderDate = null;
+        if (!rule.getBeginDealyAsPeriod().isZero()) {
+            Period delayPeriod = rule.getBeginDealyAsPeriod();
+            cutoffDate = cutoffDate.plusYears(delayPeriod.getYears())
+                                   .plusMonths(delayPeriod.getMonths())
+                                   .plusDays(delayPeriod.getDays());
         }
-        Calendar disposalDate = Calendar.getInstance();
-        disposalDate.setTimeInMillis(cutoffDate.getTimeInMillis() + rule.getRetentionDurationInMillis());
+
+        Period retentionPeriod = rule.getRetentionDurationAsPeriod();
+        LocalDateTime disposalDate = cutoffDate.plusYears(retentionPeriod.getYears())
+                                               .plusMonths(retentionPeriod.getMonths())
+                                               .plusDays(retentionPeriod.getDays());
 
         if (rule.getRetentionReminderDays() > 0) {
-            long retentionStartDateMillis = disposalDate.getTimeInMillis() - rule.getRetentionReminderDays() * 24 * 60
-                    * 60 * 1000;
-            if (retentionStartDateMillis > 0) {
-                startReminderDate = Calendar.getInstance();
-                startReminderDate.setTimeInMillis(retentionStartDateMillis);
-            }
+            startReminderDate = disposalDate.minusDays(rule.getRetentionReminderDays());
             // the reminder starts at the disposalDate - retentionReminder days
         }
 
-        record.setRuleDatesAndUpdateGlobalRetentionDetails(rule.getId(), cutoffDate, disposalDate, startReminderDate);
-        if (rule.getBeginDelayInMillis() == 0) {
+        record.setRuleDatesAndUpdateGlobalRetentionDetails(
+                rule.getId(),
+                GregorianCalendar.from(ZonedDateTime.of(cutoffDate, ZoneId.systemDefault())),
+                GregorianCalendar.from(ZonedDateTime.of(disposalDate, ZoneId.systemDefault())),
+                startReminderDate != null ? GregorianCalendar.from(ZonedDateTime.of(startReminderDate,
+                        ZoneId.systemDefault())) : null);
+        if (rule.getBeginDealyAsPeriod().isZero()) {
             startRetention(record, rule, false, session);
         }
 
@@ -350,15 +362,17 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public String createOrUpdateDynamicRuleOnDocument(Long beginDelay, Long retentionPeriod, int retentionReminder,
-            String beginAction, String endAction, String beginCondExpression, String beginCondEvent,
-            String endCondExpression, DocumentModel doc, CoreSession session) {
+    public String createOrUpdateDynamicRuleOnDocument(String beginDelayPeriod, String retentionPeriod,
+            int retentionReminder, String beginAction, String endAction, String beginCondExpression,
+            String beginCondEvent, String endCondExpression, DocumentModel doc, CoreSession session) {
         if (!doc.hasFacet(RETENTION_RULE_FACET)) {
             doc.addFacet(RETENTION_RULE_FACET); // else is just updating an existing rule
         }
         doc.setPropertyValue(RetentionRule.RULE_ID_PROPERTY, doc.getId());
-        doc.setPropertyValue(RetentionRule.RULE_BEGIN_DELAY_PROPERTY, beginDelay); // should validate with a regexp?
-        doc.setPropertyValue(RetentionRule.RULE_RETENTION_DURATION_PROPERTY, retentionPeriod);
+        doc.setPropertyValue(RetentionRule.RULE_BEGIN_DELAY_PERIOD_PROPERTY, beginDelayPeriod); // should validate with
+                                                                                                // a
+        // regexp?
+        doc.setPropertyValue(RetentionRule.RULE_RETENTION_DURATION_PERIOD_PROPERTY, retentionPeriod);
         doc.setPropertyValue(RetentionRule.RULE_RETENTION_REMINDER_PROPERTY, retentionReminder);
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_ACTION_PROPERTY, beginAction);
         doc.setPropertyValue(RetentionRule.RULE_END_ACTION_PROPERTY, endAction);

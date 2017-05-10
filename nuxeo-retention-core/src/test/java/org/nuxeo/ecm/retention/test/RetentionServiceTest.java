@@ -26,6 +26,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -135,10 +137,24 @@ public class RetentionServiceTest {
         Record record = doc.getAdapter(Record.class);
         assertNotNull(record);
         assertEquals("active", record.getStatus());
-        // wait for the retention to end
-        Thread.sleep(rule.getRetentionDurationInMillis() + 1000);
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT,
-                new DocumentEventContext(session, null, doc));
+
+        LocalDate minCutoff = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMinCutoffAt()
+                                                                                              .getTime()));
+
+        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
+                                                                                                 .getTime()));
+        assertTrue(minCutoff.isEqual(LocalDate.now()));
+        assertEquals(maxRetention.getYear(), minCutoff.getYear() + rule.getRetentionDurationAsPeriod().getYears());
+        assertEquals(maxRetention.getMonthValue(), minCutoff.getMonthValue()
+                + rule.getRetentionDurationAsPeriod().getMonths());
+
+        assertEquals(maxRetention.getDayOfMonth(), minCutoff.getDayOfMonth()
+                + rule.getRetentionDurationAsPeriod().getDays());
+
+        DocumentEventContext context = new DocumentEventContext(session, null, doc);
+        context.setProperty("DATE_TO_CHECK",
+                new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
         waitForWorkers();
         doc = session.getDocument(doc.getRef());
         record = doc.getAdapter(Record.class);
@@ -181,10 +197,13 @@ public class RetentionServiceTest {
         doc = session.getDocument(doc.getRef());
         Record record = doc.getAdapter(Record.class);
         doc = sessionAsJdoe.saveDocument(doc);
+        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
+                                                                                                 .getTime()));
 
-        Thread.sleep(rule.getBeginDelayInMillis() + 1000);
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT,
-                new DocumentEventContext(session, null, doc));
+        DocumentEventContext context = new DocumentEventContext(session, null, doc);
+        context.setProperty("DATE_TO_CHECK",
+                new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
         waitForWorkers();
         doc = session.getDocument(doc.getRef());
@@ -209,8 +228,8 @@ public class RetentionServiceTest {
         RetentionRule rule = service.getRetentionRule("myTestRuleId", session);
         assertNotNull(rule);
         assertEquals("myTestRuleId", rule.getId());
-        assertTrue(0 == rule.getBeginDelayInMillis());
-        assertTrue(10000 == rule.getRetentionDurationInMillis());
+        // assertTrue(0 == rule.getBeginDelayInMillis());
+        // assertTrue(10000 == rule.getRetentionDurationInMillis());
 
         // add a dynamic rule
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
@@ -234,7 +253,7 @@ public class RetentionServiceTest {
         ctx.setInput(doc);
         ctx.setCoreSession(session);
         Map<String, Serializable> params = new HashMap<String, Serializable>();
-        params.put("retentionPeriod", 1000000L);
+        params.put("retentionPeriod", "2M3D");
         params.put("beginAction", "Document.Lock");
 
         String ruleId = (String) automationService.run(ctx, CreateRetentionRule.ID, params);
@@ -247,14 +266,19 @@ public class RetentionServiceTest {
         service.attachRule(rule.getId(), file);
         session.save();
 
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT,
-                new DocumentEventContext(session, null, doc));
+        Record record = file.getAdapter(Record.class);
+        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
+                                                                                                 .getTime()));
+
+        DocumentEventContext context = new DocumentEventContext(session, null, doc);
+        context.setProperty("DATE_TO_CHECK",
+                new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
         waitForWorkers();
         file = session.getDocument(file.getRef());
         assertTrue(file.isLocked());
-        Record record = file.getAdapter(Record.class);
-        assertNotNull(record);
+        record = file.getAdapter(Record.class);
         assertEquals("active", record.getStatus());
 
     }
@@ -265,7 +289,7 @@ public class RetentionServiceTest {
         RetentionRule rule = service.getRetentionRule("retentionWithReminder", session);
         assertNotNull(rule);
         assertEquals("retentionWithReminder", rule.getId());
-        assertTrue(0 == rule.getBeginDelayInMillis());
+        // assertTrue(0 == rule.getBeginDelayInMillis());
         assertTrue(2 == rule.getRetentionReminderDays());
 
         DocumentModel file = session.createDocumentModel("/", "root", "File");
@@ -273,12 +297,18 @@ public class RetentionServiceTest {
         service.attachRule(rule.getId(), file);
         session.save();
 
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT,
-                new DocumentEventContext(session, null, file));
+        Record record = file.getAdapter(Record.class);
+        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
+                                                                                                 .getTime()));
+
+        DocumentEventContext context = new DocumentEventContext(session, null, file);
+        context.setProperty("DATE_TO_CHECK",
+                new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
         waitForWorkers();
         file = session.getDocument(file.getRef());
-        Record record = file.getAdapter(Record.class);
+        record = file.getAdapter(Record.class);
         assertNotNull(record);
         assertEquals("active", record.getStatus());
         assertTrue(record.getReminderStartDate().after(record.getMinCutoffAt()));

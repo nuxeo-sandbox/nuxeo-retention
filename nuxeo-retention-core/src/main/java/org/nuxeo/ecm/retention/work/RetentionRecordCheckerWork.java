@@ -19,6 +19,7 @@
 package org.nuxeo.ecm.retention.work;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -38,11 +39,14 @@ public class RetentionRecordCheckerWork extends AbstractWork {
 
     protected Map<String, List<String>> docsToCheckAndEvents;
 
-    public RetentionRecordCheckerWork(Map<String, List<String>> docsToCheckAndEvents) {
+    protected Date dateToCheck;
+
+    public RetentionRecordCheckerWork(Map<String, List<String>> docsToCheckAndEvents, Date dateTocheck) {
         this.docsToCheckAndEvents = docsToCheckAndEvents;
         List<String> docs = new ArrayList<String>();
         docs.addAll(docsToCheckAndEvents.keySet());
         setDocuments(Framework.getService(RepositoryManager.class).getDefaultRepositoryName(), docs);
+        this.dateToCheck = dateTocheck;
 
     }
 
@@ -61,7 +65,7 @@ public class RetentionRecordCheckerWork extends AbstractWork {
                 continue;
             }
             Framework.getService(RetentionService.class).evalRules((Record) doc.getAdapter(Record.class),
-                    docsToCheckAndEvents.get(string), session);
+                    docsToCheckAndEvents.get(string), dateToCheck, session);
         }
 
     }

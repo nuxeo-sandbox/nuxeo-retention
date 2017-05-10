@@ -64,11 +64,11 @@ public interface RetentionService {
     void attachRule(String ruleId, String query, CoreSession session);
 
     /**
-     * Evaluates the rules for a given record against the list of events and the current time
+     * Evaluates the rules for a given record against the list of events and the given date
      * 
      * @since 9.2
      */
-    public void evalRules(Record record, List<String> eventId, CoreSession session);
+    public void evalRules(Record record, List<String> eventId, Date dateToCheck , CoreSession session);
 
     /**
      * Evaluates the rules for a list of documents and a list of events for each document Queues a worker to eval the
@@ -76,7 +76,7 @@ public interface RetentionService {
      * 
      * @since 9.2
      */
-    public void evalRules(Map<String, List<String>> docsToCheckAndEvents);
+    public void evalRules(Map<String, List<String>> docsToCheckAndEvents, Date dateToCheck);
 
     /**
      * Query for records to check if retention status is impacted by the given date. Queues workers to eval the a page
@@ -114,7 +114,7 @@ public interface RetentionService {
      * 
      * @since 9.2
      */
-    String createOrUpdateDynamicRuleOnDocument(Long beginDelay, Long retentionPeriod, int retentionReminder,
+    String createOrUpdateDynamicRuleOnDocument(String beginDelayPeriod, String retentionPeriod, int retentionReminder,
             String beginAction, String endAction, String beginCondExpression, String beginCondEvent,
             String endCondExpression, DocumentModel doc, CoreSession session);
 }

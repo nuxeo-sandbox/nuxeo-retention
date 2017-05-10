@@ -20,6 +20,7 @@ package org.nuxeo.ecm.retention.work;
 
 import java.util.Calendar;
 import java.util.List;
+import java.util.Date;
 
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
@@ -36,10 +37,13 @@ public class RetentionRecordUpdaterWork extends AbstractWork {
 
     public static final String TITLE = "Retention Record Updater";
 
+    protected Date maxCutOffDate;
+
     // ToDo : Queue - Category?
 
-    public RetentionRecordUpdaterWork(List<String> docs) {
+    public RetentionRecordUpdaterWork(List<String> docs, Date maxCutOffDate) {
         setDocuments(Framework.getService(RepositoryManager.class).getDefaultRepositoryName(), docs);
+        this.maxCutOffDate = maxCutOffDate;
     }
 
     @Override
@@ -58,10 +62,11 @@ public class RetentionRecordUpdaterWork extends AbstractWork {
                 continue;
             }
 
-            Calendar now = Calendar.getInstance();
+            Calendar maxCutOff = Calendar.getInstance();
+            maxCutOff.setTime(maxCutOffDate);
             List<RecordRule> rules = record.getRecordRules();
             for (RecordRule recordRule : rules) {
-                if (recordRule.getCutoffStart().before(now)) {
+                if (recordRule.getCutoffStart().before(maxCutOff)) {
                     service.startRetention(record, service.getRetentionRule(recordRule.getRuleId(), session), true,
                             session);
 

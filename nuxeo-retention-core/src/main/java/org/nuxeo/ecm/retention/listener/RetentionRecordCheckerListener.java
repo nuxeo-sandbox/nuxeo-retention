@@ -20,6 +20,7 @@
 package org.nuxeo.ecm.retention.listener;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +97,8 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
         }
 
         // ToDo: check how many events max in a bundle
-        Framework.getLocalService(RetentionService.class).evalRules(docsToCheckAndEvents);
+        Framework.getLocalService(RetentionService.class).evalRules(docsToCheckAndEvents,
+                Calendar.getInstance().getTime());
 
     }
 }
