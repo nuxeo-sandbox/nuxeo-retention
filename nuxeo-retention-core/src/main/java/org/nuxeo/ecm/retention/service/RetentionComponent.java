@@ -210,63 +210,31 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     protected void startRetentionForUnmanagedDocs(Date dateToCheck) {
-        CoreInstance.doPrivileged(
-                Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName(),
-                (CoreSession s) -> {
-                    long offset = 0;
-                    List<DocumentModel> nextDocumentsToBeChecked;
-                    // ToDO move to external PP to use ES?
-                    CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
-                    SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    String query = String.format("Select * from Document WHERE ecm:mixinType = 'Record' AND "
-                            + " record:status = 'unmanaged' AND record:min_cutoff_at <= TIMESTAMP '%s'",
-                            formater.format(dateToCheck));
-                    desc.setPattern(query);
-                    Map<String, Serializable> props = new HashMap<String, Serializable>();
-                    props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) s);
-
-                    @SuppressWarnings("unchecked")
-                    PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(
-                            PageProviderService.class).getPageProvider("", desc, null, null, batchSize, 0L, props);
-                    final long maxResult = pp.getPageSize();
-                    do {
-                        pp.setCurrentPageOffset(offset);
-                        pp.refresh();
-                        nextDocumentsToBeChecked = pp.getCurrentPage();
-                        if (nextDocumentsToBeChecked.isEmpty()) {
-                            break;
-                        }
-                        List<String> docIds = nextDocumentsToBeChecked.stream()
-                                                                      .map(DocumentModel::getId)
-                                                                      .collect(Collectors.toList());
-
-                        startRetention(docIds, dateToCheck);
-                        offset += maxResult;
-                    } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
-
-                });
+        evalRules(dateToCheck, "unmanaged_records", false);
     }
 
     protected void evalRulesForActiveDocs(Date dateToCheck) {
+        evalRules(dateToCheck, "active_records", true);
+    }
+
+    protected void evalRules(Date dateToCheck, String providerName, boolean activeRetention) {
         CoreInstance.doPrivileged(
                 Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName(),
                 (CoreSession s) -> {
                     long offset = 0;
                     List<DocumentModel> nextDocumentsToBeChecked;
-                    // ToDO move to external PP to use ES?
-                    CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
-                    SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    String query = String.format("Select * from Document WHERE ecm:mixinType = 'Record' AND "
-                            + " record:status = 'active' AND record:max_retention_at <= TIMESTAMP '%s'",
-                            formater.format(dateToCheck));
-                    desc.setPattern(query);
+
                     Map<String, Serializable> props = new HashMap<String, Serializable>();
+                    props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) s);
+                    Object[] params = new Object[1];
+                    params[0] = new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck);
                     props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) s);
 
                     @SuppressWarnings("unchecked")
                     PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(
-                            PageProviderService.class).getPageProvider("", desc, null, null, batchSize, 0L, props);
-                    final long maxResult = pp.getPageSize();
+                            PageProviderService.class).getPageProvider(providerName, null, null, batchSize, 0L, props,
+                            params);
+                    long maxResult = pp.getPageSize();
                     do {
                         pp.setCurrentPageOffset(offset);
                         pp.refresh();
@@ -279,7 +247,14 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                             map.put(documentModel.getId(), new ArrayList<String>());
                         }
 
-                        evalRules(map, dateToCheck);
+                        if (activeRetention) {
+                            evalRules(map, dateToCheck);
+                        } else {
+                            startRetention(
+                                    nextDocumentsToBeChecked.stream()
+                                                            .map(DocumentModel::getId)
+                                                            .collect(Collectors.toList()), dateToCheck);
+                        }
                         offset += maxResult;
                     } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
 

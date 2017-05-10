@@ -23,7 +23,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentNotFoundException;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.core.work.AbstractWork;
@@ -32,6 +35,8 @@ import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
 public class RetentionRecordCheckerWork extends AbstractWork {
+
+    public static final Log log = LogFactory.getLog(RetentionRecordCheckerWork.class);
 
     private static final long serialVersionUID = 1L;
 
@@ -59,9 +64,18 @@ public class RetentionRecordCheckerWork extends AbstractWork {
     public void work() {
         openSystemSession();
         for (String string : docIds) {
-            DocumentModel doc = session.getDocument(new IdRef(string));
+            DocumentModel doc = null;
+            try {
+                doc = session.getDocument(new IdRef(string));
+            } catch (DocumentNotFoundException e) {
+                //this is executed post commit so the document could have been modified to start retention and removed in the same transaction
+                log.warn("Document impacted by retention no longer exists:" + string);
+                continue;
+
+            }
             Record record = doc.getAdapter(Record.class);
             if (record == null) {
+                log.warn("Document should be impacted by retention but is no longer a Record:" + string);
                 continue;
             }
             Framework.getService(RetentionService.class).evalRules((Record) doc.getAdapter(Record.class),

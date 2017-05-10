@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.retention.provider.contrib">
+
+  <extension target="org.nuxeo.ecm.platform.query.api.PageProviderService"
+    point="providers">
+
+    <coreQueryPageProvider name="unmanaged_records">
+      <pattern>
+        <![CDATA[
+        SELECT * FROM Document WHERE
+        ecm:isCheckedInVersion = 0
+        AND
+        ecm:mixinType = 'Record' AND
+        record:status = 'unmanaged' AND
+        record:min_cutoff_at <= DATE ?
+          ]]>
+      </pattern>
+      <sort column="dc:modified" ascending="false" />
+      <pageSize>20</pageSize>
+      <maxPageSize>5000</maxPageSize>
+      <property name="maxResults">5000</property>
+    </coreQueryPageProvider>
+
+    <coreQueryPageProvider name="active_records">
+      <pattern>
+       <![CDATA[
+        SELECT * FROM Document WHERE
+        ecm:isCheckedInVersion = 0 AND
+        ecm:mixinType = 'Record' AND
+        record:status = 'active' AND record:max_retention_at <= DATE ?
+         ]]>
+      </pattern>
+      <sort column="dc:modified" ascending="false" />
+      <pageSize>20</pageSize>
+      <maxPageSize>5000</maxPageSize>
+      <property name="maxResults">5000</property>
+    </coreQueryPageProvider>
+
+  </extension>
+</component>
