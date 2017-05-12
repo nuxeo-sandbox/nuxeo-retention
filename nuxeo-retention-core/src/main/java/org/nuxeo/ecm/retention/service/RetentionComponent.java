@@ -87,6 +87,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             public void run() {
                 if (!doc.hasFacet(RECORD_FACET)) {
                     doc.addFacet(RECORD_FACET);
+                    doc.getContextData().put("facets", RECORD_FACET);
                 }
                 Record record = doc.getAdapter(Record.class);
                 if (record.hasRule(ruleId)) {

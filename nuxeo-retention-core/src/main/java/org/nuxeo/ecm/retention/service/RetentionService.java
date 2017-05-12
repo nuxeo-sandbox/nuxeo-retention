@@ -41,7 +41,7 @@ public interface RetentionService {
 
     public static final Long batchSize = 10L;// maybe configurable through a property
 
-    public static final String RETENTION_CHECKER_LISTENER_IGNORE_EVENT = "retentionRecordIgnore";
+    public static final String RETENTION_CHECKER_LISTENER_IGNORE = "retentionRecordIgnore";
 
     public static final String RETENTION_CHECKER_EVENT = "checkRetentionEvent";
 
