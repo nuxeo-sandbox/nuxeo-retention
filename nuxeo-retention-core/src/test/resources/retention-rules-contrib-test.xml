@@ -49,7 +49,7 @@
         expression="document.getType()=='File'">
       </begin-condition>
       <begin-delay />
-      <retention-duration>P1Y2M4D</retention-duration> <!-- duration in miliseconds -->
+      <retention-duration>P1Y2M4D</retention-duration> 
       <retention-reminder-days />  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
@@ -75,7 +75,20 @@
       <begin-condition expression="document.getType()=='File'">
       </begin-condition>
       <begin-delay></begin-delay>
-      <retention-duration>P1Y</retention-duration> <!-- duration in miliseconds --> <!-- 3 days -->
+      <retention-duration>P1Y</retention-duration> 
+      <retention-reminder-days>2</retention-reminder-days>  <!-- no of days at the end to send a retention expires approaching reminder -->
+      <begin-action>Document.Lock</begin-action>
+      <end-action>Document.Unlock</end-action>
+      <end-condition expression="">
+      </end-condition>
+    </rule>
+    
+     <rule>
+      <id>retentionStartsWhenSettingProperty</id>
+      <begin-condition expression="document.getPropertyValue('record:min_cutoff_at').before(currentDate)">
+      </begin-condition>
+      <begin-delay></begin-delay>
+      <retention-duration>P1Y</retention-duration> 
       <retention-reminder-days>2</retention-reminder-days>  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
