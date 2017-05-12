@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.retention.work" version="1.0">
+
+  <extension target="org.nuxeo.ecm.core.work.service" point="queues">
+    <queue id="retention">
+      <category>retentionRecordChecker</category>
+      <category>retentionRecordUpdater</category>
+      <name>retention</name>
+    </queue>
+  </extension>
+
+</component>

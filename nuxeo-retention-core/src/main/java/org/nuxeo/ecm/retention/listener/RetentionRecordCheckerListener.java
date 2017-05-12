@@ -33,11 +33,12 @@ import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventBundle;
 import org.nuxeo.ecm.core.event.EventContext;
 import org.nuxeo.ecm.core.event.PostCommitEventListener;
+import org.nuxeo.ecm.core.event.PostCommitFilteringEventListener;
 import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
-public class RetentionRecordCheckerListener implements PostCommitEventListener {
+public class RetentionRecordCheckerListener implements PostCommitFilteringEventListener {
 
     public static Log log = LogFactory.getLog(RetentionRecordCheckerListener.class);
 
@@ -100,5 +101,14 @@ public class RetentionRecordCheckerListener implements PostCommitEventListener {
         Framework.getLocalService(RetentionService.class).evalRules(docsToCheckAndEvents,
                 Calendar.getInstance().getTime());
 
+    }
+
+    @Override
+    public boolean acceptEvent(Event event) {
+        //there is a dedicated listener querying for docs handling this event
+       if (RetentionService.RETENTION_CHECKER_EVENT.equals(event.getName())){
+           return false;
+       }
+       return true;
     }
 }

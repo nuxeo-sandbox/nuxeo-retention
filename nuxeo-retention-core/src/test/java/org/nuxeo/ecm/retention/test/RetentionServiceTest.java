@@ -27,7 +27,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -299,6 +304,45 @@ public class RetentionServiceTest {
         Record record = file.getAdapter(Record.class);
         LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
                                                                                                  .getTime()));
+
+        DocumentEventContext context = new DocumentEventContext(session, null, file);
+        context.setProperty("DATE_TO_CHECK",
+                new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+
+        waitForWorkers();
+        file = session.getDocument(file.getRef());
+        record = file.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+        assertTrue(record.getReminderStartDate().after(record.getMinCutoffAt()));
+
+    }
+
+    @Test
+    public void testRetentionStartsWithDate() throws Exception {
+        // we are deploying a static rule
+        RetentionRule rule = service.getRetentionRule("retentionStartsWhenSettingProperty", session);
+        assertNotNull(rule);
+        assertEquals("retentionStartsWhenSettingProperty", rule.getId());
+        // assertTrue(0 == rule.getBeginDelayInMillis());
+        assertTrue(2 == rule.getRetentionReminderDays());
+
+        DocumentModel file = session.createDocumentModel("/", "root", "File");
+        file = session.createDocument(file);
+        service.attachRule(rule.getId(), file);
+        session.save();
+
+        Record record = file.getAdapter(Record.class);
+        LocalDateTime cutoffDate = LocalDateTime.now();
+        cutoffDate = cutoffDate.minusDays(1);
+        file.setPropertyValue("record:min_cutoff_at",
+                GregorianCalendar.from(ZonedDateTime.of(cutoffDate, ZoneId.systemDefault())));
+
+        file = session.saveDocument(file);
+        session.save();
+        
+        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
 
         DocumentEventContext context = new DocumentEventContext(session, null, file);
         context.setProperty("DATE_TO_CHECK",

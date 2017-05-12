@@ -41,6 +41,8 @@ public class RetentionRecordCheckerWork extends AbstractWork {
     private static final long serialVersionUID = 1L;
 
     public static final String TITLE = "Retention record Checker";
+    
+    public static final String CATEGORY = "retentionRecordChecker";
 
     protected Map<String, List<String>> docsToCheckAndEvents;
 
@@ -58,6 +60,11 @@ public class RetentionRecordCheckerWork extends AbstractWork {
     @Override
     public String getTitle() {
         return TITLE;
+    }
+    
+    @Override
+    public String getCategory() {
+        return CATEGORY;
     }
 
     @Override

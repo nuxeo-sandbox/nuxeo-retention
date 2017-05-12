@@ -41,10 +41,12 @@ public class RetentionRecordUpdaterWork extends AbstractWork {
     private static final long serialVersionUID = 1L;
 
     public static final String TITLE = "Retention Record Updater";
+    
+    public static final String CATEGORY = "retentionRecordUpdater";
+
 
     protected Date maxCutOffDate;
 
-    // ToDo : Queue - Category?
 
     public RetentionRecordUpdaterWork(List<String> docs, Date maxCutOffDate) {
         setDocuments(Framework.getService(RepositoryManager.class).getDefaultRepositoryName(), docs);
@@ -56,6 +58,12 @@ public class RetentionRecordUpdaterWork extends AbstractWork {
         return TITLE;
     }
 
+    @Override
+    public String getCategory() {
+        return CATEGORY;
+    }
+
+    
     @Override
     public void work() {
         openSystemSession();
@@ -81,7 +89,7 @@ public class RetentionRecordUpdaterWork extends AbstractWork {
             maxCutOff.setTime(maxCutOffDate);
             List<RecordRule> rules = record.getRecordRules();
             for (RecordRule recordRule : rules) {
-                if (recordRule.getCutoffStart().before(maxCutOff)) {
+                if (recordRule.getCutoffStart() != null && recordRule.getCutoffStart().before(maxCutOff)) {
                     service.startRetention(record, service.getRetentionRule(recordRule.getRuleId(), session), true,
                             session);
 

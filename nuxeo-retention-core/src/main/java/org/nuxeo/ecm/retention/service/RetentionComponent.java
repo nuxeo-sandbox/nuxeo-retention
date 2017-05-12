@@ -381,6 +381,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         if (StringUtils.isEmpty(expression)) {
             return true;
         }
+        ctx.putLocalVariable("currentDate", Calendar.getInstance());
         Object res = ctx.checkCondition(expression);
         // if no condition, attach always
         if (res == null) {
