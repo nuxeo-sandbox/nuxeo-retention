@@ -20,6 +20,7 @@
 package org.nuxeo.ecm.retention.listener;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -32,51 +33,41 @@ import org.nuxeo.ecm.core.api.event.DocumentEventTypes;
 import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventBundle;
 import org.nuxeo.ecm.core.event.EventContext;
-import org.nuxeo.ecm.core.event.PostCommitEventListener;
 import org.nuxeo.ecm.core.event.PostCommitFilteringEventListener;
 import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
+/**
+ * Listener that checks for retention triggered by an event specified in the rule
+ * 
+ * @since 9.2
+ */
 public class RetentionRecordCheckerListener implements PostCommitFilteringEventListener {
 
     public static Log log = LogFactory.getLog(RetentionRecordCheckerListener.class);
 
+    List<String> ignoreEvents = Arrays.asList(new String[] { "sessionSaved", "loginSuccess",
+            DocumentEventTypes.DOCUMENT_REMOVED, RetentionService.RETENTION_CHECKER_EVENT });
+
     @Override
     public void handleEvent(EventBundle events) {
         Map<String, List<String>> docsToCheckAndEvents = new HashMap<String, List<String>>();
-        String ignoreId = null;
-        if (events.containsEventName(RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT)) {
-            for (Event event : events) {
-                if (RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT.equals(event.getName())) {
-                    ignoreId = ((DocumentEventContext) event.getContext()).getSourceDocument().getId();
-                }
-            }
-        }
-        for (Event event : events) {
-            if (RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT.equals(event.getName())) {
-                continue;
-            }
-            if (DocumentEventTypes.DOCUMENT_REMOVED.equals(event.getName())) {
-                // is too late for retention, this will later trigger a document not found exception
-                continue;
 
-            }
-            EventContext eventCtx = event.getContext();
-            if (!(eventCtx instanceof DocumentEventContext)) {
-                continue;
-            }
-            DocumentEventContext docEventCtx = (DocumentEventContext) eventCtx;
+        Map<String, Boolean> documentModifiedIgnored = new HashMap<String, Boolean>();
+        for (Event event : events) {
+            DocumentEventContext docEventCtx = (DocumentEventContext) event.getContext();
             DocumentModel doc = docEventCtx.getSourceDocument();
-            if (doc == null || !doc.hasFacet(RetentionService.RECORD_FACET)) {
+            String docId = doc.getId();
+            if (docEventCtx.getProperties().containsKey(RetentionService.RETENTION_CHECKER_LISTENER_IGNORE)
+                    && !documentModifiedIgnored.containsKey(docId)) {
+                // ignore only once per document per bundle, the rule can be attached and document later modified into
+                // the same transaction
+                documentModifiedIgnored.put(docId, true);
                 continue;
             }
-            String docId = doc.getId();
-            // avoid triggering the retention by the first 'documentModified' triggered when the rule is attached to the
-            // document
-            // a better solution?
-            if (ignoreId != null && ignoreId.equals(docId)
-                    && DocumentEventTypes.DOCUMENT_UPDATED.equals(event.getName())) {
+
+            if (doc == null || !doc.hasFacet(RetentionService.RECORD_FACET)) {
                 continue;
             }
 
@@ -105,10 +96,13 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
 
     @Override
     public boolean acceptEvent(Event event) {
-        //there is a dedicated listener querying for docs handling this event
-       if (RetentionService.RETENTION_CHECKER_EVENT.equals(event.getName())){
-           return false;
-       }
-       return true;
+        if (ignoreEvents.contains(event.getName())) {
+            return false;
+        }
+        EventContext eventCtx = event.getContext();
+        if (!(eventCtx instanceof DocumentEventContext)) {
+            return false;
+        }
+        return true;
     }
 }

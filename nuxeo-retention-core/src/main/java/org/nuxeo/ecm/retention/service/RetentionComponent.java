@@ -82,7 +82,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     @Override
     public void attachRule(String ruleId, DocumentModel doc) {
         CoreInstance.doPrivileged(
-                Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName(),
+                doc.getCoreSession().getRepositoryName(),
                 (CoreSession session) -> {
                     if (!doc.hasFacet(RECORD_FACET)) {
                         doc.addFacet(RECORD_FACET);
@@ -91,7 +91,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                     if (record.hasRule(ruleId)) {
                         return;
                     }
-
                     RetentionRule rule = getRetentionRule(ruleId, session);
                     record.addRule(ruleId);
                     // start the rule if possible

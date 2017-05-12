@@ -36,11 +36,7 @@ import java.util.stream.Collectors;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
-import org.nuxeo.ecm.core.event.EventService;
-import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
-import org.nuxeo.ecm.core.event.impl.EventImpl;
 import org.nuxeo.ecm.retention.service.RetentionService;
-import org.nuxeo.runtime.api.Framework;
 
 public class Record {
 
@@ -179,18 +175,14 @@ public class Record {
         for (String flag : DISABLED_FLAGS) {
             doc.putContextData(flag, Boolean.TRUE);
         }
-        // in case we had a retentionRule triggered by a 'documentModified', this is the only way to have
-        // documentModfified ignored in that bundle
-        // a better solution
-        ((EventService) Framework.getService(EventService.class)).fireEvent(new EventImpl(
-                RetentionService.RETENTION_CHECKER_LISTENER_IGNORE_EVENT, new DocumentEventContext(session, null, doc)));
+        doc.putContextData(RetentionService.RETENTION_CHECKER_LISTENER_IGNORE, Boolean.TRUE);
     }
 
     protected void enableListeners(DocumentModel doc) {
         for (String flag : DISABLED_FLAGS) {
             doc.putContextData(flag, null);
         }
-
+        doc.getContextData().remove(RetentionService.RETENTION_CHECKER_LISTENER_IGNORE);
     }
 
     public class RecordRule {

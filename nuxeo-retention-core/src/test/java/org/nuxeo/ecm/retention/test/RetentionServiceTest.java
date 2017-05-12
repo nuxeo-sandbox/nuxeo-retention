@@ -233,8 +233,6 @@ public class RetentionServiceTest {
         RetentionRule rule = service.getRetentionRule("myTestRuleId", session);
         assertNotNull(rule);
         assertEquals("myTestRuleId", rule.getId());
-        // assertTrue(0 == rule.getBeginDelayInMillis());
-        // assertTrue(10000 == rule.getRetentionDurationInMillis());
 
         // add a dynamic rule
         DocumentModel doc = session.createDocumentModel("/", "root", "Folder");
@@ -294,7 +292,6 @@ public class RetentionServiceTest {
         RetentionRule rule = service.getRetentionRule("retentionWithReminder", session);
         assertNotNull(rule);
         assertEquals("retentionWithReminder", rule.getId());
-        // assertTrue(0 == rule.getBeginDelayInMillis());
         assertTrue(2 == rule.getRetentionReminderDays());
 
         DocumentModel file = session.createDocumentModel("/", "root", "File");
@@ -326,7 +323,6 @@ public class RetentionServiceTest {
         RetentionRule rule = service.getRetentionRule("retentionStartsWhenSettingProperty", session);
         assertNotNull(rule);
         assertEquals("retentionStartsWhenSettingProperty", rule.getId());
-        // assertTrue(0 == rule.getBeginDelayInMillis());
         assertTrue(2 == rule.getRetentionReminderDays());
 
         DocumentModel file = session.createDocumentModel("/", "root", "File");
@@ -342,7 +338,7 @@ public class RetentionServiceTest {
 
         file = session.saveDocument(file);
         session.save();
-        
+
         LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
 
         DocumentEventContext context = new DocumentEventContext(session, null, file);
