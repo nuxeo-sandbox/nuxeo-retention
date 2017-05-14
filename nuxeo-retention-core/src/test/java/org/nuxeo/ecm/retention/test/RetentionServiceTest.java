@@ -203,9 +203,9 @@ public class RetentionServiceTest {
         doc = session.getDocument(doc.getRef());
         Record record = doc.getAdapter(Record.class);
         doc = sessionAsJdoe.saveDocument(doc);
-        //check that cutoff date was set to currentDate + 1
+        // check that cutoff date was set to currentDate + 1
         assertTrue(record.getMinCutoffAt().getTime().after(Calendar.getInstance().getTime()));
-        
+
         LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
                                                                                                  .getTime()));
 
@@ -317,7 +317,13 @@ public class RetentionServiceTest {
         record = file.getAdapter(Record.class);
         assertNotNull(record);
         assertEquals("active", record.getStatus());
-        assertTrue(record.getReminderStartDate().after(record.getMinCutoffAt()));
+        context.setProperty("DATE_TO_CHECK",
+                new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.minusDays(2).toString()));
+        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECK_REMINDER_EVENT,
+                context);
+
+        assertTrue(record.getReminderStartDate().getTime().after(record.getMinCutoffAt().getTime()));
+        assertTrue(record.getReminderStartDate().getTime().before(record.getMaxRetentionAt().getTime()));
 
     }
 
