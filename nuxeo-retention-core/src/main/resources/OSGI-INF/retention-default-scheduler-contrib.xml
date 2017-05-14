@@ -11,6 +11,13 @@
       <!-- every day at 11.59 PM -->
       <cronExpression>0 59 23 * * ?</cronExpression>
     </schedule>
+    
+    <schedule id="retentionAboutToExpireScheduler">
+      <eventId>retentionCheckReminder</eventId>
+      <eventCategory>retention</eventCategory>
+      <!-- every day at 11.58 PM -->
+      <cronExpression>0 58 23 * * ?</cronExpression>
+    </schedule>
 
   </extension>
 

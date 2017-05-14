@@ -45,6 +45,10 @@ public interface RetentionService {
 
     public static final String RETENTION_CHECKER_EVENT = "checkRetentionEvent";
     
+    public static final String RETENTION_ABOUT_TO_EXPIRE_EVENT = "retentionAboutToExpire";
+    
+    public static final String RETENTION_CHECK_REMINDER_EVENT = "retentionCheckReminder";
+    
     public static final String RETENTION_CATEGORY_EVENT = "retention";
     
     public static final String RETENTION_ACTIVE_EVENT = "retentionActive";
@@ -91,6 +95,14 @@ public interface RetentionService {
      * @since 9.2
      */
     public void queryDocsAndEvalRulesForDate(Date dateToCheck);
+    
+    
+    /**
+     * Query for records that have a reminder set that the retention is about to expire and notifyEvent
+     * 
+     * @since 9.2
+     */
+    public void queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck);
 
     /**
      * Starts retention for doc. Executes the beginAction and sets to Active if is not already the case. Used when a

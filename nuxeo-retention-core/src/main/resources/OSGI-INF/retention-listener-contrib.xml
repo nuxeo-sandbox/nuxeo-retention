@@ -12,6 +12,12 @@
       class="org.nuxeo.ecm.retention.listener.RetentionDateCheckerListener">
       <event>checkRetentionEvent</event>
     </listener>
+    
+     <listener name="retentionReminderListener" postCommit="false"
+      async="true"
+      class="org.nuxeo.ecm.retention.listener.RetentionReminderDateCheckerListener">
+      <event>retentionCheckReminder</event>
+    </listener>
   </extension>
 
 </component>

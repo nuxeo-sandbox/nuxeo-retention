@@ -202,17 +202,37 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     @Override
     public void queryDocsAndEvalRulesForDate(Date dateToCheck) {
         // docs in active retention that might have been expired
-        evalRulesForActiveDocs(dateToCheck);
+        evalRules(dateToCheck, "active_records");
         // docs not in active retention because of the initial delay
-        startRetentionForUnmanagedDocs(dateToCheck);
-    }
-
-    protected void startRetentionForUnmanagedDocs(Date dateToCheck) {
         evalRules(dateToCheck, "unmanaged_records");
     }
 
-    protected void evalRulesForActiveDocs(Date dateToCheck) {
-        evalRules(dateToCheck, "active_records");
+    @Override
+    public void queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck) {
+
+        new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
+
+            @Override
+            public void run() {
+                long offset = 0;
+                List<DocumentModel> nextDocumentsToBeChecked;
+                PageProvider<DocumentModel> pp = getPageProvider(dateToCheck, "active_records_reminder", session);
+                long maxResult = pp.getPageSize();
+                do {
+                    pp.setCurrentPageOffset(offset);
+                    pp.refresh();
+                    nextDocumentsToBeChecked = pp.getCurrentPage();
+                    if (nextDocumentsToBeChecked.isEmpty()) {
+                        break;
+                    }
+                    for (DocumentModel documentModel : nextDocumentsToBeChecked) {
+                        notifyEvent(session, RETENTION_ABOUT_TO_EXPIRE_EVENT, documentModel);
+                    }
+                    offset += maxResult;
+                } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
+
+            }
+        }.runUnrestricted();
     }
 
     protected void evalRules(Date dateToCheck, String providerName) {
@@ -223,16 +243,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             public void run() {
                 long offset = 0;
                 List<DocumentModel> nextDocumentsToBeChecked;
-
-                Map<String, Serializable> props = new HashMap<String, Serializable>();
-                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
-                Object[] params = new Object[1];
-                params[0] = new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck);
-                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
-
-                @SuppressWarnings("unchecked")
-                PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(
-                        PageProviderService.class).getPageProvider(providerName, null, batchSize, 0L, props, params);
+                PageProvider<DocumentModel> pp = getPageProvider(dateToCheck, providerName, session);
                 long maxResult = pp.getPageSize();
                 do {
                     pp.setCurrentPageOffset(offset);
@@ -252,6 +263,18 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             }
         }.runUnrestricted();
 
+    }
+
+    @SuppressWarnings("unchecked")
+    protected PageProvider<DocumentModel> getPageProvider(Date dateToCheck, String providerName, CoreSession session) {
+        Map<String, Serializable> props = new HashMap<String, Serializable>();
+        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
+        Object[] params = new Object[1];
+        params[0] = new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck);
+        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
+
+        return (PageProvider<DocumentModel>) Framework.getService(PageProviderService.class).getPageProvider(
+                providerName, null, batchSize, 0L, props, params);
     }
 
     @Override
