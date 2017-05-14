@@ -32,7 +32,6 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -48,7 +47,11 @@ import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.NuxeoPrincipal;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
+import org.nuxeo.ecm.core.api.event.CoreEventConstants;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
+import org.nuxeo.ecm.core.event.Event;
+import org.nuxeo.ecm.core.event.EventService;
+import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.actions.ELActionContext;
 import org.nuxeo.ecm.platform.el.ExpressionContext;
@@ -59,7 +62,6 @@ import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.work.RetentionRecordCheckerWork;
-import org.nuxeo.ecm.retention.work.RetentionRecordUpdaterWork;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentInstance;
 import org.nuxeo.runtime.model.DefaultComponent;
@@ -102,7 +104,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                         record.getDoc(), session) : true;
                 if (rule.getBeginCondition().getEvent() == null) {
                     if (ruleApplies) {
-                        setRetentionDatesAndStartIfNoDelay(record, rule, false, session);
+                        evalRetentionDatesAndStartIfApplies(record, rule, new Date(), false, session);
                     }
                 }
                 record.save(session);
@@ -180,10 +182,9 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                     record.getDoc(), session);
             // if either there is an event to match or there is no event
             if ((ruleApplies && events != null && events.contains(rule.getBeginCondition().getEvent()))
-                    || (ruleApplies && rule.getBeginCondition().getEvent() == null)) {
-                setRetentionDatesAndStartIfNoDelay(record, rule, true, session); // should we check the condition also
-                                                                                 // when
-                // we have an event?
+                    || (ruleApplies && StringUtils.isBlank(rule.getBeginCondition().getEvent()))) {
+                evalRetentionDatesAndStartIfApplies(record, rule, dateToCheck, true, session);
+
             }
 
         }
@@ -198,14 +199,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
     }
 
-    protected void startRetention(List<String> docs, Date maxCutoffDate) {
-        if (docs.isEmpty()) {
-            return;
-        }
-        RetentionRecordUpdaterWork work = new RetentionRecordUpdaterWork(docs, maxCutoffDate);
-        Framework.getService(WorkManager.class).schedule(work, WorkManager.Scheduling.ENQUEUE);
-    }
-
     @Override
     public void queryDocsAndEvalRulesForDate(Date dateToCheck) {
         // docs in active retention that might have been expired
@@ -215,14 +208,14 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     protected void startRetentionForUnmanagedDocs(Date dateToCheck) {
-        evalRules(dateToCheck, "unmanaged_records", false);
+        evalRules(dateToCheck, "unmanaged_records");
     }
 
     protected void evalRulesForActiveDocs(Date dateToCheck) {
-        evalRules(dateToCheck, "active_records", true);
+        evalRules(dateToCheck, "active_records");
     }
 
-    protected void evalRules(Date dateToCheck, String providerName, boolean activeRetention) {
+    protected void evalRules(Date dateToCheck, String providerName) {
 
         new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
 
@@ -252,15 +245,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                     for (DocumentModel documentModel : nextDocumentsToBeChecked) {
                         map.put(documentModel.getId(), new ArrayList<String>());
                     }
-
-                    if (activeRetention) {
-                        evalRules(map, dateToCheck);
-                    } else {
-                        startRetention(
-                                nextDocumentsToBeChecked.stream()
-                                                        .map(DocumentModel::getId)
-                                                        .collect(Collectors.toList()), dateToCheck);
-                    }
+                    evalRules(map, dateToCheck);
                     offset += maxResult;
                 } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
 
@@ -272,13 +257,14 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     @Override
     public void endRetention(Record record, RetentionRule rule, CoreSession session) {
         executeRuleAction(rule.getEndAction(), record.getDoc(), session);
+        notifyEvent(session, RETENTION_EXPIRED_EVENT, record.getDoc());
         record.setStatus(RETENTION_STATE.expired.name());
         record.save(session);
     }
 
-    protected void setRetentionDatesAndStartIfNoDelay(Record record, RetentionRule rule, boolean save,
+    protected void evalRetentionDatesAndStartIfApplies(Record record, RetentionRule rule, Date cDate, boolean save,
             CoreSession session) {
-        LocalDateTime cutoffDate = LocalDateTime.now();
+        LocalDateTime cutoffDate = LocalDateTime.ofInstant(cDate.toInstant(), ZoneId.systemDefault());
         LocalDateTime startReminderDate = null;
         if (!rule.getBeginDealyAsPeriod().isZero()) {
             Period delayPeriod = rule.getBeginDealyAsPeriod();
@@ -303,12 +289,12 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 GregorianCalendar.from(ZonedDateTime.of(disposalDate, ZoneId.systemDefault())),
                 startReminderDate != null ? GregorianCalendar.from(ZonedDateTime.of(startReminderDate,
                         ZoneId.systemDefault())) : null);
-        if (rule.getBeginDealyAsPeriod().isZero()) {
-            startRetention(record, rule, false, session);
-        }
-
         if (save) {
             record.save(session);
+        }
+        // if there is no delay or the delay period has already expired
+        if (rule.getBeginDealyAsPeriod().isZero() || record.getMinCutoffAt().getTime().before(cDate)) {
+            startRetention(record, rule, true, session);
         }
     }
 
@@ -317,6 +303,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         executeRuleAction(rule.getBeginAction(), record.getDoc(), session);
         if (!RETENTION_STATE.active.name().equals(record.getStatus())) {
             record.setStatus(RETENTION_STATE.active.name());
+            notifyEvent(session, RETENTION_ACTIVE_EVENT, record.getDoc());
             if (save) {
                 record.save(session);
             }
@@ -412,6 +399,15 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             throw new NuxeoException("Error running chain: " + actionId, e);
         }
 
+    }
+
+    protected void notifyEvent(CoreSession session, String eventId, DocumentModel doc) throws NuxeoException {
+        DocumentEventContext ctx = new DocumentEventContext(session, session.getPrincipal(), doc);
+        ctx.setCategory(RETENTION_CATEGORY_EVENT);
+        ctx.setProperty(CoreEventConstants.REPOSITORY_NAME, session.getRepositoryName());
+        ctx.setProperty(CoreEventConstants.SESSION_ID, session.getSessionId());
+        Event event = ctx.newEvent(eventId);
+        Framework.getLocalService(EventService.class).fireEvent(event);
     }
 
 }

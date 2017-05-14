@@ -3,8 +3,8 @@
 
   <extension target="org.nuxeo.ecm.core.work.service" point="queues">
     <queue id="retention">
+      <maxThreads>1</maxThreads>
       <category>retentionRecordChecker</category>
-      <category>retentionRecordUpdater</category>
       <name>retention</name>
     </queue>
   </extension>
