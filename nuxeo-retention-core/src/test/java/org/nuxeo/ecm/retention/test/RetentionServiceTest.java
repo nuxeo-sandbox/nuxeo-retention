@@ -73,6 +73,7 @@ import org.nuxeo.runtime.test.runner.LocalDeploy;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
+import com.ibm.icu.util.Calendar;
 
 @RunWith(FeaturesRunner.class)
 @Features({ TransactionalFeature.class, AutomationFeature.class })
@@ -202,6 +203,9 @@ public class RetentionServiceTest {
         doc = session.getDocument(doc.getRef());
         Record record = doc.getAdapter(Record.class);
         doc = sessionAsJdoe.saveDocument(doc);
+        //check that cutoff date was set to currentDate + 1
+        assertTrue(record.getMinCutoffAt().getTime().after(Calendar.getInstance().getTime()));
+        
         LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
                                                                                                  .getTime()));
 

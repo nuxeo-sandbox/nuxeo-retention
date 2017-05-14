@@ -44,6 +44,13 @@ public interface RetentionService {
     public static final String RETENTION_CHECKER_LISTENER_IGNORE = "retentionRecordIgnore";
 
     public static final String RETENTION_CHECKER_EVENT = "checkRetentionEvent";
+    
+    public static final String RETENTION_CATEGORY_EVENT = "retention";
+    
+    public static final String RETENTION_ACTIVE_EVENT = "retentionActive";
+    
+    public static final String RETENTION_EXPIRED_EVENT = "retentionExpired";
+    
 
     /**
      * Attaches the given rule to the document using an unrestricted session. Starts the retention if the rule evaluates
