@@ -49,7 +49,7 @@ public interface RetentionService {
     
     public static final String RETENTION_CHECK_REMINDER_EVENT = "retentionCheckReminder";
     
-    public static final String RETENTION_CATEGORY_EVENT = "retention";
+    public static final String RETENTION_CATEGORY_EVENT = "Retention";
     
     public static final String RETENTION_ACTIVE_EVENT = "retentionActive";
     
