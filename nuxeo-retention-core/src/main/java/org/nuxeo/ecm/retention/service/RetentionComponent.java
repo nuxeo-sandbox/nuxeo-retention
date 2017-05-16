@@ -203,15 +203,32 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public void queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck) {
+    public List<String> queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck, boolean notify) {
+        List<String> docIds = new ArrayList<String>();
 
         new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
 
             @Override
             public void run() {
+                Map<String, Serializable> props = new HashMap<String, Serializable>();
+
+                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
+                Object[] params = new Object[1];
+                params[0] = new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck);
+                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
+                @SuppressWarnings("unchecked")
+                PageProvider<Map<String, Serializable>> pp = (PageProvider<Map<String, Serializable>>) Framework.getService(
+                        PageProviderService.class)
+                                                                                                                .getPageProvider(
+                                                                                                                        "active_records_reminder",
+                                                                                                                        null,
+                                                                                                                        batchSize,
+                                                                                                                        0L,
+                                                                                                                        props,
+                                                                                                                        params);
+
                 long offset = 0;
-                List<DocumentModel> nextDocumentsToBeChecked;
-                PageProvider<DocumentModel> pp = getPageProvider(dateToCheck, "active_records_reminder", session);
+                List<Map<String, Serializable>> nextDocumentsToBeChecked;
                 long maxResult = pp.getPageSize();
                 do {
                     pp.setCurrentPageOffset(offset);
@@ -220,14 +237,21 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                     if (nextDocumentsToBeChecked.isEmpty()) {
                         break;
                     }
-                    for (DocumentModel documentModel : nextDocumentsToBeChecked) {
-                        notifyEvent(session, RETENTION_ABOUT_TO_EXPIRE_EVENT, documentModel);
+
+                    for (Map<String, Serializable> result : nextDocumentsToBeChecked) {
+                        docIds.add((String) result.get("ecm:uuid"));
+                        if (notify) {
+                            notifyEvent(session, RETENTION_ABOUT_TO_EXPIRE_EVENT,
+                                    session.getDocument(new IdRef((String) result.get("ecm:uuid"))));
+                        }
+
                     }
                     offset += maxResult;
                 } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
-
             }
         }.runUnrestricted();
+
+        return docIds;
     }
 
     protected void evalRules(Date dateToCheck, String providerName) {
@@ -426,5 +450,4 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         Event event = ctx.newEvent(eventId);
         Framework.getLocalService(EventService.class).fireEvent(event);
     }
-
 }

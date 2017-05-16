@@ -62,7 +62,7 @@
       </begin-condition>
       <begin-delay></begin-delay>
       <retention-duration>P1Y</retention-duration> 
-      <retention-reminder-days>2</retention-reminder-days>  <!-- no of days at the end to send a retention expires approaching reminder -->
+      <retention-reminder-days>3</retention-reminder-days>  <!-- no of days at the end to send a retention expires approaching reminder -->
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
       <end-condition expression="">

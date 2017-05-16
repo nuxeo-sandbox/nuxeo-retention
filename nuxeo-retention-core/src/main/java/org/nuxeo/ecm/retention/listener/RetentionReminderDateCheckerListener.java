@@ -35,7 +35,7 @@ public class RetentionReminderDateCheckerListener implements EventListener {
             dateToCheck = (Date) event.getContext().getProperty("DATE_TO_CHECK");
         }
         if (RetentionService.RETENTION_CHECK_REMINDER_EVENT.equals(event.getName())) {
-            Framework.getLocalService(RetentionService.class).queryDocsAndNotifyRetentionAboutToExpire(dateToCheck);
+            Framework.getLocalService(RetentionService.class).queryDocsAndNotifyRetentionAboutToExpire(dateToCheck, true);
         }
     }
 }
