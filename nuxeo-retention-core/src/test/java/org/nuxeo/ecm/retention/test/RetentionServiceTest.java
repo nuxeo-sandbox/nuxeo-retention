@@ -295,7 +295,7 @@ public class RetentionServiceTest {
         RetentionRule rule = service.getRetentionRule("retentionWithReminder", session);
         assertNotNull(rule);
         assertEquals("retentionWithReminder", rule.getId());
-        assertTrue(2 == rule.getRetentionReminderDays());
+        assertTrue(3 == rule.getRetentionReminderDays());
 
         DocumentModel file = session.createDocumentModel("/", "root", "File");
         file = session.createDocument(file);
@@ -323,7 +323,10 @@ public class RetentionServiceTest {
 
         assertTrue(record.getReminderStartDate().getTime().after(record.getMinCutoffAt().getTime()));
         assertTrue(record.getReminderStartDate().getTime().before(record.getMaxRetentionAt().getTime()));
-
+        List<String> docsAboutToExpire = service.queryDocsAndNotifyRetentionAboutToExpire(
+                Date.from(maxRetention.minusDays(2).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()), false);
+        assertTrue(docsAboutToExpire.size() == 1);
+        assertEquals(record.getDoc().getId(), docsAboutToExpire.get(0));
     }
 
     @Test

@@ -102,7 +102,7 @@ public interface RetentionService {
      * 
      * @since 9.2
      */
-    public void queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck);
+    public List<String> queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck, boolean notify);
 
     /**
      * Starts retention for doc. Executes the beginAction and sets to Active if is not already the case. Used when a
