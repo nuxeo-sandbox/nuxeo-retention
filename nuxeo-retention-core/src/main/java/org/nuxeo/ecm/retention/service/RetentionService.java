@@ -44,17 +44,16 @@ public interface RetentionService {
     public static final String RETENTION_CHECKER_LISTENER_IGNORE = "retentionRecordIgnore";
 
     public static final String RETENTION_CHECKER_EVENT = "checkRetentionEvent";
-    
+
     public static final String RETENTION_ABOUT_TO_EXPIRE_EVENT = "retentionAboutToExpire";
-    
+
     public static final String RETENTION_CHECK_REMINDER_EVENT = "retentionCheckReminder";
-    
+
     public static final String RETENTION_CATEGORY_EVENT = "Retention";
-    
+
     public static final String RETENTION_ACTIVE_EVENT = "retentionActive";
-    
+
     public static final String RETENTION_EXPIRED_EVENT = "retentionExpired";
-    
 
     /**
      * Attaches the given rule to the document using an unrestricted session. Starts the retention if the rule evaluates
@@ -64,6 +63,13 @@ public interface RetentionService {
      * @since 9.2
      */
     void attachRule(String ruleId, DocumentModel doc);
+
+    /**
+     *  Removes the retention facet from doc
+     * 
+     * @since 9.2
+     */
+    void clearRules(DocumentModel doc);
 
     /**
      * Performs the give query using an unrestricted session and attaches the given rule to the documents. Starts the
@@ -79,7 +85,7 @@ public interface RetentionService {
      * 
      * @since 9.2
      */
-    public void evalRules(Record record, List<String> eventId, Date dateToCheck , CoreSession session);
+    public void evalRules(Record record, List<String> eventId, Date dateToCheck, CoreSession session);
 
     /**
      * Evaluates the rules for a list of documents and a list of events for each document Queues a worker to eval the
@@ -95,8 +101,7 @@ public interface RetentionService {
      * @since 9.2
      */
     public void queryDocsAndEvalRulesForDate(Date dateToCheck);
-    
-    
+
     /**
      * Query for records that have a reminder set that the retention is about to expire and notifyEvent
      * 

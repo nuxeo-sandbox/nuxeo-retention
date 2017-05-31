@@ -108,6 +108,16 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                     record.save(session);
                 });
     }
+    
+    @Override
+    public void clearRules(DocumentModel doc) {
+        CoreInstance.doPrivileged(doc.getCoreSession().getRepositoryName(), (CoreSession session) -> {
+            if (doc.hasFacet(RECORD_FACET)) {
+                doc.removeFacet(RECORD_FACET);
+                session.saveDocument(doc);
+            }
+        });
+    }
 
     @Override
     public void attachRule(String ruleId, String query, CoreSession session) {
