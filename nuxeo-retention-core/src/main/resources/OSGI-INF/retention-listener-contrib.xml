@@ -17,7 +17,15 @@
       async="true"
       class="org.nuxeo.ecm.retention.listener.RetentionReminderDateCheckerListener">
       <event>retentionCheckReminder</event>
+      </listener>
+  
+    <listener name="cpoUniqueFilenameListener" async="false"
+      postCommit="false"
+      class="org.nuxeo.ecm.retention.listener.RetentionClearRecordListener"
+      priority="3000">
+      <event>aboutToCopy</event>
     </listener>
+      
   </extension>
 
 </component>
