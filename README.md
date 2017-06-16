@@ -1,46 +1,67 @@
-# nuxeo-retention
+## Principles & Concepts
 
-# About / Synopsis
+### Rules definition
 
-* Nuxeo Retention 
-* Project status: working/prototype
-* Nuxeo Support
 
-# Table of contents
 
-Use for instance https://github.com/ekalinin/github-markdown-toc
+Each rule is composed of :
 
-# Installation
+ - id
+ - a condition for retention start / cutoff
+       - event
+       - duration       
+ - a cutoff action: *what we do after entering cutoff*
+       - Automation 
+ - a condition for retention end
+      - event
+      - duration   
+ - a retention end action : *what we do after entering cutoff*
+      - automation 
+ - the retention duration ( a Java period)
+ - a begin delay 
+ - retention-reminder-days: 
+  
 
-Sample:
-- From the Nuxeo Marketplace: install [the Sample Nuxeo Package](https://connect.nuxeo.com/nuxeo/site/marketplace/package/nuxeo-sample).
-- From the Nuxeo server web UI "Admin / Update Center / Packages from Nuxeo Marketplace"
-- From the command line: `nuxeoctl mp-install nuxeo-sample`
 
-# Usage
-## Screenshots
-## Features
+### Record facet
 
-# Code
-## QA
+When a retention rule is applied on the document we store the data into the  Record facet that is added to each document under Retention.
+The facet holds:
 
-[![Build Status](https://qa.nuxeo.org/jenkins/buildStatus/icon?job=addons_nuxeo-sample-project-master)](https://qa.nuxeo.org/jenkins/job/addons_nuxeo-sample-project-master/)
 
-If QA resources are included, sample: https://github.com/nuxeo/nuxeo-sdk-ios/blob/master/README.md
+   - associated rule(s)
+   - retention start (target or actual): min_cutoff_at
+   - retention end  (target or actual) : max_retention_at ( composed from all rules if more than one rules are applied to this document)
+   - status flag  ('unmanaged', 'active', 'expired')
 
-## Content
 
-Description, sub-modules organization...
 
-## Requirements
+## How it works
 
-See [CORG/Compiling Nuxeo from sources](http://doc.nuxeo.com/x/xION)
+### Defining Rule 
 
-Sample: https://github.com/nuxeo/nuxeo-distribution
+There are two ways to contribute retention rules:
+- statically, by contributing to the "rules" extention point in the RetentionService
+- dinammically via the facet 'RetentionRule': in this case, the id of the rule is the id of the document where the facet is added ( using as a base storage for the rule)
 
-## Limitations
+### Attach a Rule
 
-Sample: https://github.com/nuxeo/nuxeo-elasticsearch/blob/master/README.md
+The following APIs are exposed in the RetentionService:
+- a method to attach a rule on a single document:     
+void attachRule(String ruleId, DocumentModel doc);
+- a method to attach a rule to a query result
+void attachRule(String ruleId, String query, CoreSession session);
+
+
+
+### Checking rules to start or end the retention
+
+- A post commmit listener inspects all the documents with the 'Record' facet for retention rules triggered by events
+- A listner notified on 'checkRetentionEvent' queries  for: 
+          1) unmanaged Records with the record:min_cutoff_at < currentDate ( the retention       should start)
+          2) active Record with record:max_retention_at <= currentDate ( the retention should end).
+       A scheduler is configured to trigger a 'checkRetentionEvent' daily. 
+
 
 ## Build
 
