@@ -176,7 +176,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 Calendar maxCutOff = Calendar.getInstance();
                 maxCutOff.setTime(dateToCheck);
 
-                if (rr.getDisposalDate().before(maxCutOff)) {
+                if (rr.getDisposalDate().compareTo(maxCutOff) <= 0) {
                     // record is still active? if yes execute endAction and set to expired
                     endRetention(record, getRetentionRule(rr.getRuleId(), session), session);
                     return; // no need to check other rules? the first one that applies sets the document to
