@@ -12,7 +12,7 @@
         AND
         ecm:mixinType = 'Record' AND
         record:status = 'unmanaged' AND
-        record:min_cutoff_at <= DATE ?
+        record:min_cutoff_at <= TIMESTAMP ?
           ]]>
       </pattern>
       <sort column="dc:modified" ascending="false" />
@@ -27,7 +27,7 @@
         SELECT * FROM Document WHERE
         ecm:isCheckedInVersion = 0 AND
         ecm:mixinType = 'Record' AND
-        record:status = 'active' AND record:max_retention_at <= DATE ?
+        record:status = 'active' AND record:max_retention_at <= TIMESTAMP ?
          ]]>
       </pattern>
       <sort column="dc:modified" ascending="false" />

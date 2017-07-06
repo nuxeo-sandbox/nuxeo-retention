@@ -20,7 +20,9 @@
 package org.nuxeo.ecm.retention.service;
 
 import java.io.Serializable;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
@@ -101,7 +103,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 // start the rule if possible
                 Boolean ruleApplies = rule.getBeginCondition() != null ? evaluateConditionExpression(
                         initActionContext(record.getDoc(), session), rule.getBeginCondition().getExpression(),
-                        record.getDoc(), session) : true;
+                        record.getDoc(), null, session) : true;
                 if (rule.getBeginCondition().getEvent() == null) {
                     if (ruleApplies) {
                         evalRetentionDatesAndStartIfApplies(record, rule, new Date(), false, session);
@@ -197,7 +199,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
             RetentionRule rule = getRetentionRule(rr.getRuleId(), session);
             Boolean ruleApplies = evaluateConditionExpression(actionContext, rule.getBeginCondition().getExpression(),
-                    record.getDoc(), session);
+                    record.getDoc(), dateToCheck, session);
             // if either there is an event to match or there is no event
             if ((ruleApplies && events != null && events.contains(rule.getBeginCondition().getEvent()))
                     || (ruleApplies && StringUtils.isBlank(rule.getBeginCondition().getEvent()))) {
@@ -312,7 +314,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         Map<String, Serializable> props = new HashMap<String, Serializable>();
         props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
         Object[] params = new Object[1];
-        params[0] = new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck);
+        params[0] = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(dateToCheck);
         props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
 
         return (PageProvider<DocumentModel>) Framework.getService(PageProviderService.class).getPageProvider(
@@ -430,11 +432,16 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     protected Boolean evaluateConditionExpression(ELActionContext ctx, String expression, DocumentModel doc,
-            CoreSession session) {
+            Date dateToCheck, CoreSession session) {
+        Calendar now = Calendar.getInstance();
+        if (dateToCheck != null) {
+            now.setTime(dateToCheck);
+        }
+
         if (StringUtils.isEmpty(expression)) {
             return true;
         }
-        ctx.putLocalVariable("currentDate", Calendar.getInstance());
+        ctx.putLocalVariable("currentDate", now);
         Object res = ctx.checkCondition(expression);
         // if no condition, attach always
         if (res == null) {
