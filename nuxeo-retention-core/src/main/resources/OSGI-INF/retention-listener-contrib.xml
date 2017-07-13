@@ -19,7 +19,7 @@
       <event>retentionCheckReminder</event>
       </listener>
   
-    <listener name="cpoUniqueFilenameListener" async="false"
+    <listener name="retentionRecordCleaner" async="false"
       postCommit="false"
       class="org.nuxeo.ecm.retention.listener.RetentionClearRecordListener"
       priority="3000">
