@@ -27,7 +27,7 @@
 
   <groupId>org.nuxeo.ecm.retention</groupId>
   <artifactId>nuxeo-retention</artifactId>
-  <version>1.2-SNAPSHOT</version>
+  <version>release-1.2</version>
   <name>Nuxeo retention</name>
   <description>Document retention management service</description>
   <packaging>pom</packaging>
