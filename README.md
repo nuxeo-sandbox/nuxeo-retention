@@ -1,7 +1,8 @@
 ## Principles & Concepts
 
-### Rules definition
+A document under active retention can not be modified or deleted. 
 
+### Rules definition
 
 
 Each rule is composed of :
@@ -41,8 +42,8 @@ The facet holds:
 ### Defining Rule 
 
 There are two ways to contribute retention rules:
-- statically, by contributing to the "rules" extention point in the RetentionService
-- dinammically via the facet 'RetentionRule': in this case, the id of the rule is the id of the document where the facet is added ( using as a base storage for the rule)
+- statically, by contributing to the "rules" extension point in the RetentionService
+- dynamically via the facet 'RetentionRule': in this case, the id of the rule is the id of the document where the facet is added ( using as a base storage for the rule)
 
 ### Attach a Rule
 
@@ -57,18 +58,51 @@ void attachRule(String ruleId, String query, CoreSession session);
 ### Checking rules to start or end the retention
 
 - A post commmit listener inspects all the documents with the 'Record' facet for retention rules triggered by events
-- A listner notified on 'checkRetentionEvent' queries  for: 
+- A listener notified on 'checkRetentionEvent' queries  for: 
           1) unmanaged Records with the record:min_cutoff_at < currentDate ( the retention       should start)
           2) active Record with record:max_retention_at <= currentDate ( the retention should end).
        A scheduler is configured to trigger a 'checkRetentionEvent' daily. 
+
+### Enforcing that a document under active retention can not be modified.
+
+This is implemented with a new Security policy that denies access to a document under retention active.
 
 
 ## Build
 
     mvn clean install
 
-Build options:
-- ...
+
+## Simple test:
+Create a dynamic retention rule that puts the document in retention when the document is modified and attach it to a document
+
+1. Create the dynamic retention rule for 100 days triggered on 'documentModified'.
+This rule is persisted as a facet on the input document.
+```
+POST /Retention.CreateRule
+with:
+{
+"docId": "65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5", 
+"params":{
+	"retentionPeriod": "100D",
+	"beginCondEvent" :"documentModified"
+     }
+}
+=> this sends back the id of the rule.
+```
+2. Attach the rule on the input document.
+```
+POST /Retention.AttachRule
+{
+"input": "01d0b119-ef17-49ed-8ffd-fef7ba48ce42", 
+"params":{
+	"ruleId": "65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5"
+     }
+}
+```
+When the document is modified the first time it will pass under retention active.
+
+
 
 ## Deploy (how to install build product)
 
