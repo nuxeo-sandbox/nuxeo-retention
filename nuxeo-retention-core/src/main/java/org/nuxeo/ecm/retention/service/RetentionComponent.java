@@ -202,7 +202,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             if ((ruleApplies && events != null && events.contains(rule.getBeginCondition().getEvent()))
                     || (ruleApplies && StringUtils.isBlank(rule.getBeginCondition().getEvent()))) {
                 evalRetentionDatesAndStartIfApplies(record, rule, dateToCheck, true, session);
-
             }
 
         }
@@ -329,7 +328,8 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     protected void evalRetentionDatesAndStartIfApplies(Record record, RetentionRule rule, Date cDate, boolean save,
             CoreSession session) {
-        LocalDateTime cutoffDate = LocalDateTime.ofInstant(cDate.toInstant(), ZoneId.systemDefault());
+    	Date minCutoffDate = record.getMinCutoffAt() == null ? new Date() : record.getMinCutoffAt().getTime();
+        LocalDateTime cutoffDate =  LocalDateTime.ofInstant(minCutoffDate.toInstant(), ZoneId.systemDefault());
         LocalDateTime startReminderDate = null;
         if (!rule.getBeginDealyAsPeriod().isZero()) {
             Period delayPeriod = rule.getBeginDealyAsPeriod();
