@@ -202,7 +202,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             if ((ruleApplies && events != null && events.contains(rule.getBeginCondition().getEvent()))
                     || (ruleApplies && StringUtils.isBlank(rule.getBeginCondition().getEvent()))) {
                 evalRetentionDatesAndStartIfApplies(record, rule, dateToCheck, true, session);
-
             }
 
         }
