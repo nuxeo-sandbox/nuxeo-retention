@@ -104,7 +104,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                             record.getDoc(), null, session) : true;
                     if (rule.getBeginCondition().getEvent() == null) {
                         if (ruleApplies) {
-                            evalRetentionDatesAndStartIfApplies(record, rule, new Date(), false, session);
+                            evalRetentionDatesAndStartOrExpireIfApplies(record, rule, new Date(), false, session);
                         }
                     }
                     record.save(session);
@@ -191,9 +191,9 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             // if either there is an event to match or there is no event
             if ((ruleApplies && events != null && events.contains(rule.getBeginCondition().getEvent()))
                     || (ruleApplies && StringUtils.isBlank(rule.getBeginCondition().getEvent()))) {
-                evalRetentionDatesAndStartIfApplies(record, rule, dateToCheck, true, session);
+            	evalRetentionDatesAndStartOrExpireIfApplies(record, rule, dateToCheck, true, session);
             }
-
+            
         }
     }
 
@@ -315,7 +315,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         record.save(session);
     }
 
-    protected void evalRetentionDatesAndStartIfApplies(Record record, RetentionRule rule, Date cDate, boolean save,
+    protected void evalRetentionDatesAndStartOrExpireIfApplies(Record record, RetentionRule rule, Date cDate, boolean save,
             CoreSession session) {
     	Date minCutoffDate = record.getMinCutoffAt() == null ? new Date() : record.getMinCutoffAt().getTime();
         LocalDateTime cutoffDate =  LocalDateTime.ofInstant(minCutoffDate.toInstant(), ZoneId.systemDefault());
@@ -348,8 +348,13 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         }
         // if there is no delay or the delay period has already expired
         if (rule.getBeginDealyAsPeriod().isZero() || record.getMinCutoffAt().getTime().before(cDate)) {
-            startRetention(record, rule, true, session);
-        }
+        	// start retention if still active otherwise stop it
+        	if(record.getMaxRetentionAt() == null || record.getMaxRetentionAt().getTime().after(cDate)) {
+        	    startRetention(record, rule, true, session);
+            } else {
+                endRetention(record, rule, session);
+            }           
+        }        
     }
 
     @Override
