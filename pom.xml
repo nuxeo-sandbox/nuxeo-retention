@@ -93,4 +93,11 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+  
+  <distributionManagement>
+    <repository>
+      <id>public-releases</id>
+      <url>https://mavenin.nuxeo.com/nexus/content/repositories/public-releases</url>
+    </repository>
+  </distributionManagement>
 </project>
