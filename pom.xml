@@ -84,15 +84,6 @@
       </snapshots>
     </pluginRepository>
   </pluginRepositories>
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.nuxeo.ecm.retention</groupId>
-        <artifactId>nuxeo-retention-service</artifactId>
-        <version>9.2-SNAPSHOT</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
   
   <distributionManagement>
     <repository>
