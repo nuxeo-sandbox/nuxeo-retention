@@ -27,12 +27,15 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -76,7 +79,6 @@ import org.nuxeo.runtime.test.runner.LocalDeploy;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
-import com.ibm.icu.util.Calendar;
 
 @RunWith(FeaturesRunner.class)
 @Features({ TransactionalFeature.class, AutomationFeature.class })
@@ -84,8 +86,8 @@ import com.ibm.icu.util.Calendar;
 @LocalDeploy("org.nuxeo.ecm.retention.service.nuxeo-retention-service:retention-rules-contrib-test.xml")
 @RepositoryConfig(init = DefaultRepositoryInit.class, cleanup = Granularity.METHOD)
 public class RetentionServiceTest {
-	
-	@Inject
+
+    @Inject
     CoreSession session;
 
     @Inject
@@ -147,13 +149,22 @@ public class RetentionServiceTest {
         assertNotNull(record);
         assertEquals("active", record.getStatus());
 
-        LocalDate minCutoff = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMinCutoffAt()
-                                                                                              .getTime()));
+        LocalDate minCutoff = LocalDate
+                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMinCutoffAt().getTime()));
 
-        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
-                                                                                                 .getTime()));
+        LocalDate maxRetention = LocalDate
+                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
         assertTrue(minCutoff.isEqual(LocalDate.now()));
-        assertEquals(maxRetention.getYear(), minCutoff.getYear() + rule.getRetentionDurationAsPeriod().getYears());
+        LocalDate yearCutoff = LocalDate.now();
+
+        // NXP-23478: Test duration is longer than 1 year (specifically 1Y2M4D)
+        // Calculate the actual year
+        Period period = rule.getRetentionDurationAsPeriod();
+        yearCutoff = yearCutoff.plusYears(period.getYears());
+        yearCutoff = yearCutoff.plusMonths(period.getMonths());
+        yearCutoff = yearCutoff.plusDays(period.getDays());
+
+        assertEquals(maxRetention.getYear(), yearCutoff.getYear());
         // assertEquals(maxRetention.getMonthValue(), minCutoff.getMonthValue()
         // + rule.getRetentionDurationAsPeriod().getMonths());
 
@@ -206,20 +217,30 @@ public class RetentionServiceTest {
         doc = session.getDocument(doc.getRef());
         Record record = doc.getAdapter(Record.class);
         doc = sessionAsJdoe.saveDocument(doc);
+        
+        // NXP-23478 save must complete before retention delay is checked
+        waitForWorkers();
+        
         // check that cutoff date was set to currentDate + 1
         assertTrue(record.getMinCutoffAt().getTime().after(Calendar.getInstance().getTime()));
 
-        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
-                                                                                                 .getTime()));
+        Calendar maxRetention = record.getMinCutoffAt();
+        Calendar checkRetention = Calendar.getInstance(maxRetention.getTimeZone());
+        checkRetention.setTimeInMillis(maxRetention.getTimeInMillis());
+        checkRetention.add(Calendar.HOUR, 1);
 
         DocumentEventContext context = new DocumentEventContext(session, null, doc);
-        context.setProperty("DATE_TO_CHECK",
-                new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+        // NXP-23478 need timestamp here instead of just date
+        context.setProperty("DATE_TO_CHECK", checkRetention.getTime());
+
+        // NXP-23478 Fire sync event
+        EventService evts = Framework.getLocalService(EventService.class);
+        evts.fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+        evts.waitForAsyncCompletion();
 
         waitForWorkers();
         doc = session.getDocument(doc.getRef());
-        //assertTrue(doc.isLocked());
+        assertTrue(doc.isLocked());
         record = doc.getAdapter(Record.class);
         assertNotNull(record);
         assertEquals("active", record.getStatus());
@@ -277,8 +298,8 @@ public class RetentionServiceTest {
         session.save();
 
         Record record = file.getAdapter(Record.class);
-        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
-                                                                                                 .getTime()));
+        LocalDate maxRetention = LocalDate
+                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
 
         DocumentEventContext context = new DocumentEventContext(session, null, doc);
         context.setProperty("DATE_TO_CHECK",
@@ -307,8 +328,8 @@ public class RetentionServiceTest {
         session.save();
 
         Record record = file.getAdapter(Record.class);
-        LocalDate maxRetention = LocalDate.parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt()
-                                                                                                 .getTime()));
+        LocalDate maxRetention = LocalDate
+                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
 
         DocumentEventContext context = new DocumentEventContext(session, null, file);
         context.setProperty("DATE_TO_CHECK",
@@ -433,7 +454,7 @@ public class RetentionServiceTest {
         sessionAsJdoe.close();
 
     }
-    
+
     @Test
     public void testRetentionExpireWithDate() throws Exception {
         RetentionRule rule = service.getRetentionRule("retentionStartsWhenSettingProperty", session);
@@ -445,12 +466,12 @@ public class RetentionServiceTest {
         file = session.createDocument(file);
         service.attachRule(rule.getId(), file);
         session.save();
-        
+
         LocalDateTime minCutOffAt = LocalDateTime.now();
         minCutOffAt = minCutOffAt.minusYears(1).minusDays(3);
         file.setPropertyValue("record:min_cutoff_at",
                 GregorianCalendar.from(ZonedDateTime.of(minCutOffAt, ZoneId.systemDefault())));
-       
+
         file = session.saveDocument(file);
         session.save();
 
