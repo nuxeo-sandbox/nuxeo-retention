@@ -19,8 +19,7 @@
   ~
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.nuxeo</groupId>
@@ -36,6 +35,7 @@
 
   <modules>
     <module>nuxeo-retention-core</module>
+    <module>nuxeo-retention-package</module>
   </modules>
 
   <repositories>
@@ -91,7 +91,12 @@
       <dependency>
         <groupId>org.nuxeo.ecm.retention</groupId>
         <artifactId>nuxeo-retention-service</artifactId>
-        <version>9.2-SNAPSHOT</version>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nuxeo.ecm.retention</groupId>
+        <artifactId>nuxeo-retention-package</artifactId>
+        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
