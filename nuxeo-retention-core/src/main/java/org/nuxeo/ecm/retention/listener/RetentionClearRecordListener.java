@@ -18,6 +18,7 @@
  */
 package org.nuxeo.ecm.retention.listener;
 
+import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.event.DocumentEventTypes;
 import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventListener;
@@ -33,7 +34,12 @@ public class RetentionClearRecordListener implements EventListener {
         if (!DocumentEventTypes.ABOUT_TO_COPY.equals(event.getName())) {
             return;
         }
+
         DocumentEventContext docEventCtx = (DocumentEventContext) event.getContext();
-        Framework.getLocalService(RetentionService.class).clearRules(docEventCtx.getSourceDocument());
+        DocumentModel doc = docEventCtx.getSourceDocument();
+        if (doc == null || !doc.hasFacet(RetentionService.RECORD_FACET)) {
+            return;
+        }
+        Framework.getLocalService(RetentionService.class).clearRules(doc);
     }
 }
