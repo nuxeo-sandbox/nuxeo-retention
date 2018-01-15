@@ -30,7 +30,7 @@
   <groupId>org.nuxeo.ecm.retention</groupId>
   <artifactId>nuxeo-retention</artifactId>
   <name>Nuxeo retention</name>
-  <version>9.10</version>
+  <version>9.10-SNAPSHOT</version>
   <description>Document retention management service</description>
   <packaging>pom</packaging>
 
