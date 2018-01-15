@@ -24,13 +24,13 @@
   <parent>
     <groupId>org.nuxeo</groupId>
     <artifactId>nuxeo-addons-parent</artifactId>
-    <version>9.10-SNAPSHOT</version>
+    <version>9.10</version>
   </parent>
 
   <groupId>org.nuxeo.ecm.retention</groupId>
   <artifactId>nuxeo-retention</artifactId>
   <name>Nuxeo retention</name>
-  <version>9.10-SNAPSHOT</version>
+  <version>9.10</version>
   <description>Document retention management service</description>
   <packaging>pom</packaging>
 
