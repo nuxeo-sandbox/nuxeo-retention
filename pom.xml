@@ -33,6 +33,12 @@
   <description>Document retention management service</description>
   <packaging>pom</packaging>
 
+  <scm>
+    <connection>scm:git:git://github.com/nuxeo-sandbox/nuxeo-retention.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:nuxeo-sandbox/nuxeo-retention.git</developerConnection>
+    <url>https://github.com/nuxeo-sandbox/nuxeo-retention</url>
+  </scm>
+
   <modules>
     <module>nuxeo-retention-core</module>
     <module>nuxeo-retention-package</module>
