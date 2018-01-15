@@ -21,7 +21,7 @@
 		<dependency>
 			<groupId>org.nuxeo.ecm.distribution</groupId>
 			<artifactId>nuxeo-nxr-server</artifactId>
-			<version>9.10-SNAPSHOT</version>
+			<version>9.10</version>
 			<type>zip</type>
 			<scope>provided</scope>
 		</dependency>
