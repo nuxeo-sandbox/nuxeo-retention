@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.nuxeo.ecm.retention</groupId>
 		<artifactId>nuxeo-retention</artifactId>
-		<version>9.10.1-SNAPSHOT</version>
+		<version>9.10-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -11,16 +11,11 @@
 	<packaging>zip</packaging>
 	<name>Nuxeo retention package - Nuxeo retention rule provider</name>
 
-	<properties>
-		<nuxeo.distribution.version>9.10.1-SNAPSHOT</nuxeo.distribution.version>
-	</properties>
-
 	<dependencies>
 		<!-- Base distribution(s) for the MP -->
 		<dependency>
 			<groupId>org.nuxeo.ecm.distribution</groupId>
 			<artifactId>nuxeo-nxr-server</artifactId>
-			<version>9.10</version>
 			<type>zip</type>
 			<scope>provided</scope>
 		</dependency>
@@ -29,7 +24,6 @@
 		<dependency>
 			<groupId>org.nuxeo.ecm.retention</groupId>
 			<artifactId>nuxeo-retention-core</artifactId>
-			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
 

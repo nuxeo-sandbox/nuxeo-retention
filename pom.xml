@@ -20,15 +20,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.nuxeo</groupId>
-    <artifactId>nuxeo-addons-parent</artifactId>
+    <groupId>org.nuxeo.ecm.distribution</groupId>
+    <artifactId>nuxeo-distribution</artifactId>
     <version>9.10</version>
   </parent>
 
   <groupId>org.nuxeo.ecm.retention</groupId>
   <artifactId>nuxeo-retention</artifactId>
   <name>Nuxeo retention</name>
-  <version>9.10.1-SNAPSHOT</version>
+  <version>9.10-SNAPSHOT</version>
   <description>Document retention management service</description>
   <packaging>pom</packaging>
 
@@ -95,7 +95,7 @@
     <dependencies>
       <dependency>
         <groupId>org.nuxeo.ecm.retention</groupId>
-        <artifactId>nuxeo-retention-service</artifactId>
+        <artifactId>nuxeo-retention-core</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
