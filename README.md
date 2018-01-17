@@ -1,3 +1,5 @@
+[![Build Status](https://qa.nuxeo.org/jenkins/buildStatus/icon?job=Sandbox/sandbox_nuxeo-retention_master)](https://qa.nuxeo.org/jenkins/job/Sandbox/sandbox_nuxeo-retention_master)
+
 ## Principles & Concepts
 
 A document under active retention can not be modified or deleted. 
