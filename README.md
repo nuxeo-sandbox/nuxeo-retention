@@ -1,4 +1,4 @@
-[![Build Status](https://qa.nuxeo.org/jenkins/buildStatus/icon?job=Sandbox/sandbox_nuxeo-retention_master)](https://qa.nuxeo.org/jenkins/job/Sandbox/job/sandbox_nuxeo-retention_master/)
+[![Build Status](https://qa.nuxeo.org/jenkins/buildStatus/icon?job=Sandbox/sandbox_nuxeo-retention-master)](https://qa.nuxeo.org/jenkins/job/Sandbox/job/sandbox_nuxeo-retention-master/)
 
 ## Principles & Concepts
 
