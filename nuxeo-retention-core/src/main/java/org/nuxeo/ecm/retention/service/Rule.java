@@ -31,11 +31,13 @@ public interface Rule {
     
     String getRetentionDuration();
     
+    String getRetentionEndDate();
+    
     int getRetentionReminderDays();
 
     String getBeginAction();
 
-    String getEndAction();
+    String getEndAction();  
 
     RuleCondition getEndCondition();
 

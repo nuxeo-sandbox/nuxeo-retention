@@ -21,6 +21,8 @@ package org.nuxeo.ecm.retention.service;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
@@ -312,6 +314,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         executeRuleAction(rule.getEndAction(), record.getDoc(), session);
         notifyEvent(session, RETENTION_EXPIRED_EVENT, record.getDoc());
         record.setStatus(RETENTION_STATE.expired.name());
+        session.setRetentionActive(record.getDoc().getRef(), false);
         record.save(session);
     }
 
@@ -328,6 +331,10 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         }
 
         Period retentionPeriod = rule.getRetentionDurationAsPeriod();
+		if (rule.getRetentionEndDate() != null) {
+			Calendar retentionEndDate = (Calendar) record.getDoc().getPropertyValue(rule.getRetentionEndDate());
+			retentionPeriod = Period.between(asLocalDate(cDate), asLocalDate(retentionEndDate.getTime()));
+		}        
         LocalDateTime disposalDate = cutoffDate.plusYears(retentionPeriod.getYears())
                                                .plusMonths(retentionPeriod.getMonths())
                                                .plusDays(retentionPeriod.getDays());
@@ -363,6 +370,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         if (!RETENTION_STATE.active.name().equals(record.getStatus())) {
             record.setStatus(RETENTION_STATE.active.name());
             notifyEvent(session, RETENTION_ACTIVE_EVENT, record.getDoc());
+            session.setRetentionActive(record.getDoc().getRef(), true);
             if (save) {
                 record.save(session);
             }
@@ -473,4 +481,8 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         Event event = ctx.newEvent(eventId);
         Framework.getLocalService(EventService.class).fireEvent(event);
     }
+    
+    protected LocalDate asLocalDate(Date date) {
+		return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+	}
 }

@@ -484,6 +484,26 @@ public class RetentionServiceTest {
         assertNotNull(record);
         assertEquals("expired", record.getStatus());
     }
+    
+    @Test
+	public void testRetentionWithEndDate() throws Exception {
+		RetentionRule rule = service.getRetentionRule("retentionOnCreationWithEndDate", session);
+		assertNotNull(rule);
+		DocumentModel doc = session.createDocumentModel("/", "root", "File");
+
+		Calendar c = Calendar.getInstance();
+		c.add(Calendar.DATE, 30);
+		doc.setPropertyValue("dc:expired", c.getTime());
+		doc = session.createDocument(doc);
+		service.attachRule(rule.getId(), doc);
+		waitForWorkers();
+		assertTrue(doc.isLocked());
+		doc = session.getDocument(doc.getRef());
+		Record record = doc.getAdapter(Record.class);
+		assertNotNull(record);
+		assertEquals("active", record.getStatus());
+		assertTrue(session.isRetentionActive(record.getDoc().getRef()));
+	}
 
     protected void waitForWorkers() throws InterruptedException {
         TransactionHelper.commitOrRollbackTransaction();

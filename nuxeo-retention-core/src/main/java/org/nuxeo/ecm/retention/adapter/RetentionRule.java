@@ -25,8 +25,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.retention.service.RetentionRuleConditionDescriptor;
@@ -48,6 +48,8 @@ public class RetentionRule implements Rule {
     public static final String RULE_END_CONDITION_PROPERTY = "rule:endCondition";
 
     public static final String RULE_BEGIN_DELAY_PERIOD_PROPERTY = "rule:beginDelayPeriod";
+    
+    public static final String RULE_RETENTION_END_DATE_PROPERTY = "rule:retentionEndDate";
 
     public static final String RULE_RETENTION_DURATION_PERIOD_PROPERTY = "rule:retentionDurationPeriod";
 
@@ -66,6 +68,8 @@ public class RetentionRule implements Rule {
     protected Period beginDelay;
 
     protected Period retentionDuration;
+    
+    protected String retentionEndDate;
 
     protected int retentionReminder;
 
@@ -80,6 +84,7 @@ public class RetentionRule implements Rule {
         this.beginCondition = new RetentionRuleCondition(ruleDescriptor.getBeginCondition());
         this.beginDelay = parsePeriod(ruleDescriptor.getBeginDelay());
         this.retentionDuration = parsePeriod(ruleDescriptor.getRetentionDuration());
+        this.retentionEndDate = ruleDescriptor.getRetentionEndDate();
         this.retentionReminder = ruleDescriptor.getRetentionReminderDays();
         this.beginAction = ruleDescriptor.getBeginAction();
         this.endAction = ruleDescriptor.getEndAction();
@@ -133,6 +138,11 @@ public class RetentionRule implements Rule {
     @Override
     public RetentionRuleCondition getEndCondition() {
         return endCondition;
+    }
+    
+    @Override
+    public String getRetentionEndDate() {
+    	return retentionEndDate;
     }
 
     @Override

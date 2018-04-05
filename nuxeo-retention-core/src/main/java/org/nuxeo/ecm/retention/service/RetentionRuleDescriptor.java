@@ -40,6 +40,9 @@ public class RetentionRuleDescriptor implements Rule {
 
     @XNode(value = "end-action")
     protected String endAction;
+    
+    @XNode(value = "retention-end-date")
+    protected String retentionEndDate;
 
     @XNode(value = "end-condition")
     protected RetentionRuleConditionDescriptor endCondition;
@@ -90,7 +93,12 @@ public class RetentionRuleDescriptor implements Rule {
     public String getEndAction() {
         return endAction;
     }
-
+    
+    @Override
+    public String getRetentionEndDate() {
+		return retentionEndDate;
+	}
+    
     @Override
     public RetentionRuleConditionDescriptor getEndCondition() {
         return endCondition;
