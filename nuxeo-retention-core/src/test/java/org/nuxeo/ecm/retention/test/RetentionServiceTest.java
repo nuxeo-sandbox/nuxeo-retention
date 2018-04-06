@@ -27,7 +27,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -52,6 +51,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.DocumentSecurityException;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.security.ACE;
 import org.nuxeo.ecm.core.api.security.ACL;
 import org.nuxeo.ecm.core.api.security.ACP;
@@ -149,11 +149,11 @@ public class RetentionServiceTest {
         assertNotNull(record);
         assertEquals("active", record.getStatus());
 
-        LocalDate minCutoff = LocalDate
-                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMinCutoffAt().getTime()));
+        LocalDate minCutoff = LocalDate.parse(
+                new SimpleDateFormat("yyyy-MM-dd").format(record.getMinCutoffAt().getTime()));
 
-        LocalDate maxRetention = LocalDate
-                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
+        LocalDate maxRetention = LocalDate.parse(
+                new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
         assertTrue(minCutoff.isEqual(LocalDate.now()));
         LocalDate yearCutoff = LocalDate.now();
 
@@ -217,10 +217,10 @@ public class RetentionServiceTest {
         doc = session.getDocument(doc.getRef());
         Record record = doc.getAdapter(Record.class);
         doc = sessionAsJdoe.saveDocument(doc);
-        
+
         // NXP-23478 save must complete before retention delay is checked
         waitForWorkers();
-        
+
         // check that cutoff date was set to currentDate + 1
         assertTrue(record.getMinCutoffAt().getTime().after(Calendar.getInstance().getTime()));
 
@@ -298,8 +298,8 @@ public class RetentionServiceTest {
         session.save();
 
         Record record = file.getAdapter(Record.class);
-        LocalDate maxRetention = LocalDate
-                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
+        LocalDate maxRetention = LocalDate.parse(
+                new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
 
         DocumentEventContext context = new DocumentEventContext(session, null, doc);
         context.setProperty("DATE_TO_CHECK",
@@ -328,8 +328,8 @@ public class RetentionServiceTest {
         session.save();
 
         Record record = file.getAdapter(Record.class);
-        LocalDate maxRetention = LocalDate
-                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
+        LocalDate maxRetention = LocalDate.parse(
+                new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
 
         DocumentEventContext context = new DocumentEventContext(session, null, file);
         context.setProperty("DATE_TO_CHECK",
@@ -484,26 +484,59 @@ public class RetentionServiceTest {
         assertNotNull(record);
         assertEquals("expired", record.getStatus());
     }
-    
-    @Test
-	public void testRetentionWithEndDate() throws Exception {
-		RetentionRule rule = service.getRetentionRule("retentionOnCreationWithEndDate", session);
-		assertNotNull(rule);
-		DocumentModel doc = session.createDocumentModel("/", "root", "File");
 
-		Calendar c = Calendar.getInstance();
-		c.add(Calendar.DATE, 30);
-		doc.setPropertyValue("dc:expired", c.getTime());
-		doc = session.createDocument(doc);
-		service.attachRule(rule.getId(), doc);
-		waitForWorkers();
-		assertTrue(doc.isLocked());
-		doc = session.getDocument(doc.getRef());
-		Record record = doc.getAdapter(Record.class);
-		assertNotNull(record);
-		assertEquals("active", record.getStatus());
-		assertTrue(session.isRetentionActive(record.getDoc().getRef()));
-	}
+    @Test
+    public void testRetentionWithDisposalDate() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithDisposalDate", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertTrue(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+    }
+
+    @Test(expected = NuxeoException.class)
+    public void testRetentionWithInvalidDisposalDate() throws Exception {
+        service.getRetentionRule("retentionOnCreationWithInvalidDisposalDate", session);
+    }
+
+    @Test
+    public void testRetentionWithDisposalDateXpath() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithDisposalDateXpath", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.DATE, 30);
+        doc.setPropertyValue("dc:expired", c.getTime());
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertTrue(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+    }
+
+    @Test()
+    public void testRetentionWithInvalidDisposalDateXpath() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithInvalidDisposalDateXpath", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertFalse(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("unmanaged", record.getStatus());
+    }
 
     protected void waitForWorkers() throws InterruptedException {
         TransactionHelper.commitOrRollbackTransaction();

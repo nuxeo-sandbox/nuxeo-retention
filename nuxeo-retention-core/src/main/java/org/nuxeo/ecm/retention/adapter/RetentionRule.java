@@ -20,8 +20,11 @@
 package org.nuxeo.ecm.retention.adapter;
 
 import java.io.Serializable;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -48,8 +51,10 @@ public class RetentionRule implements Rule {
     public static final String RULE_END_CONDITION_PROPERTY = "rule:endCondition";
 
     public static final String RULE_BEGIN_DELAY_PERIOD_PROPERTY = "rule:beginDelayPeriod";
-    
-    public static final String RULE_RETENTION_END_DATE_PROPERTY = "rule:retentionEndDate";
+
+    public static final String RULE_RETENTION_DISPOSAL_DATE_PROPERTY = "rule:retentionDisposalDate";
+
+    public static final String RULE_RETENTION_DISPOSAL_DATE_XPATH_PROPERTY = "rule:retentionDisposalDateXpath";
 
     public static final String RULE_RETENTION_DURATION_PERIOD_PROPERTY = "rule:retentionDurationPeriod";
 
@@ -59,7 +64,7 @@ public class RetentionRule implements Rule {
 
     public static final String RULE_END_ACTION_PROPERTY = "rule:endAction";
 
-    public static final String RULE_END_CONDITION_EXPRESSION_PROPERTY = "rule:endCondition/expression";
+    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
     protected String id;
 
@@ -68,8 +73,10 @@ public class RetentionRule implements Rule {
     protected Period beginDelay;
 
     protected Period retentionDuration;
-    
-    protected String retentionEndDate;
+
+    protected Date retentionDisposalDate;
+
+    protected String retentionDisposalDateXpath;
 
     protected int retentionReminder;
 
@@ -77,18 +84,16 @@ public class RetentionRule implements Rule {
 
     protected String endAction;
 
-    protected RetentionRuleCondition endCondition;
-
     public RetentionRule(RetentionRuleDescriptor ruleDescriptor) {
         this.id = ruleDescriptor.getId();
         this.beginCondition = new RetentionRuleCondition(ruleDescriptor.getBeginCondition());
         this.beginDelay = parsePeriod(ruleDescriptor.getBeginDelay());
         this.retentionDuration = parsePeriod(ruleDescriptor.getRetentionDuration());
-        this.retentionEndDate = ruleDescriptor.getRetentionEndDate();
+        this.retentionDisposalDate = parseDisposalDate(ruleDescriptor.getRetentionDisposalDate());
+        this.retentionDisposalDateXpath = ruleDescriptor.getRetentionDisposalDateXpath();
         this.retentionReminder = ruleDescriptor.getRetentionReminderDays();
         this.beginAction = ruleDescriptor.getBeginAction();
         this.endAction = ruleDescriptor.getEndAction();
-        this.endCondition = new RetentionRuleCondition(ruleDescriptor.getEndCondition());
     }
 
     @SuppressWarnings("unchecked")
@@ -96,14 +101,14 @@ public class RetentionRule implements Rule {
         this.id = (String) doc.getPropertyValue(RULE_ID_PROPERTY);
         this.beginCondition = new RetentionRuleCondition(
                 (Map<String, Serializable>) doc.getPropertyValue(RULE_BEGIN_CONDITION_PROPERTY));
-        this.endCondition = new RetentionRuleCondition(
-                (Map<String, Serializable>) doc.getPropertyValue(RULE_END_CONDITION_PROPERTY));
         this.beginDelay = parsePeriod((String) doc.getPropertyValue(RULE_BEGIN_DELAY_PERIOD_PROPERTY));
         this.retentionDuration = parsePeriod((String) doc.getPropertyValue(RULE_RETENTION_DURATION_PERIOD_PROPERTY));
+        this.retentionDisposalDate = parseDisposalDate(
+                (String) doc.getPropertyValue(RULE_RETENTION_DISPOSAL_DATE_PROPERTY));
+        this.retentionDisposalDateXpath = (String) doc.getPropertyValue(RULE_RETENTION_DISPOSAL_DATE_XPATH_PROPERTY);
         this.retentionReminder = ((Long) doc.getPropertyValue(RULE_RETENTION_REMINDER_PROPERTY)).intValue();
         this.beginAction = (String) doc.getPropertyValue(RULE_BEGIN_ACTION_PROPERTY);
         this.endAction = (String) doc.getPropertyValue(RULE_END_ACTION_PROPERTY);
-
     }
 
     @Override
@@ -136,13 +141,17 @@ public class RetentionRule implements Rule {
     }
 
     @Override
-    public RetentionRuleCondition getEndCondition() {
-        return endCondition;
+    public String getRetentionDisposalDate() {
+        return retentionDisposalDate == null ? null : retentionDisposalDate.toString();
     }
-    
+
+    public Date getRetentionDisposalDateAsDate() {
+        return retentionDisposalDate;
+    }
+
     @Override
-    public String getRetentionEndDate() {
-    	return retentionEndDate;
+    public String getRetentionDisposalDateXpath() {
+        return retentionDisposalDateXpath;
     }
 
     @Override
@@ -170,6 +179,17 @@ public class RetentionRule implements Rule {
             return Period.parse(retentionPeriod);
         } catch (DateTimeParseException e) {
             throw new NuxeoException("Invalid retention duration: " + retentionPeriod, e);
+        }
+    }
+
+    protected Date parseDisposalDate(String dateAsString) {
+        if (StringUtils.isBlank(dateAsString)) {
+            return null;
+        }
+        try {
+            return DATE_FORMAT.parse(dateAsString);
+        } catch (ParseException e) {
+            throw new NuxeoException("Invalid retention disposal date: " + dateAsString, e);
         }
     }
 

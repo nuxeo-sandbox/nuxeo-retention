@@ -22,7 +22,6 @@ package org.nuxeo.ecm.retention.service;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
@@ -86,31 +85,30 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public void attachRule(String ruleId, DocumentModel doc) {
-        CoreInstance.doPrivileged(
-                doc.getCoreSession().getRepositoryName(),
-                (CoreSession session) -> {
-                    if (!doc.hasFacet(RECORD_FACET)) {
-                        doc.addFacet(RECORD_FACET);
-                        doc.getContextData().put("facets", RECORD_FACET);
-                    }
-                    Record record = doc.getAdapter(Record.class);
-                    if (record.hasRule(ruleId)) {
-                        return;
-                    }
+        CoreInstance.doPrivileged(doc.getCoreSession().getRepositoryName(), (CoreSession session) -> {
+            if (!doc.hasFacet(RECORD_FACET)) {
+                doc.addFacet(RECORD_FACET);
+                doc.getContextData().put("facets", RECORD_FACET);
+            }
+            Record record = doc.getAdapter(Record.class);
+            if (record.hasRule(ruleId)) {
+                return;
+            }
 
-                    RetentionRule rule = getRetentionRule(ruleId, session);
-                    record.addRule(ruleId);
-                    // start the rule if possible
-                    Boolean ruleApplies = rule.getBeginCondition() != null ? evaluateConditionExpression(
-                            initActionContext(record.getDoc(), session), rule.getBeginCondition().getExpression(),
-                            record.getDoc(), null, session) : true;
-                    if (rule.getBeginCondition().getEvent() == null) {
-                        if (ruleApplies) {
-                            evalRetentionDatesAndStartOrExpireIfApplies(record, rule, new Date(), false, session);
-                        }
-                    }
-                    record.save(session);
-                });
+            RetentionRule rule = getRetentionRule(ruleId, session);
+            record.addRule(ruleId);
+            // start the rule if possible
+            Boolean ruleApplies = rule.getBeginCondition() != null
+                    ? evaluateConditionExpression(initActionContext(record.getDoc(), session),
+                            rule.getBeginCondition().getExpression(), record.getDoc(), null, session)
+                    : true;
+            if (rule.getBeginCondition().getEvent() == null) {
+                if (ruleApplies) {
+                    evalRetentionDatesAndStartOrExpireIfApplies(record, rule, new Date(), false, session);
+                }
+            }
+            record.save(session);
+        });
 
     }
 
@@ -193,9 +191,9 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             // if either there is an event to match or there is no event
             if ((ruleApplies && events != null && events.contains(rule.getBeginCondition().getEvent()))
                     || (ruleApplies && StringUtils.isBlank(rule.getBeginCondition().getEvent()))) {
-            	evalRetentionDatesAndStartOrExpireIfApplies(record, rule, dateToCheck, true, session);
+                evalRetentionDatesAndStartOrExpireIfApplies(record, rule, dateToCheck, true, session);
             }
-            
+
         }
     }
 
@@ -232,14 +230,8 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
                 @SuppressWarnings("unchecked")
                 PageProvider<Map<String, Serializable>> pp = (PageProvider<Map<String, Serializable>>) Framework.getService(
-                        PageProviderService.class)
-                                                                                                                .getPageProvider(
-                                                                                                                        "active_records_reminder",
-                                                                                                                        null,
-                                                                                                                        batchSize,
-                                                                                                                        0L,
-                                                                                                                        props,
-                                                                                                                        params);
+                        PageProviderService.class).getPageProvider("active_records_reminder", null, batchSize, 0L,
+                                props, params);
 
                 long offset = 0;
                 List<Map<String, Serializable>> nextDocumentsToBeChecked;
@@ -314,54 +306,66 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         executeRuleAction(rule.getEndAction(), record.getDoc(), session);
         notifyEvent(session, RETENTION_EXPIRED_EVENT, record.getDoc());
         record.setStatus(RETENTION_STATE.expired.name());
-        session.setRetentionActive(record.getDoc().getRef(), false);
         record.save(session);
     }
 
-    protected void evalRetentionDatesAndStartOrExpireIfApplies(Record record, RetentionRule rule, Date cDate, boolean save,
-            CoreSession session) {
-    	Date minCutoffDate = record.getMinCutoffAt() == null ? new Date() : record.getMinCutoffAt().getTime();
-        LocalDateTime cutoffDate =  LocalDateTime.ofInstant(minCutoffDate.toInstant(), ZoneId.systemDefault());
+    protected void evalRetentionDatesAndStartOrExpireIfApplies(Record record, RetentionRule rule, Date cDate,
+            boolean save, CoreSession session) {
+        Date minCutoffDate = record.getMinCutoffAt() == null ? new Date() : record.getMinCutoffAt().getTime();
+        LocalDateTime cutoffDate = LocalDateTime.ofInstant(minCutoffDate.toInstant(), ZoneId.systemDefault());
         LocalDateTime startReminderDate = null;
         if (!rule.getBeginDealyAsPeriod().isZero()) {
             Period delayPeriod = rule.getBeginDealyAsPeriod();
-            cutoffDate = cutoffDate.plusYears(delayPeriod.getYears())
-                                   .plusMonths(delayPeriod.getMonths())
-                                   .plusDays(delayPeriod.getDays());
+            cutoffDate = cutoffDate.plusYears(delayPeriod.getYears()).plusMonths(delayPeriod.getMonths()).plusDays(
+                    delayPeriod.getDays());
         }
 
-        Period retentionPeriod = rule.getRetentionDurationAsPeriod();
-		if (rule.getRetentionEndDate() != null) {
-			Calendar retentionEndDate = (Calendar) record.getDoc().getPropertyValue(rule.getRetentionEndDate());
-			retentionPeriod = Period.between(asLocalDate(cDate), asLocalDate(retentionEndDate.getTime()));
-		}        
-        LocalDateTime disposalDate = cutoffDate.plusYears(retentionPeriod.getYears())
-                                               .plusMonths(retentionPeriod.getMonths())
-                                               .plusDays(retentionPeriod.getDays());
+        // Priority 1. Period / 2. Disposal date / 3. Disposal date as xpath
+        LocalDateTime disposalDate = null;
+        if (!rule.getRetentionDurationAsPeriod().isZero()) {
+            disposalDate = cutoffDate.plusYears(rule.getRetentionDurationAsPeriod().getYears())
+                                     .plusMonths(rule.getRetentionDurationAsPeriod().getMonths())
+                                     .plusDays(rule.getRetentionDurationAsPeriod().getDays());
+        } else if (rule.getRetentionDisposalDateAsDate() != null) {
+            disposalDate = Instant.ofEpochMilli(rule.getRetentionDisposalDateAsDate().getTime())
+                                  .atZone(ZoneId.systemDefault())
+                                  .toLocalDateTime();
+        } else if (StringUtils.isNotBlank(rule.getRetentionDisposalDateXpath())) {
+            try {
+                Calendar calendar = (Calendar) record.getDoc().getPropertyValue(rule.getRetentionDisposalDateXpath());
+                disposalDate = Instant.ofEpochMilli(calendar.getTime().getTime())
+                                      .atZone(ZoneId.systemDefault())
+                                      .toLocalDateTime();
+            } catch (Exception e) {
+                log.error("Can not eval rule " + rule.getId() + " for record " + record.getId() + " and xpath "
+                        + rule.getRetentionDisposalDateXpath());
+                return;
+            }
+        }
 
         if (rule.getRetentionReminderDays() > 0) {
             startReminderDate = disposalDate.minusDays(rule.getRetentionReminderDays());
             // the reminder starts at the disposalDate - retentionReminder days
         }
 
-        record.setRuleDatesAndUpdateGlobalRetentionDetails(
-                rule.getId(),
+        record.setRuleDatesAndUpdateGlobalRetentionDetails(rule.getId(),
                 GregorianCalendar.from(ZonedDateTime.of(cutoffDate, ZoneId.systemDefault())),
                 GregorianCalendar.from(ZonedDateTime.of(disposalDate, ZoneId.systemDefault())),
-                startReminderDate != null ? GregorianCalendar.from(ZonedDateTime.of(startReminderDate,
-                        ZoneId.systemDefault())) : null);
+                startReminderDate != null
+                        ? GregorianCalendar.from(ZonedDateTime.of(startReminderDate, ZoneId.systemDefault()))
+                        : null);
         if (save) {
             record.save(session);
         }
         // if there is no delay or the delay period has already expired
         if (rule.getBeginDealyAsPeriod().isZero() || record.getMinCutoffAt().getTime().before(cDate)) {
-        	// start retention if still active otherwise stop it
-        	if(record.getMaxRetentionAt() == null || record.getMaxRetentionAt().getTime().after(cDate)) {
-        	    startRetention(record, rule, true, session);
+            // start retention if still active otherwise stop it
+            if (record.getMaxRetentionAt() == null || record.getMaxRetentionAt().getTime().after(cDate)) {
+                startRetention(record, rule, true, session);
             } else {
                 endRetention(record, rule, session);
-            }           
-        }        
+            }
+        }
     }
 
     @Override
@@ -370,7 +374,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         if (!RETENTION_STATE.active.name().equals(record.getStatus())) {
             record.setStatus(RETENTION_STATE.active.name());
             notifyEvent(session, RETENTION_ACTIVE_EVENT, record.getDoc());
-            session.setRetentionActive(record.getDoc().getRef(), true);
             if (save) {
                 record.save(session);
             }
@@ -415,7 +418,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         doc.setPropertyValue(RetentionRule.RULE_END_ACTION_PROPERTY, endAction);
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_EXPRESSION_TYPE_PROPERTY, beginCondExpression);
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_EVENT_PROPERTY, beginCondEvent);
-        doc.setPropertyValue(RetentionRule.RULE_END_CONDITION_EXPRESSION_PROPERTY, endCondExpression);
 
         doc = session.saveDocument(doc);
         return doc.getId();
@@ -481,8 +483,4 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         Event event = ctx.newEvent(eventId);
         Framework.getLocalService(EventService.class).fireEvent(event);
     }
-    
-    protected LocalDate asLocalDate(Date date) {
-		return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
-	}
 }

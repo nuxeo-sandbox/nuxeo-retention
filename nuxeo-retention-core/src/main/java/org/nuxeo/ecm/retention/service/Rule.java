@@ -28,18 +28,18 @@ public interface Rule {
     RuleCondition getBeginCondition();
 
     String getBeginDelay();
-    
+
     String getRetentionDuration();
-    
-    String getRetentionEndDate();
-    
+
+    String getRetentionDisposalDate();
+
+    String getRetentionDisposalDateXpath();
+
     int getRetentionReminderDays();
 
     String getBeginAction();
 
-    String getEndAction();  
-
-    RuleCondition getEndCondition();
+    String getEndAction();
 
     public interface RuleCondition {
 

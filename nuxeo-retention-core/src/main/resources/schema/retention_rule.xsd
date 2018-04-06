@@ -11,10 +11,11 @@
 
   <xs:element name="ruleId" type="xs:string" />
   <xs:element name="beginCondition" type="nxs:retention_rule_condition" />
-  <xs:element name="endCondition" type="nxs:retention_rule_condition" />
   <xs:element name="beginDelayPeriod" type="xs:string" />
   <xs:element name="retentionDurationPeriod" type="xs:string" />
   <xs:element name="retentionReminderInDays" type="xs:integer" />
   <xs:element name="beginAction" type="xs:string" />
   <xs:element name="endAction" type="xs:string" />
+  <xs:element name="retentionDisposalDate" type="xs:string" />
+  <xs:element name="retentionDisposalDateXpath" type="xs:string" />
 </xs:schema>

@@ -83,12 +83,47 @@
     </rule>
     
     <rule>
-      <id>retentionOnCreationWithEndDate</id>
-      <begin-condition event="documentCreated"
-        expression="document.getType()=='File'">
+      <id>retentionOnCreationWithDisposalDate</id>
+      <begin-condition event="documentCreated" expression="document.getType()=='File'">
       </begin-condition>
       <begin-delay />
-      <retention-end-date>dc:expired</retention-end-date> 
+      <retention-disposal-date>20991231</retention-disposal-date>
+      <begin-action>Document.Lock</begin-action>
+      <end-action>Document.Unlock</end-action>
+      <end-condition expression="">
+      </end-condition>
+    </rule>
+    
+    <rule>
+      <id>retentionOnCreationWithInvalidDisposalDate</id>
+      <begin-condition event="documentCreated" expression="document.getType()=='File'">
+      </begin-condition>
+      <begin-delay />
+      <retention-disposal-date>invalid</retention-disposal-date>
+      <begin-action>Document.Lock</begin-action>
+      <end-action>Document.Unlock</end-action>
+      <end-condition expression="">
+      </end-condition>
+    </rule>
+    
+    <rule>
+      <id>retentionOnCreationWithDisposalDateXpath</id>
+      <begin-condition event="documentCreated" expression="document.getType()=='File'">
+      </begin-condition>
+      <begin-delay />
+      <retention-disposal-date-xpath>dc:expired</retention-disposal-date-xpath>
+      <begin-action>Document.Lock</begin-action>
+      <end-action>Document.Unlock</end-action>
+      <end-condition expression="">
+      </end-condition>
+    </rule>
+    
+    <rule>
+      <id>retentionOnCreationWithInvalidDisposalDateXpath</id>
+      <begin-condition event="documentCreated" expression="document.getType()=='File'">
+      </begin-condition>
+      <begin-delay />
+      <retention-disposal-date-xpath>invalid:invalid</retention-disposal-date-xpath>
       <begin-action>Document.Lock</begin-action>
       <end-action>Document.Unlock</end-action>
       <end-condition expression="">
@@ -96,6 +131,5 @@
     </rule>
 
   </extension>
-
 
 </component>
