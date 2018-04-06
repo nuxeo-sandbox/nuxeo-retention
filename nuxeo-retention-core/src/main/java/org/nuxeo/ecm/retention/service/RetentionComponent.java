@@ -218,7 +218,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     public List<String> queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck, boolean notify) {
         List<String> docIds = new ArrayList<String>();
 
-        new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
+        new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
 
             @Override
             public void run() {
@@ -262,7 +262,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     protected void evalRules(Date dateToCheck, String providerName) {
 
-        new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
+        new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
             @Override
             public void run() {
                 long offset = 0;
@@ -302,11 +302,11 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public void endRetention(Record record, RetentionRule rule, CoreSession session) {
-        executeRuleAction(rule.getEndAction(), record.getDoc(), session);
+    public void endRetention(Record record, RetentionRule rule, CoreSession session) {        
         notifyEvent(session, RETENTION_EXPIRED_EVENT, record.getDoc());
         record.setStatus(RETENTION_STATE.expired.name());
         record.save(session);
+        executeRuleAction(rule.getEndAction(), record.getDoc(), session);
     }
 
     protected void evalRetentionDatesAndStartOrExpireIfApplies(Record record, RetentionRule rule, Date cDate,
@@ -466,7 +466,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         }
         // get base context
         OperationContext context = getExecutionContext(doc, session);
-        AutomationService automationService = Framework.getLocalService(AutomationService.class);
+        AutomationService automationService = Framework.getService(AutomationService.class);
         try {
             automationService.run(context, actionId);
         } catch (OperationException e) {
@@ -481,6 +481,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         ctx.setProperty(CoreEventConstants.REPOSITORY_NAME, session.getRepositoryName());
         ctx.setProperty(CoreEventConstants.SESSION_ID, session.getSessionId());
         Event event = ctx.newEvent(eventId);
-        Framework.getLocalService(EventService.class).fireEvent(event);
+        Framework.getService(EventService.class).fireEvent(event);
     }
 }

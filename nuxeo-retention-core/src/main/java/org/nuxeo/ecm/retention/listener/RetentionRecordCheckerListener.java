@@ -21,7 +21,7 @@ package org.nuxeo.ecm.retention.listener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +55,7 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
         Map<String, List<String>> docsToCheckAndEvents = new HashMap<String, List<String>>();
 
         Map<String, Boolean> documentModifiedIgnored = new HashMap<String, Boolean>();
+        Date dateToCheck = new Date();
         for (Event event : events) {
             DocumentEventContext docEventCtx = (DocumentEventContext) event.getContext();
             DocumentModel doc = docEventCtx.getSourceDocument();
@@ -83,15 +84,18 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
                 docsToCheckAndEvents.put(docId, evs);
             }
 
+            // workaround for tests
+            if (event.getContext().getProperty("DATE_TO_CHECK") != null) {
+                dateToCheck = (Date) event.getContext().getProperty("DATE_TO_CHECK");
+            }
+
         }
         if (docsToCheckAndEvents.isEmpty()) {
             return;
         }
 
         // ToDo: check how many events max in a bundle
-        Framework.getLocalService(RetentionService.class).evalRules(docsToCheckAndEvents,
-                Calendar.getInstance().getTime());
-
+        Framework.getService(RetentionService.class).evalRules(docsToCheckAndEvents, dateToCheck);
     }
 
     @Override
