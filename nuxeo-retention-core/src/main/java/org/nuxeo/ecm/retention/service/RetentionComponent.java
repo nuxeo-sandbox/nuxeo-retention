@@ -302,7 +302,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public void endRetention(Record record, RetentionRule rule, CoreSession session) {        
+    public void endRetention(Record record, RetentionRule rule, CoreSession session) {
         notifyEvent(session, RETENTION_EXPIRED_EVENT, record.getDoc());
         record.setStatus(RETENTION_STATE.expired.name());
         record.save(session);
@@ -333,9 +333,10 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         } else if (StringUtils.isNotBlank(rule.getRetentionDisposalDateXpath())) {
             try {
                 Calendar calendar = (Calendar) record.getDoc().getPropertyValue(rule.getRetentionDisposalDateXpath());
-                disposalDate = Instant.ofEpochMilli(calendar.getTime().getTime())
-                                      .atZone(ZoneId.systemDefault())
-                                      .toLocalDateTime();
+                disposalDate = calendar == null ? null
+                        : Instant.ofEpochMilli(calendar.getTime().getTime())
+                                 .atZone(ZoneId.systemDefault())
+                                 .toLocalDateTime();
             } catch (Exception e) {
                 log.error("Can not eval rule " + rule.getId() + " for record " + record.getId() + " and xpath "
                         + rule.getRetentionDisposalDateXpath());
