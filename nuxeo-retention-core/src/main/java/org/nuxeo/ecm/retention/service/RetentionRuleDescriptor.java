@@ -22,7 +22,7 @@ package org.nuxeo.ecm.retention.service;
  * 
  * @since 9.2
  */
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.nuxeo.common.xmap.annotation.XNode;
 import org.nuxeo.common.xmap.annotation.XObject;
 
