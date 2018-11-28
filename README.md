@@ -58,7 +58,7 @@ These are the steps to contribute with new rules as a extension point:
   * Retain *Picture* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
   * Retain *Video* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.  
 
-```
+```xml
 <extension target="org.nuxeo.ecm.retention.RetentionService" point="rules">
   
   <rule>
