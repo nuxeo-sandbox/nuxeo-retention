@@ -47,6 +47,56 @@ There are two ways to contribute retention rules:
 - statically, by contributing to the "rules" extension point in the RetentionService
 - dynamically via the facet 'RetentionRule': in this case, the id of the rule is the id of the document where the facet is added ( using as a base storage for the rule)
 
+### Static configuration
+
+These are the steps to contribute with new rules as a extension point:
+- Access to Nuxeo Studio
+- Browse to *CONFIGURATION > Advanced Settings > XML Extensions*
+- Create a new *XML extension* called *RETENTION*
+- Add your rules. In this example we will add 3 rules:
+  * Retain *File* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
+  * Retain *Picture* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
+  * Retain *Video* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.  
+
+```
+<extension target="org.nuxeo.ecm.retention.RetentionService" point="rules">
+  
+  <rule>
+    <id>fileRetentionWithReminder</id>
+    <begin-condition expression="document.getType()=='File'"></begin-condition>
+    <begin-delay></begin-delay>
+    <retention-duration>P1Y</retention-duration>
+    <retention-reminder-days>3</retention-reminder-days>
+    <begin-action>Document.Lock</begin-action>
+    <end-action>Document.Delete</end-action>
+    <end-condition expression=""></end-condition>
+  </rule>
+  
+    <rule>
+    <id>pictureRetentionWithReminder</id>
+    <begin-condition expression="document.getType()=='Picture'"></begin-condition>
+    <begin-delay></begin-delay>
+    <retention-duration>P1Y</retention-duration>
+    <retention-reminder-days>3</retention-reminder-days>
+    <begin-action>Document.Lock</begin-action>
+    <end-action>Document.Delete</end-action>
+    <end-condition expression=""></end-condition>
+  </rule>
+  
+    <rule>
+    <id>videoRetentionWithReminder</id>
+    <begin-condition expression="document.getType()=='Video'"></begin-condition>
+    <begin-delay></begin-delay>
+    <retention-duration>P1Y</retention-duration>
+    <retention-reminder-days>3</retention-reminder-days>
+    <begin-action>Document.Lock</begin-action>
+    <end-action>Document.Delete</end-action>
+    <end-condition expression=""></end-condition>
+  </rule>
+  
+</extension>
+```
+
 ### Attach a Rule
 
 The following APIs are exposed in the RetentionService:
