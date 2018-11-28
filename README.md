@@ -130,7 +130,7 @@ Create a dynamic retention rule that puts the document in retention when the doc
 
 1. Create the dynamic retention rule for 100 days triggered on 'documentModified'.
 This rule is persisted as a facet on the input document.
-```
+```js
 POST /Retention.CreateRule
 with:
 {
@@ -143,7 +143,7 @@ with:
 => this sends back the id of the rule.
 ```
 2. Attach the rule on the input document.
-```
+```js
 POST /Retention.AttachRule
 {
 "input": "01d0b119-ef17-49ed-8ffd-fef7ba48ce42", 
