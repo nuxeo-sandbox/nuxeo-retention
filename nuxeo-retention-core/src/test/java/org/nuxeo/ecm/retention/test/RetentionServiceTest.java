@@ -27,7 +27,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -51,7 +50,9 @@ import org.nuxeo.ecm.automation.test.AutomationFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
+import org.nuxeo.ecm.core.api.DocumentNotFoundException;
 import org.nuxeo.ecm.core.api.DocumentSecurityException;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.security.ACE;
 import org.nuxeo.ecm.core.api.security.ACL;
 import org.nuxeo.ecm.core.api.security.ACP;
@@ -149,11 +150,11 @@ public class RetentionServiceTest {
         assertNotNull(record);
         assertEquals("active", record.getStatus());
 
-        LocalDate minCutoff = LocalDate
-                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMinCutoffAt().getTime()));
+        LocalDate minCutoff = LocalDate.parse(
+                new SimpleDateFormat("yyyy-MM-dd").format(record.getMinCutoffAt().getTime()));
 
-        LocalDate maxRetention = LocalDate
-                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
+        LocalDate maxRetention = LocalDate.parse(
+                new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
         assertTrue(minCutoff.isEqual(LocalDate.now()));
         LocalDate yearCutoff = LocalDate.now();
 
@@ -174,7 +175,7 @@ public class RetentionServiceTest {
         DocumentEventContext context = new DocumentEventContext(session, null, doc);
         context.setProperty("DATE_TO_CHECK",
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+        Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
         waitForWorkers();
         doc = session.getDocument(doc.getRef());
         record = doc.getAdapter(Record.class);
@@ -217,10 +218,10 @@ public class RetentionServiceTest {
         doc = session.getDocument(doc.getRef());
         Record record = doc.getAdapter(Record.class);
         doc = sessionAsJdoe.saveDocument(doc);
-        
+
         // NXP-23478 save must complete before retention delay is checked
         waitForWorkers();
-        
+
         // check that cutoff date was set to currentDate + 1
         assertTrue(record.getMinCutoffAt().getTime().after(Calendar.getInstance().getTime()));
 
@@ -234,7 +235,7 @@ public class RetentionServiceTest {
         context.setProperty("DATE_TO_CHECK", checkRetention.getTime());
 
         // NXP-23478 Fire sync event
-        EventService evts = Framework.getLocalService(EventService.class);
+        EventService evts = Framework.getService(EventService.class);
         evts.fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
         evts.waitForAsyncCompletion();
 
@@ -298,13 +299,13 @@ public class RetentionServiceTest {
         session.save();
 
         Record record = file.getAdapter(Record.class);
-        LocalDate maxRetention = LocalDate
-                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
+        LocalDate maxRetention = LocalDate.parse(
+                new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
 
         DocumentEventContext context = new DocumentEventContext(session, null, doc);
         context.setProperty("DATE_TO_CHECK",
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+        Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
         waitForWorkers();
         file = session.getDocument(file.getRef());
@@ -328,13 +329,13 @@ public class RetentionServiceTest {
         session.save();
 
         Record record = file.getAdapter(Record.class);
-        LocalDate maxRetention = LocalDate
-                .parse(new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
+        LocalDate maxRetention = LocalDate.parse(
+                new SimpleDateFormat("yyyy-MM-dd").format(record.getMaxRetentionAt().getTime()));
 
         DocumentEventContext context = new DocumentEventContext(session, null, file);
         context.setProperty("DATE_TO_CHECK",
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+        Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
         waitForWorkers();
         file = session.getDocument(file.getRef());
@@ -343,8 +344,7 @@ public class RetentionServiceTest {
         assertEquals("active", record.getStatus());
         context.setProperty("DATE_TO_CHECK",
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.minusDays(2).toString()));
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECK_REMINDER_EVENT,
-                context);
+        Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECK_REMINDER_EVENT, context);
 
         assertTrue(record.getReminderStartDate().getTime().after(record.getMinCutoffAt().getTime()));
         assertTrue(record.getReminderStartDate().getTime().before(record.getMaxRetentionAt().getTime()));
@@ -381,7 +381,7 @@ public class RetentionServiceTest {
         DocumentEventContext context = new DocumentEventContext(session, null, file);
         context.setProperty("DATE_TO_CHECK",
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+        Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
         waitForWorkers();
         file = session.getDocument(file.getRef());
@@ -444,7 +444,7 @@ public class RetentionServiceTest {
 
         DocumentSecurityException e = null;
         try {
-            Framework.getLocalService(TrashService.class).trashDocuments(Arrays.asList(new DocumentModel[] { file }));
+            Framework.getService(TrashService.class).trashDocuments(Arrays.asList(new DocumentModel[] { file }));
         } catch (DocumentSecurityException e1) {
             e = e1;
 
@@ -476,13 +476,142 @@ public class RetentionServiceTest {
         session.save();
 
         DocumentEventContext context = new DocumentEventContext(session, null, file);
-        Framework.getLocalService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+        Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
         waitForWorkers();
         file = session.getDocument(file.getRef());
         Record record = file.getAdapter(Record.class);
         assertNotNull(record);
         assertEquals("expired", record.getStatus());
+    }
+
+    @Test
+    public void testRetentionWithDisposalDate() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithDisposalDate", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertTrue(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+        assertEquals(2099, record.getMaxRetentionAt().get(Calendar.YEAR));
+        assertEquals(11, record.getMaxRetentionAt().get(Calendar.MONTH));
+        assertEquals(31, record.getMaxRetentionAt().get(Calendar.DATE));
+    }
+
+    @Test(expected = NuxeoException.class)
+    public void testRetentionWithInvalidDisposalDate() throws Exception {
+        service.getRetentionRule("retentionOnCreationWithInvalidDisposalDate", session);
+    }
+
+    @Test
+    public void testRetentionWithDisposalDateXpath() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithDisposalDateXpath", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.DATE, 30);
+        doc.setPropertyValue("dc:expired", c.getTime());
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertTrue(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+        assertEquals(c.get(Calendar.YEAR), record.getMaxRetentionAt().get(Calendar.YEAR));
+        assertEquals(c.get(Calendar.MONTH), record.getMaxRetentionAt().get(Calendar.MONTH));
+        assertEquals(c.get(Calendar.DATE), record.getMaxRetentionAt().get(Calendar.DATE));
+    }
+
+    @Test()
+    public void testRetentionWithInvalidDisposalDateXpath() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithInvalidDisposalDateXpath", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertFalse(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("unmanaged", record.getStatus());
+    }
+
+    @Test(expected = NuxeoException.class)
+    public void testRetentionWithInvalidDuration() throws Exception {
+        service.getRetentionRule("retentionOnCreationWithInvalidDuration", session);
+    }
+
+    @Test
+    public void testRetentionWithDurationAndDisposalDate() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithDurationAndDisposalDate", session);
+        assertNotNull(rule);
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.YEAR, 1);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertTrue(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+        assertEquals(c.get(Calendar.YEAR), record.getMaxRetentionAt().get(Calendar.YEAR));
+        assertEquals(c.get(Calendar.MONTH), record.getMaxRetentionAt().get(Calendar.MONTH));
+        assertEquals(c.get(Calendar.DATE), record.getMaxRetentionAt().get(Calendar.DATE));
+    }
+
+    @Test
+    public void testRetentionWithDurationAndDisposalDateAndDisposalXpath() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithDurationAndDisposalDateAndDisposalXpath",
+                session);
+        assertNotNull(rule);
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.YEAR, 1);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        assertTrue(doc.isLocked());
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+        assertEquals(c.get(Calendar.YEAR), record.getMaxRetentionAt().get(Calendar.YEAR));
+        assertEquals(c.get(Calendar.MONTH), record.getMaxRetentionAt().get(Calendar.MONTH));
+        assertEquals(c.get(Calendar.DATE), record.getMaxRetentionAt().get(Calendar.DATE));
+    }
+
+    @Test(expected = DocumentNotFoundException.class)
+    public void testWithEndActionDocumentDelete() throws Exception {
+        RetentionRule rule = service.getRetentionRule("retentionOnCreationWithEndActionDocumentDelete", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        waitForWorkers();
+        doc = session.getDocument(doc.getRef());
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertEquals("active", record.getStatus());
+
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.DATE, 1);
+
+        DocumentEventContext context = new DocumentEventContext(session, null, doc);
+        context.setProperty("DATE_TO_CHECK", c.getTime());
+        Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+        waitForWorkers();
+
+        doc = session.getDocument(doc.getRef());
     }
 
     protected void waitForWorkers() throws InterruptedException {

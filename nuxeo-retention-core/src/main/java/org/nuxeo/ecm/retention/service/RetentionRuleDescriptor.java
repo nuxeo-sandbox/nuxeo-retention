@@ -41,6 +41,12 @@ public class RetentionRuleDescriptor implements Rule {
     @XNode(value = "end-action")
     protected String endAction;
 
+    @XNode(value = "retention-disposal-date")
+    protected String retentionDisposalDate;
+
+    @XNode(value = "retention-disposal-date-xpath")
+    protected String retentionDisposalDateXpath;
+
     @XNode(value = "end-condition")
     protected RetentionRuleConditionDescriptor endCondition;
 
@@ -49,7 +55,6 @@ public class RetentionRuleDescriptor implements Rule {
     @XNode(value = "begin-delay")
     public void setBeginDelay(String value) {
         beginDelay = value;
-
     }
 
     protected String retentionDuration;
@@ -92,8 +97,13 @@ public class RetentionRuleDescriptor implements Rule {
     }
 
     @Override
-    public RetentionRuleConditionDescriptor getEndCondition() {
-        return endCondition;
+    public String getRetentionDisposalDate() {
+        return retentionDisposalDate;
+    }
+
+    @Override
+    public String getRetentionDisposalDateXpath() {
+        return retentionDisposalDateXpath;
     }
 
     @Override
