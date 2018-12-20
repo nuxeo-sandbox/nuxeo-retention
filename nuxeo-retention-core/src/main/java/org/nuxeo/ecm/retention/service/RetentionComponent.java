@@ -66,19 +66,18 @@ import org.nuxeo.ecm.retention.work.RetentionRecordCheckerWork;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentInstance;
 import org.nuxeo.runtime.model.DefaultComponent;
+import org.nuxeo.runtime.model.Descriptor;
 
 public class RetentionComponent extends DefaultComponent implements RetentionService {
 
     public static final String RULES_EP = "rules";
-
-    protected RetentionRulesContributionRegistry registry = new RetentionRulesContributionRegistry();
 
     public static Log log = LogFactory.getLog(RetentionComponent.class);
 
     @Override
     public void registerContribution(Object contribution, String extensionPoint, ComponentInstance contributor) {
         if (RULES_EP.equals(extensionPoint)) {
-            registry.addContribution((RetentionRuleDescriptor) contribution);
+            register(RULES_EP, (Descriptor) contribution);
         }
     }
 
@@ -218,7 +217,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     public List<String> queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck, boolean notify) {
         List<String> docIds = new ArrayList<String>();
 
-        new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
+        new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
 
             @Override
             public void run() {
@@ -268,7 +267,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     protected void evalRules(Date dateToCheck, String providerName) {
 
-        new UnrestrictedSessionRunner(Framework.getLocalService(RepositoryManager.class).getDefaultRepositoryName()) {
+        new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
             @Override
             public void run() {
                 long offset = 0;
@@ -374,7 +373,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         if (ruleId == null) {
             throw new NuxeoException("Can not attch null rule");
         }
-        RetentionRuleDescriptor staticRule = registry.getRetentionRule(ruleId);
+        RetentionRuleDescriptor staticRule = getDescriptor(RULES_EP, ruleId);
         if (staticRule != null) {
             return new RetentionRule(staticRule);
         }
@@ -434,12 +433,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             return true;
         }
         ctx.putLocalVariable("currentDate", now);
-        Object res = ctx.checkCondition(expression);
-        // if no condition, attach always
-        if (res == null) {
-            return true;
-        }
-        return (Boolean) res;
+        return ctx.checkCondition(expression);
     }
 
     protected OperationContext getExecutionContext(DocumentModel doc, CoreSession session) {
@@ -456,7 +450,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         }
         // get base context
         OperationContext context = getExecutionContext(doc, session);
-        AutomationService automationService = Framework.getLocalService(AutomationService.class);
+        AutomationService automationService = Framework.getService(AutomationService.class);
         try {
             automationService.run(context, actionId);
         } catch (OperationException e) {
@@ -471,6 +465,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         ctx.setProperty(CoreEventConstants.REPOSITORY_NAME, session.getRepositoryName());
         ctx.setProperty(CoreEventConstants.SESSION_ID, session.getSessionId());
         Event event = ctx.newEvent(eventId);
-        Framework.getLocalService(EventService.class).fireEvent(event);
+        Framework.getService(EventService.class).fireEvent(event);
     }
 }

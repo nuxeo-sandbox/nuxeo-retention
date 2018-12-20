@@ -40,6 +40,6 @@ public class RetentionClearRecordListener implements EventListener {
         if (doc == null || !doc.hasFacet(RetentionService.RECORD_FACET)) {
             return;
         }
-        Framework.getLocalService(RetentionService.class).clearRules(doc);
+        Framework.getService(RetentionService.class).clearRules(doc);
     }
 }

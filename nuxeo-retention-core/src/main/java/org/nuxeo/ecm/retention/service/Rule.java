@@ -18,12 +18,12 @@
  */
 package org.nuxeo.ecm.retention.service;
 
+import org.nuxeo.runtime.model.Descriptor;
+
 /**
  * @since 9.2
  */
-public interface Rule {
-
-    String getId();
+public interface Rule extends Descriptor {
 
     RuleCondition getBeginCondition();
 

@@ -89,7 +89,7 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
         }
 
         // ToDo: check how many events max in a bundle
-        Framework.getLocalService(RetentionService.class).evalRules(docsToCheckAndEvents,
+        Framework.getService(RetentionService.class).evalRules(docsToCheckAndEvents,
                 Calendar.getInstance().getTime());
 
     }
