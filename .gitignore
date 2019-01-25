@@ -4,7 +4,9 @@ bower_components
 .tmp
 .publish/
 target
+.vscode
 .classpath
+.factorypath
 .project
 npm-debug.log
 .settings/
@@ -28,3 +30,4 @@ bin/
 *~bak
 *-bak
 *.bak
+*.versionsBackup
