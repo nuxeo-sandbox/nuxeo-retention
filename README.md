@@ -6,36 +6,45 @@ A document under active retention can not be modified or deleted.
 
 ### Rules definition
 
+A rule can be defined:
 
-Each rule is composed of :
+- Statically, via an XML contribution (see below)
+- Or dynamically, using a document storing the values in the `retention_rule` schema (prefix `rule`)
+  - Note: Adding the `RetentionRule` facet to a document automatically adds the schema
 
- - id
- - a condition for retention start / cutoff
-       - event
-       - duration       
- - a cutoff action: *what we do after entering cutoff*
-       - Automation 
- - a condition for retention end
-      - event
-      - duration   
- - a retention end action : *what we do after entering cutoff*
-      - automation 
- - the retention duration ( a Java period)
- - a begin delay 
- - retention-reminder-days: 
+Each rule is composed of:
+
+ - An id
+     - The name of an XML contribution (see below)
+     - Or the UUID of a document defining the rules:
+       - Must have the `retention_rule` schema
+       - Note: Adding the `RetentionRule` facet to a document adds this schema
+ - A condition for retention start:
+     - event: A string, like "documentCreated", "documentModified", ...)
+     - condition: A string, and `EL` expression (i.e: `document.getType()=='File'`, or `document.getPropertyValue('record:min_cutoff_at').before(currentDate)`, ...)     - **WARNING**: This is EL. Not MVEL, not JavaScript, no FreeMarker, ... 
+ - A _begin_ action: *what we do after entering cutoff*
+     - Automation
+ - A condition for retention end
+     - event: A string, like "documentCreated", "documentModified", ...)
+     - condition: A string, and `EL` expression (see above)
+ - A `beginDelayPeriod`: Java period which i'm not sure what it's doing
+ - The retention duration (a Java period)
+ - A duration in days for the reminder before end of retention. An event will be triggered when _(end of retention - reminderDays)_ is reached.
+ - A retention end action : *what we do after entering cutoff*
+    - Automation 
   
 
 
 ### Record facet
 
-When a retention rule is applied on the document we store the data into the  Record facet that is added to each document under Retention.
-The facet holds:
+When a retention rule is applied on the document we store the data into the `Record` facet that is added to each document under retention.
+The facet holds the `record` schema:
 
-
-   - associated rule(s)
-   - retention start (target or actual): min_cutoff_at
-   - retention end  (target or actual) : max_retention_at ( composed from all rules if more than one rules are applied to this document)
-   - status flag  ('unmanaged', 'active', 'expired')
+   - Status of the retention (`record:status`: 'unmanaged', 'active', 'expired')
+   - List of associated rule(s) (`record:rules`)
+   - Retention start (target or actual): `record:min_cutoff_at`
+   - Retention end  (target or actual) : `record:max_retention_at`
+   - The`record:reminder_start_date` field: When this value is not null and is reached, the `retentionAboutToExpire` event is fired. Configuration can listen to this event and act accordingly ( mail notificaiton, ...)
 
 
 
