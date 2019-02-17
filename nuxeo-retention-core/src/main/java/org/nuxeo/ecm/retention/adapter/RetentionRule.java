@@ -88,7 +88,7 @@ public class RetentionRule implements Rule {
 
     @SuppressWarnings("unchecked")
     public RetentionRule(DocumentModel doc) {
-        this.id = (String) doc.getPropertyValue(RULE_ID_PROPERTY);
+        this.id = (String) doc.getId();
         this.beginCondition = new RetentionRuleCondition(
                 (Map<String, Serializable>) doc.getPropertyValue(RULE_BEGIN_CONDITION_PROPERTY));
         this.endCondition = new RetentionRuleCondition(

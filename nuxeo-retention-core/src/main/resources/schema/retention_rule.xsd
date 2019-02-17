@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-<xs:schema targetNamespace="http://www.nuxeo.org/ecm/schemas/retention_rule/"
-  xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:nxs="http://www.nuxeo.org/ecm/schemas/retention_rule/">
+<xs:schema targetNamespace="http://www.nuxeo.org/ecm/schemas/retention_rule/" 
+  xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  xmlns:nxs="http://www.nuxeo.org/ecm/schemas/retention_rule/">
 
   <xs:complexType name="retention_rule_condition">
     <xs:sequence>

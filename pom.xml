@@ -40,6 +40,7 @@
 
   <modules>
     <module>nuxeo-retention-core</module>
+    <module>nuxeo-retention-web-ui</module>
     <module>nuxeo-retention-package</module>
   </modules>
 
@@ -96,6 +97,11 @@
       <dependency>
         <groupId>org.nuxeo.ecm.retention</groupId>
         <artifactId>nuxeo-retention-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nuxeo.ecm.retention</groupId>
+        <artifactId>nuxeo-retention-web-ui</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

@@ -26,13 +26,15 @@ import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
 public class RetentionDateCheckerListener implements EventListener {
+    
+    public static final String DATE_TO_CHECK = "DATE_TO_CHECK";
 
     @Override
     public void handleEvent(Event event) {
         Date dateToCheck = new Date();
         // workaround for tests
-        if (event.getContext().getProperty("DATE_TO_CHECK") != null) {
-            dateToCheck = (Date) event.getContext().getProperty("DATE_TO_CHECK");
+        if (event.getContext().getProperty(DATE_TO_CHECK) != null) {
+            dateToCheck = (Date) event.getContext().getProperty(DATE_TO_CHECK);
         }
         if (RetentionService.RETENTION_CHECKER_EVENT.equals(event.getName())) {
             Framework.getService(RetentionService.class).queryDocsAndEvalRulesForDate(dateToCheck);

@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-<xs:schema targetNamespace="http://www.nuxeo.org/ecm/schemas/record/"
-  xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:nxs="http://www.nuxeo.org/ecm/schemas/record/">
+<xs:schema targetNamespace="http://www.nuxeo.org/ecm/schemas/record/" 
+  xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  xmlns:nxs="http://www.nuxeo.org/ecm/schemas/record/">
 
   <xs:complexType name="retention_rule">
     <xs:sequence>
@@ -12,8 +13,7 @@
 
   <xs:complexType name="retention_rules">
     <xs:sequence>
-      <xs:element name="item" type="nxs:retention_rule"
-        minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="item" type="nxs:retention_rule" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
 

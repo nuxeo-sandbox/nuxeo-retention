@@ -1,0 +1,46 @@
+<!--
+(C) Copyright 2018 Nuxeo (http://nuxeo.com/) and others.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="retention-action.html">
+
+<nuxeo-slot-content name="retentionForFile" slot="DOCUMENT_ACTIONS" order="0">
+  <template>
+    <nuxeo-filter document="[[document]]" type="File">
+      <template>
+        <retention-action operation="Retention_AddToFile" document="[[document]]"></retention-action>
+      </template>
+    </nuxeo-filter>
+  </template>
+</nuxeo-slot-content>
+
+<nuxeo-slot-content name="retentionForPicture" slot="DOCUMENT_ACTIONS" order="0">
+  <template>
+    <nuxeo-filter document="[[document]]" type="Picture">
+      <template>
+        <retention-action operation="Retention_AddToPicture" document="[[document]]"></retention-action>
+      </template>
+    </nuxeo-filter>
+  </template>
+</nuxeo-slot-content>
+
+<nuxeo-slot-content name="retentionForVideo" slot="DOCUMENT_ACTIONS" order="0">
+  <template>
+    <nuxeo-filter document="[[document]]" type="Video">
+      <template>
+        <retention-action operation="Retention_AddToVideo" document="[[document]]"></retention-action>
+      </template>
+    </nuxeo-filter>
+  </template>
+</nuxeo-slot-content>

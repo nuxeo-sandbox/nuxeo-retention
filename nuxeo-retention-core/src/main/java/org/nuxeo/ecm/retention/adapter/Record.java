@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -122,6 +123,19 @@ public class Record {
         Map<String, Serializable> r = new HashMap<String, Serializable>();
         r.put("rule_id", ruleId);
         rr.add(r);
+        doc.setPropertyValue(RETENTION_RULES, (Serializable) rr);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void removeRule(String ruleId) {
+        List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
+        Iterator<Map<String, Serializable>> iter = rr.iterator();
+        while (iter.hasNext()) {
+            Map<String, Serializable> entry = iter.next();
+            if (ruleId.equals(entry.get("rule_id"))) {
+                iter.remove();
+            }
+        }
         doc.setPropertyValue(RETENTION_RULES, (Serializable) rr);
     }
 

@@ -1,0 +1,32 @@
+<!--
+`nuxeo-retentionconfig-metadata-layout`
+@group Nuxeo UI
+@element nuxeo-retentionconfig-metadata-layout
+-->
+<dom-module id="nuxeo-retentionconfig-metadata-layout">
+  <template>
+    <style>
+      *[role=widget] {
+        padding: 5px;
+      }
+    </style>
+
+    </template>
+
+  <script>
+  Polymer({
+    is: 'nuxeo-retentionconfig-metadata-layout',
+    behaviors: [Nuxeo.LayoutBehavior],
+    properties: {
+
+      /**
+         * @doctype RetentionConfig
+         */
+      document: {
+        type: Object,
+      },
+
+    }
+  });
+  </script>
+</dom-module>

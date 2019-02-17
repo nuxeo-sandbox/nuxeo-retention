@@ -1,0 +1,104 @@
+<!--
+`retention-action`
+@group Nuxeo UI
+@element retention-action
+-->
+<dom-module id="retention-action">
+  <template>
+    <style>
+      /* Add your custom styles here */
+
+    </style>
+
+    <nuxeo-operation id="applyRetention" op="Retention.AttachRule" input="[[document.uid]]" params="[[_params(config)]]"></nuxeo-operation>
+
+    <template is="dom-if" if="[[_isNotRecord(document)]]">
+      <div class="action" on-click="_toggleDialog">
+        <paper-icon-button icon="[[icon]]" noink></paper-icon-button>
+        <span class="label" hidden$="[[!showLabel]]">[[label]]</span>
+      </div>
+      <paper-tooltip>[[label]]</paper-tooltip>
+    </template>
+
+    <nuxeo-dialog id="dialog" with-backdrop>
+      <h2>Apply Retention Rule</h2>
+
+      <nuxeo-document-suggestion page-provider="RetentionConfigurations" value="{{config}}" label="Retention Configuration"
+        min-chars="0"></nuxeo-document-suggestion>
+
+      <div class="buttons">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button class="primary" dialog-confirm on-click="_apply">Apply</paper-button>
+      </div>
+    </nuxeo-dialog>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'retention-action',
+      properties: {
+
+        document: {
+          type: Object
+        },
+
+        config: {
+          type: Object
+        },
+
+        label: {
+          type: String,
+          value: 'Apply Retention'
+        },
+
+        showLabel: {
+          type: Boolean,
+          value: false
+        },
+
+        icon: {
+          type: String,
+          value: 'icons:archive'
+        },
+
+        operation: {
+          type: String,
+          value: 'Retention_AddToFile'
+        }
+      },
+
+      _isNotRecord: function (document) {
+        return document.facets.indexOf("Record") === -1;
+      },
+
+      _toggleDialog: function () {
+        this.$.dialog.toggle();
+      },
+
+      _apply: function () {
+        if (this.document) {
+          this.$.applyRetention.execute().then(() => {
+            this.fire('document-updated');
+            this.fire('notify', {
+              message: "Retention Applied"
+            });
+          }).catch((error) => {
+            console.log(error);
+            this.fire('notify', {
+              message: "Retention Failed: " + error
+            });
+          });
+        }
+      },
+
+      _params: function (config) {
+        return {
+          "ruleId": config
+        };
+      },
+
+    });
+
+  </script>
+</dom-module>

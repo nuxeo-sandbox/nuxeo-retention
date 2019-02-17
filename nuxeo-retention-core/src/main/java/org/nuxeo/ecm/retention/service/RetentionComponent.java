@@ -21,6 +21,7 @@ package org.nuxeo.ecm.retention.service;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
@@ -32,6 +33,8 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
@@ -50,6 +53,9 @@ import org.nuxeo.ecm.core.api.NuxeoPrincipal;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
 import org.nuxeo.ecm.core.api.event.CoreEventConstants;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
+import org.nuxeo.ecm.core.bulk.BulkService;
+import org.nuxeo.ecm.core.bulk.message.BulkCommand;
+import org.nuxeo.ecm.core.bulk.message.BulkStatus;
 import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
@@ -57,9 +63,12 @@ import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.actions.ELActionContext;
 import org.nuxeo.ecm.platform.el.ExpressionContext;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
+import org.nuxeo.ecm.platform.query.api.PageProviderDefinition;
 import org.nuxeo.ecm.platform.query.api.PageProviderService;
-import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
+import org.nuxeo.ecm.retention.actions.AboutToExpireRetentionRuleAction;
+import org.nuxeo.ecm.retention.actions.AttachRetentionRuleAction;
+import org.nuxeo.ecm.retention.actions.EvaluateRetentionRuleAction;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.work.RetentionRecordCheckerWork;
@@ -83,32 +92,49 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public void attachRule(String ruleId, DocumentModel doc) {
-        CoreInstance.doPrivileged(
-                doc.getCoreSession().getRepositoryName(),
-                (CoreSession session) -> {
-                    if (!doc.hasFacet(RECORD_FACET)) {
-                        doc.addFacet(RECORD_FACET);
-                        doc.getContextData().put("facets", RECORD_FACET);
-                    }
-                    Record record = doc.getAdapter(Record.class);
-                    if (record.hasRule(ruleId)) {
-                        return;
-                    }
+        CoreInstance.doPrivileged(doc.getCoreSession().getRepositoryName(), (CoreSession session) -> {
+            if (!doc.hasFacet(RECORD_FACET)) {
+                doc.addFacet(RECORD_FACET);
+                doc.getContextData().put("facets", RECORD_FACET);
+            }
+            Record record = doc.getAdapter(Record.class);
+            if (record.hasRule(ruleId)) {
+                return;
+            }
 
-                    RetentionRule rule = getRetentionRule(ruleId, session);
-                    record.addRule(ruleId);
-                    // start the rule if possible
-                    Boolean ruleApplies = rule.getBeginCondition() != null ? evaluateConditionExpression(
-                            initActionContext(record.getDoc(), session), rule.getBeginCondition().getExpression(),
-                            record.getDoc(), null, session) : true;
-                    if (rule.getBeginCondition().getEvent() == null) {
-                        if (ruleApplies) {
-                            evalRetentionDatesAndStartOrExpireIfApplies(record, rule, new Date(), false, session);
-                        }
-                    }
-                    record.save(session);
-                });
+            RetentionRule rule = getRetentionRule(ruleId, session);
+            record.addRule(ruleId);
+            // start the rule if possible
+            Boolean ruleApplies = rule.getBeginCondition() != null
+                    ? evaluateConditionExpression(initActionContext(record.getDoc(), session),
+                            rule.getBeginCondition().getExpression(), record.getDoc(), null, session)
+                    : true;
+            if (rule.getBeginCondition().getEvent() == null) {
+                if (ruleApplies) {
+                    evalRetentionDatesAndStartOrExpireIfApplies(record, rule, new Date(), false, session);
+                }
+            }
+            record.save(session);
+        });
 
+    }
+
+    @Override
+    public boolean clearRule(String ruleId, DocumentModel doc) {
+        final AtomicBoolean cleared = new AtomicBoolean(false);
+        CoreInstance.doPrivileged(doc.getCoreSession().getRepositoryName(), (CoreSession session) -> {
+            if (!doc.hasFacet(RECORD_FACET)) {
+                return;
+            }
+            Record record = doc.getAdapter(Record.class);
+            if (!record.hasRule(ruleId)) {
+                return;
+            }
+
+            record.removeRule(ruleId);
+            record.save(session);
+        });
+        return cleared.get();
     }
 
     @Override
@@ -121,38 +147,50 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         });
     }
 
-    @Override
-    public void attachRule(String ruleId, String query, CoreSession session) {
-        long offset = 0;
-        List<DocumentModel> nextDocumentsToBeUpdated;
-
-        CoreQueryPageProviderDescriptor desc = new CoreQueryPageProviderDescriptor();
-        desc.setPattern(query);
-        Map<String, Serializable> props = new HashMap<String, Serializable>();
-        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
-
-        @SuppressWarnings("unchecked")
-        PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) Framework.getService(PageProviderService.class)
-                                                                                .getPageProvider("", desc, null, null,
-                                                                                        batchSize, 0L, props);
-        final long maxResult = pp.getPageSize();
-        do {
-            pp.setCurrentPageOffset(offset);
-            pp.refresh();
-            nextDocumentsToBeUpdated = pp.getCurrentPage();
-            if (nextDocumentsToBeUpdated.isEmpty()) {
-                break;
-            }
-            // this should not be to expensive to be done inline here
-            for (DocumentModel documentModel : nextDocumentsToBeUpdated) {
-                attachRule(ruleId, documentModel);
-            }
-            offset += maxResult;
-        } while (nextDocumentsToBeUpdated.size() == maxResult && pp.isNextPageAvailable());
+    private PageProviderService pageProvider() {
+        return Framework.getService(PageProviderService.class);
     }
 
     @Override
-    public void evalRules(Record record, List<String> events, Date dateToCheck, CoreSession session) {
+    public void attachRule(String ruleId, String query, CoreSession session) {
+        // Construct query
+        BulkCommand command = new BulkCommand.Builder(AttachRetentionRuleAction.ACTION_NAME, query).param(
+                AttachRetentionRuleAction.PARAM_RULE_ID, ruleId).user("Administrator").build();
+
+        // Submit command
+        BulkService bulkService = Framework.getService(BulkService.class);
+        String commandId = bulkService.submit(command);
+
+        try {
+            boolean complete = false;
+            while (!complete) {
+                // Await end of computation
+                complete = bulkService.await(commandId, Duration.ofMinutes(1));
+            }
+
+        } catch (InterruptedException iex) {
+            // ignored
+        }
+
+        // Get status
+        BulkStatus status = bulkService.getStatus(commandId);
+        switch (status.getState()) {
+        case COMPLETED:
+            log.debug("Bulk attach completed: " + status);
+            break;
+        case ABORTED:
+            log.warn("Retention bulk attach aborted: " + status);
+            break;
+        case UNKNOWN:
+            log.error("Unknown status for bulk attach: " + status);
+            break;
+        default:
+            // continue
+        }
+    }
+
+    @Override
+    public void evalRules(Record record, Set<String> events, Date dateToCheck, CoreSession session) {
         if (record == null) {
             return; // nothing to do
         }
@@ -190,14 +228,14 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             // if either there is an event to match or there is no event
             if ((ruleApplies && events != null && events.contains(rule.getBeginCondition().getEvent()))
                     || (ruleApplies && StringUtils.isBlank(rule.getBeginCondition().getEvent()))) {
-            	evalRetentionDatesAndStartOrExpireIfApplies(record, rule, dateToCheck, true, session);
+                evalRetentionDatesAndStartOrExpireIfApplies(record, rule, dateToCheck, true, session);
             }
-            
+
         }
     }
 
     @Override
-    public void evalRules(Map<String, List<String>> docsToCheckAndEvents, Date dateToCheck) {
+    public void evalRules(Map<String, Set<String>> docsToCheckAndEvents, Date dateToCheck) {
         RetentionRecordCheckerWork work = new RetentionRecordCheckerWork(docsToCheckAndEvents, dateToCheck);
         if (docsToCheckAndEvents.isEmpty()) {
             return;
@@ -214,7 +252,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
-    public List<String> queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck, boolean notify) {
+    public List<String> queryDocsAboutToExpire(Date dateToCheck) {
         List<String> docIds = new ArrayList<String>();
 
         new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
@@ -224,19 +262,11 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 Map<String, Serializable> props = new HashMap<String, Serializable>();
 
                 props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
-                Object[] params = new Object[1];
-                params[0] = new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck);
-                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
+                Object[] params = { new SimpleDateFormat("yyyy-MM-dd").format(dateToCheck) };
+
                 @SuppressWarnings("unchecked")
-                PageProvider<Map<String, Serializable>> pp = (PageProvider<Map<String, Serializable>>) Framework.getService(
-                        PageProviderService.class)
-                                                                                                                .getPageProvider(
-                                                                                                                        "active_records_reminder",
-                                                                                                                        null,
-                                                                                                                        batchSize,
-                                                                                                                        0L,
-                                                                                                                        props,
-                                                                                                                        params);
+                PageProvider<Map<String, Serializable>> pp = (PageProvider<Map<String, Serializable>>) pageProvider().getPageProvider(
+                        "active_records_reminder", null, batchSize, 0L, props, params);
 
                 long offset = 0;
                 List<Map<String, Serializable>> nextDocumentsToBeChecked;
@@ -251,11 +281,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
                     for (Map<String, Serializable> result : nextDocumentsToBeChecked) {
                         docIds.add((String) result.get("ecm:uuid"));
-                        if (notify) {
-                            notifyEvent(session, RETENTION_ABOUT_TO_EXPIRE_EVENT,
-                                    session.getDocument(new IdRef((String) result.get("ecm:uuid"))));
-                        }
-
                     }
                     offset += maxResult;
                 } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
@@ -263,47 +288,109 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         }.runUnrestricted();
 
         return docIds;
+
     }
 
-    protected void evalRules(Date dateToCheck, String providerName) {
+    @Override
+    public void notifyRetentionAboutToExpire(Date dateToCheck) {
+        final Date dateRef = dateToCheck != null ? dateToCheck : new Date();
 
         new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
             @Override
             public void run() {
-                long offset = 0;
-                List<DocumentModel> nextDocumentsToBeChecked;
-                PageProvider<DocumentModel> pp = getPageProvider(dateToCheck, providerName, session);
-                long maxResult = pp.getPageSize();
-                do {
-                    pp.setCurrentPageOffset(offset);
-                    pp.refresh();
-                    nextDocumentsToBeChecked = pp.getCurrentPage();
-                    if (nextDocumentsToBeChecked.isEmpty()) {
-                        break;
-                    }
-                    Map<String, List<String>> map = new HashMap<String, List<String>>();
-                    for (DocumentModel documentModel : nextDocumentsToBeChecked) {
-                        map.put(documentModel.getId(), new ArrayList<String>());
-                    }
-                    evalRules(map, dateToCheck);
-                    offset += maxResult;
-                } while (nextDocumentsToBeChecked.size() == maxResult && pp.isNextPageAvailable());
 
+                // Construct query
+                String query = formatQuery("active_records_reminder", dateRef, "yyyy-MM-dd");
+                BulkCommand command = new BulkCommand.Builder(AboutToExpireRetentionRuleAction.ACTION_NAME, query).user(
+                        "Administrator").build();
+
+                // Submit command
+                BulkService bulkService = Framework.getService(BulkService.class);
+                String commandId = bulkService.submit(command);
+
+                try {
+                    boolean complete = false;
+                    while (!complete) {
+                        // Await end of computation
+                        complete = bulkService.await(commandId, Duration.ofMinutes(1));
+                    }
+
+                } catch (InterruptedException iex) {
+                    // ignored
+                }
+
+                // Get status
+                BulkStatus status = bulkService.getStatus(commandId);
+                switch (status.getState()) {
+                case COMPLETED:
+                    log.debug("Command completed: " + status);
+                    break;
+                case ABORTED:
+                    log.warn("Retention bulk evaluation aborted: " + status);
+                    break;
+                case UNKNOWN:
+                    log.error("Unknown status for command: " + status);
+                    break;
+                default:
+                    // continue
+                }
+            }
+        }.runUnrestricted();
+    }
+
+    protected void evalRules(Date dateToCheck, String providerName) {
+        final Date dateRef = dateToCheck != null ? dateToCheck : new Date();
+
+        new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
+            @Override
+            public void run() {
+
+                // Construct query
+                String query = formatQuery(providerName, dateRef, "yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+                BulkCommand command = new BulkCommand.Builder(EvaluateRetentionRuleAction.ACTION_NAME,
+                        query).param(EvaluateRetentionRuleAction.PARAM_DATE_TO_CHECK_MS, dateRef.getTime())
+                              .user("Administrator")
+                              .build();
+
+                // Submit command
+                BulkService bulkService = Framework.getService(BulkService.class);
+                String commandId = bulkService.submit(command);
+
+                try {
+                    boolean complete = false;
+                    while (!complete) {
+                        // Await end of computation
+                        complete = bulkService.await(commandId, Duration.ofMinutes(1));
+                    }
+
+                } catch (InterruptedException iex) {
+                    // ignored
+                }
+
+                // Get status
+                BulkStatus status = bulkService.getStatus(commandId);
+                switch (status.getState()) {
+                case COMPLETED:
+                    log.debug("Command completed: " + status);
+                    break;
+                case ABORTED:
+                    log.warn("Retention bulk evaluation aborted: " + status);
+                    break;
+                case UNKNOWN:
+                    log.error("Unknown status for command: " + status);
+                    break;
+                default:
+                    // continue
+                }
             }
         }.runUnrestricted();
 
     }
 
-    @SuppressWarnings("unchecked")
-    protected PageProvider<DocumentModel> getPageProvider(Date dateToCheck, String providerName, CoreSession session) {
-        Map<String, Serializable> props = new HashMap<String, Serializable>();
-        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
-        Object[] params = new Object[1];
-        params[0] = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(dateToCheck);
-        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) session);
-
-        return (PageProvider<DocumentModel>) Framework.getService(PageProviderService.class).getPageProvider(
-                providerName, null, batchSize, 0L, props, params);
+    protected String formatQuery(String providerName, Date dateToCheck, String format) {
+        PageProviderDefinition def = pageProvider().getPageProviderDefinition(providerName);
+        String pattern = def.getPattern();
+        return pattern.replace("?", "'" + new SimpleDateFormat(format).format(dateToCheck) + "'");
     }
 
     @Override
@@ -314,10 +401,10 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         record.save(session);
     }
 
-    protected void evalRetentionDatesAndStartOrExpireIfApplies(Record record, RetentionRule rule, Date cDate, boolean save,
-            CoreSession session) {
-    	Date minCutoffDate = record.getMinCutoffAt() == null ? new Date() : record.getMinCutoffAt().getTime();
-        LocalDateTime cutoffDate =  LocalDateTime.ofInstant(minCutoffDate.toInstant(), ZoneId.systemDefault());
+    protected void evalRetentionDatesAndStartOrExpireIfApplies(Record record, RetentionRule rule, Date cDate,
+            boolean save, CoreSession session) {
+        Date minCutoffDate = record.getMinCutoffAt() == null ? new Date() : record.getMinCutoffAt().getTime();
+        LocalDateTime cutoffDate = LocalDateTime.ofInstant(minCutoffDate.toInstant(), ZoneId.systemDefault());
         LocalDateTime startReminderDate = null;
         if (!rule.getBeginDealyAsPeriod().isZero()) {
             Period delayPeriod = rule.getBeginDealyAsPeriod();
@@ -336,24 +423,24 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             // the reminder starts at the disposalDate - retentionReminder days
         }
 
-        record.setRuleDatesAndUpdateGlobalRetentionDetails(
-                rule.getId(),
+        record.setRuleDatesAndUpdateGlobalRetentionDetails(rule.getId(),
                 GregorianCalendar.from(ZonedDateTime.of(cutoffDate, ZoneId.systemDefault())),
                 GregorianCalendar.from(ZonedDateTime.of(disposalDate, ZoneId.systemDefault())),
-                startReminderDate != null ? GregorianCalendar.from(ZonedDateTime.of(startReminderDate,
-                        ZoneId.systemDefault())) : null);
+                startReminderDate != null
+                        ? GregorianCalendar.from(ZonedDateTime.of(startReminderDate, ZoneId.systemDefault()))
+                        : null);
         if (save) {
             record.save(session);
         }
         // if there is no delay or the delay period has already expired
         if (rule.getBeginDealyAsPeriod().isZero() || record.getMinCutoffAt().getTime().before(cDate)) {
-        	// start retention if still active otherwise stop it
-        	if(record.getMaxRetentionAt() == null || record.getMaxRetentionAt().getTime().after(cDate)) {
-        	    startRetention(record, rule, true, session);
+            // start retention if still active otherwise stop it
+            if (record.getMaxRetentionAt() == null || record.getMaxRetentionAt().getTime().after(cDate)) {
+                startRetention(record, rule, true, session);
             } else {
                 endRetention(record, rule, session);
-            }           
-        }        
+            }
+        }
     }
 
     @Override
@@ -382,7 +469,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         try {
             dynamicRuleDoc = session.getDocument(new IdRef(ruleId));
         } catch (DocumentNotFoundException e) {
-            log.error("Can not find dynamic rule with id " + ruleId);
+            log.error("Can not find dynamic rule with ID: " + ruleId);
             throw new NuxeoException(e);
         }
         return new RetentionRule(dynamicRuleDoc);

@@ -31,11 +31,11 @@ public class RetentionReminderDateCheckerListener implements EventListener {
     public void handleEvent(Event event) {
         Date dateToCheck = new Date();
         // workaround for tests
-        if (event.getContext().getProperty("DATE_TO_CHECK") != null) {
-            dateToCheck = (Date) event.getContext().getProperty("DATE_TO_CHECK");
+        if (event.getContext().getProperty(RetentionDateCheckerListener.DATE_TO_CHECK) != null) {
+            dateToCheck = (Date) event.getContext().getProperty(RetentionDateCheckerListener.DATE_TO_CHECK);
         }
         if (RetentionService.RETENTION_CHECK_REMINDER_EVENT.equals(event.getName())) {
-            Framework.getService(RetentionService.class).queryDocsAndNotifyRetentionAboutToExpire(dateToCheck, true);
+            Framework.getService(RetentionService.class).notifyRetentionAboutToExpire(dateToCheck);
         }
     }
 }

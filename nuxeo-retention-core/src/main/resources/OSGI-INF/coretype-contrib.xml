@@ -1,7 +1,11 @@
 <component name="org.nuxeo.retention.coretype">
+  <require>org.nuxeo.ecm.core.CoreExtensions</require>
+  <require>org.nuxeo.ecm.core.schema.TypeService</require>
+  <require>org.nuxeo.ecm.core.LifecycleCoreExtensions</require>
   <extension point="schema" target="org.nuxeo.ecm.core.schema.TypeService">
     <schema name="record" prefix="record" src="schema/record.xsd"/>
     <schema name="retention_rule" prefix="rule" src="schema/retention_rule.xsd"/>
+    <schema name="retention_config" prefix="retentionconfig" src="schema/retention_config.xsd"/>
   </extension>
   <extension point="doctype" target="org.nuxeo.ecm.core.schema.TypeService">
     <facet name="Record">
@@ -10,5 +14,36 @@
     <facet name="RetentionRule">
       <schema name="retention_rule"/>
     </facet>
+    <doctype extends="Document" name="RetentionConfig">
+      <schema name="common" />
+      <schema name="dublincore" />
+      <schema name="uid" />
+      <schema name="files" />
+      <schema name="retention_rule"/>
+      <schema name="retention_config"/>
+      <facet name="Commentable" />
+      <facet name="Versionable" />
+      <facet name="NXTag" />
+    </doctype>
+    <doctype name="Workspace" append="true">
+      <subtypes>
+        <type>RetentionConfig</type>
+      </subtypes>
+    </doctype>
+    <doctype name="Folder" append="true">
+      <subtypes>
+        <type>RetentionConfig</type>
+      </subtypes>
+    </doctype>
+    <doctype name="OrderedFolder" append="true">
+      <subtypes>
+        <type>RetentionConfig</type>
+      </subtypes>
+    </doctype>
+  </extension>
+  <extension target="org.nuxeo.ecm.core.lifecycle.LifeCycleService" point="types">
+    <types>
+      <type name="RetentionConfig">default</type>
+    </types>
   </extension>
 </component>

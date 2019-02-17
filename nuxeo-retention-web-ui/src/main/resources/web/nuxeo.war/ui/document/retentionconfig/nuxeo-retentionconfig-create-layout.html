@@ -1,0 +1,118 @@
+<!--
+`nuxeo-retentionconfig-create-layout`
+@group Nuxeo UI
+@element nuxeo-retentionconfig-create-layout
+-->
+<dom-module id="nuxeo-retentionconfig-create-layout">
+  <template>
+    <style include="iron-flex iron-flex-alignment nuxeo-styles">
+      *[role=widget] {
+        padding: 5px;
+      }
+    </style>
+    <nuxeo-input role="widget" value="{{document.properties.dc:title}}" label="Title" type="text"></nuxeo-input>
+
+    <nuxeo-input role="widget" value="{{document.properties.dc:description}}" label="Description" type="text"></nuxeo-input>
+
+    <nuxeo-directory-suggestion role="widget" value="{{document.properties.retentionconfig:docTypes}}" label="Types"
+      multiple="true" directory-name="RetentionDoctypes" min-chars="0"></nuxeo-directory-suggestion>
+
+    <nuxeo-directory-suggestion role="widget" value="{{document.properties.retentionconfig:facets}}" label="Facets"
+      multiple="true" directory-name="RetentionFacets" min-chars="0"></nuxeo-directory-suggestion>
+
+    <nuxeo-directory-suggestion value="{{document.properties.retentionconfig:states}}" label="States" multiple="true"
+      directory-name="RetentionStates" role="widget" min-chars="0"></nuxeo-directory-suggestion>
+
+    <label>Retention Delay</label>
+    <div class="layout horizontal flex">
+      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:delayDays}}" on-input="_delayDuration"
+        label="Days" min="0" type="number"></nuxeo-input>
+      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:delayMonths}}" on-input="_delayDuration"
+        label="Months" min="0" type="number"></nuxeo-input>
+      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:delayYears}}" on-input="_delayDuration"
+        label="Years" min="0" type="number"></nuxeo-input>
+      <nuxeo-input role="widget" id="DelayPeriod" value="{{document.properties.rule:beginDelayPeriod}}" label="Delay Period"
+        type="text" readonly="true"></nuxeo-input>
+    </div>
+
+    <label>Retention Duration</label>
+    <div class="layout horizontal flex">
+      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:durationYears}}" on-input="_retentionDuration"
+        min="0" label="Years" type="number"></nuxeo-input>
+      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:durationMonths}}" on-input="_retentionDuration"
+        min="0" label="Months" type="number"></nuxeo-input>
+      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:durationDays}}" on-input="_retentionDuration"
+        min="0" label="Days" type="number"></nuxeo-input>
+      <nuxeo-input role="widget" id="DurationPeriod" value="{{document.properties.rule:retentionDurationPeriod}}" label="Duration Period"
+        type="text" readonly="true"></nuxeo-input>
+    </div>
+
+    <nuxeo-input role="widget" value="{{document.properties.rule:retentionReminderInDays}}" label="Reminder Days" min="0"
+      type="number"></nuxeo-input>
+
+    <nuxeo-input role="widget" value="{{document.properties.rule:beginAction}}" label="Begin Action" type="text"></nuxeo-input>
+
+    <label>Begin Condition</label>
+    <div class="layout horizontal flex">
+      <nuxeo-input role="widget" value="{{document.properties.rule:beginCondition.expression}}" label="Expression" type="text"></nuxeo-input>
+      <nuxeo-input role="widget" value="{{document.properties.rule:beginCondition.event}}" label="Event" type="text"></nuxeo-input>
+    </div>
+
+    <nuxeo-input role="widget" value="{{document.properties.rule:endAction}}" label="End Action" type="text"></nuxeo-input>
+
+    <label>End Condition</label>
+    <div class="layout horizontal flex">
+      <nuxeo-input role="widget" value="{{document.properties.rule:endCondition.expression}}" label="Expression" type="text"></nuxeo-input>
+      <nuxeo-input role="widget" value="{{document.properties.rule:endCondition.event}}" label="Event" type="text"></nuxeo-input>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'nuxeo-retentionconfig-create-layout',
+      behaviors: [Nuxeo.LayoutBehavior],
+      properties: {
+
+        /**
+         * @doctype RetentionConfig
+         */
+        document: {
+          type: Object,
+        },
+
+      },
+
+      _period: function (value, part) {
+        if (value && value > 0) {
+          return value + part;
+        }
+        return "";
+      },
+
+      _retentionDuration: function () {
+        var duration = "P";
+        duration += this._period(this.document.properties["retentionconfig:durationYears"], "Y");
+        duration += this._period(this.document.properties["retentionconfig:durationMonths"], "M");
+        duration += this._period(this.document.properties["retentionconfig:durationDays"], "D");
+
+        if (duration === "P") {
+          duration = null;
+        }
+        this.$.DurationPeriod.value = duration;
+      },
+
+      _delayDuration: function () {
+        var duration = "P";
+        duration += this._period(this.document.properties["retentionconfig:delayYears"], "Y");
+        duration += this._period(this.document.properties["retentionconfig:delayMonths"], "M");
+        duration += this._period(this.document.properties["retentionconfig:delayDays"], "D");
+
+        if (duration === "P") {
+          duration = null;
+        }
+        this.$.DelayPeriod.value = duration;
+      }
+    });
+
+  </script>
+</dom-module>

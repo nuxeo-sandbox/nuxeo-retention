@@ -16,7 +16,7 @@
  * Contributors:
  *     mcedica@nuxeo.com
  */
-package org.nuxeo.ecm.retention.rest;
+package org.nuxeo.ecm.retention.operations;
 
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;

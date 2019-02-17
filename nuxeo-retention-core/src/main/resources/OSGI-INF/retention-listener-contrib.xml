@@ -1,31 +1,22 @@
 <?xml version="1.0"?>
 <component name="org.nuxeo.ecm.retention.listeners">
 
-  <extension target="org.nuxeo.ecm.core.event.EventServiceComponent"
-    point="listener">
-    <listener name="retentionRecordCheckerListener"
-      class="org.nuxeo.ecm.retention.listener.RetentionRecordCheckerListener">
+  <extension target="org.nuxeo.ecm.core.event.EventServiceComponent" point="listener">
+    <listener name="retentionRecordCheckerListener" class="org.nuxeo.ecm.retention.listener.RetentionRecordCheckerListener">
     </listener>
 
-    <listener name="retentionDateCheckerListener" postCommit="false"
-      async="true"
-      class="org.nuxeo.ecm.retention.listener.RetentionDateCheckerListener">
+    <listener name="retentionDateCheckerListener" postCommit="false" async="true" class="org.nuxeo.ecm.retention.listener.RetentionDateCheckerListener">
       <event>checkRetentionEvent</event>
     </listener>
-    
-     <listener name="retentionReminderListener" postCommit="false"
-      async="true"
-      class="org.nuxeo.ecm.retention.listener.RetentionReminderDateCheckerListener">
+
+    <listener name="retentionReminderListener" postCommit="false" async="true" class="org.nuxeo.ecm.retention.listener.RetentionReminderDateCheckerListener">
       <event>retentionCheckReminder</event>
-      </listener>
-  
-    <listener name="retentionRecordCleaner" async="false"
-      postCommit="false"
-      class="org.nuxeo.ecm.retention.listener.RetentionClearRecordListener"
-      priority="3000">
+    </listener>
+
+    <listener name="retentionRecordCleaner" async="false" postCommit="false" class="org.nuxeo.ecm.retention.listener.RetentionClearRecordListener" priority="3000">
       <event>aboutToCopy</event>
     </listener>
-      
+
   </extension>
 
 </component>
