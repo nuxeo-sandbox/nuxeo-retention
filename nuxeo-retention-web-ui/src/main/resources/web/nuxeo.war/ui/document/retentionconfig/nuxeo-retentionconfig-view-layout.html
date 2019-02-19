@@ -1,0 +1,125 @@
+<!--
+`nuxeo-retentionconfig-view-layout`
+@group Nuxeo UI
+@element nuxeo-retentionconfig-view-layout
+-->
+<dom-module id="nuxeo-retentionconfig-view-layout">
+  <template>
+    <style include="iron-flex iron-flex-alignment nuxeo-styles">
+      *[role=widget] {
+        padding: 5px;
+      }
+
+      .duration {
+        margin-right: 10px;
+      }
+
+    </style>
+
+    <paper-card heading="[[document.properties.dc:title]]" elevation="0">
+      <div class="card-content layout horizontal wrap">
+
+        <div class="layout vertical flex">
+          <nuxeo-directory-suggestion role="widget" value="[[document.properties.retentionconfig:docTypes]]" label="Types"
+            multiple="true" readonly="true" directory-name="RetentionDoctypes"></nuxeo-directory-suggestion>
+          <nuxeo-directory-suggestion role="widget" value="[[document.properties.retentionconfig:facets]]" label="Facets"
+            multiple="true" readonly="true" directory-name="RetentionFacets"></nuxeo-directory-suggestion>
+          <nuxeo-directory-suggestion role="widget" value="[[document.properties.retentionconfig:states]]" label="States"
+            multiple="true" readonly="true" directory-name="RetentionStates"></nuxeo-directory-suggestion>
+        </div>
+        <div class="layout vertical flex">
+          <div role="widget" hidden$="[[!document.properties.rule:beginDelayPeriod]]">
+            <label>Retention Delay</label>
+            <div class="layout horizontal flex">
+              <div class="duration" hidden$="[[!document.properties.retentionconfig:delayHours]]">
+                <div>[[document.properties.retentionconfig:delayHours]] <span>Hours</span></div>
+              </div>
+              <div class="duration" hidden$="[[!document.properties.retentionconfig:delayDays]]">
+                <div>[[document.properties.retentionconfig:delayDays]] <span>Days</span></div>
+              </div>
+              <div class="duration" hidden$="[[!document.properties.retentionconfig:delayMonths]]">
+                <div>[[document.properties.retentionconfig:delayMonths]] <span>Months</span></div>
+              </div>
+              <div class="duration" hidden$="[[!document.properties.retentionconfig:delayYears]]">
+                <div>[[document.properties.retentionconfig:delayYears]] <span>Years</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div role="widget" hidden$="[[!document.properties.rule:retentionDurationPeriod]]">
+            <label>Retention Duration</label>
+            <div class="layout horizontal flex">
+              <div class="duration" hidden$="[[!document.properties.retentionconfig:durationYears]]">
+                <div>[[document.properties.retentionconfig:durationYears]] <span>Years</span></div>
+              </div>
+              <div class="duration" hidden$="[[!document.properties.retentionconfig:durationMonths]]">
+                <div>[[document.properties.retentionconfig:durationMonths]] <span>Months</span></div>
+              </div>
+              <div class="duration" hidden$="[[!document.properties.retentionconfig:durationDays]]">
+                <div>[[document.properties.retentionconfig:durationDays]] <span>Days</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div role="widget" hidden$="[[!document.properties.rule:retentionReminderInDays]]">
+            <label>Reminder Notification</label>
+            <div>[[document.properties.rule:retentionReminderInDays]] <span>Days</span></div>
+          </div>
+        </div>
+        <div class="layout vertical flex">
+          <div role="widget">
+            <label>Begin Condition</label>
+            <div class="duration" hidden$="[[!document.properties.rule:beginAction]]">
+              <label>Action</label>
+              <div>[[document.properties.rule:beginAction]]</div>
+            </div>
+            <div class="duration" hidden$="[[!document.properties.rule:beginCondition.expression]]">
+              <label>Expression</label>
+              <div>[[document.properties.rule:beginCondition.expression]]</div>
+            </div>
+            <div class="duration" hidden$="[[!document.properties.rule:beginCondition.event]]">
+              <label>Event</label>
+              <div>[[document.properties.rule:beginCondition.event]]</div>
+            </div>
+          </div>
+
+          <div role="widget">
+            <label>End Condition</label>
+            <div class="duration" hidden$="[[!document.properties.rule:endAction]]">
+              <label>Action</label>
+              <div>[[document.properties.rule:endAction]]</div>
+            </div>
+            <div class="duration" hidden$="[[!document.properties.rule:endCondition.expression]]">
+              <label>Expression</label>
+              <div>[[document.properties.rule:endCondition.expression]]</div>
+            </div>
+            <div class="duration" hidden$="[[!document.properties.rule:endCondition.event]]">
+              <label>Event</label>
+              <div>[[document.properties.rule:endCondition.event]]</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </paper-card>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'nuxeo-retentionconfig-view-layout',
+      behaviors: [Nuxeo.LayoutBehavior],
+      properties: {
+
+        /**
+         * @doctype RetentionConfig
+         */
+        document: {
+          type: Object,
+        },
+
+      }
+    });
+
+  </script>
+</dom-module>

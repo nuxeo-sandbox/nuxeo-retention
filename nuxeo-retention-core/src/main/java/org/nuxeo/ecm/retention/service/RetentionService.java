@@ -22,6 +22,7 @@ package org.nuxeo.ecm.retention.service;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -65,7 +66,15 @@ public interface RetentionService {
     void attachRule(String ruleId, DocumentModel doc);
 
     /**
-     *  Removes the retention facet from doc
+     * Removes a rule from the document
+     * 
+     * @return true if removed
+     * @since 9.2
+     */
+    boolean clearRule(String ruleId, DocumentModel doc);
+    
+    /**
+     * Removes the retention facet from doc
      * 
      * @since 9.2
      */
@@ -85,7 +94,7 @@ public interface RetentionService {
      * 
      * @since 9.2
      */
-    public void evalRules(Record record, List<String> eventId, Date dateToCheck, CoreSession session);
+    public void evalRules(Record record, Set<String> eventId, Date dateToCheck, CoreSession session);
 
     /**
      * Evaluates the rules for a list of documents and a list of events for each document Queues a worker to eval the
@@ -93,7 +102,7 @@ public interface RetentionService {
      * 
      * @since 9.2
      */
-    public void evalRules(Map<String, List<String>> docsToCheckAndEvents, Date dateToCheck);
+    public void evalRules(Map<String, Set<String>> docsToCheckAndEvents, Date dateToCheck);
 
     /**
      * Query for records to check if retention status is impacted by the given date. Queues workers to eval the a page
@@ -105,9 +114,18 @@ public interface RetentionService {
     /**
      * Query for records that have a reminder set that the retention is about to expire and notifyEvent
      * 
-     * @since 9.2
+     * @since 10.10
      */
-    public List<String> queryDocsAndNotifyRetentionAboutToExpire(Date dateToCheck, boolean notify);
+    public void notifyRetentionAboutToExpire(Date dateToCheck);
+
+    /**
+     * Query for records that have a reminder set that the retention is about to expire
+     * 
+     * @since 9.2
+     * @deprecated
+     * @see #notifyRetentionAboutToExpire(Date) and 'active_records_reminder' page provider
+     */
+    public List<String> queryDocsAboutToExpire(Date dateToCheck);
 
     /**
      * Starts retention for doc. Executes the beginAction and sets to Active if is not already the case. Used when a

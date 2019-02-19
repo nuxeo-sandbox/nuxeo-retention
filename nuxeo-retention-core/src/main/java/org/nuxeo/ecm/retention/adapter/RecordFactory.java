@@ -26,7 +26,7 @@ import org.nuxeo.ecm.core.api.adapter.DocumentAdapterFactory;
 public class RecordFactory implements DocumentAdapterFactory {
 
     @Override
-    public Object getAdapter(DocumentModel doc, Class<?> itf) {
+    public Record getAdapter(DocumentModel doc, Class<?> itf) {
         if (doc.hasFacet("Record")) {
             return new Record(doc);
         } else {

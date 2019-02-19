@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.automation.AutomationService;
@@ -67,8 +69,9 @@ import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.usermanager.UserManager;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
-import org.nuxeo.ecm.retention.rest.AttachRetentionRule;
-import org.nuxeo.ecm.retention.rest.CreateRetentionRule;
+import org.nuxeo.ecm.retention.operations.AttachRetentionRule;
+import org.nuxeo.ecm.retention.operations.CreateRetentionRule;
+import org.nuxeo.ecm.retention.service.RetentionComponent;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
@@ -83,8 +86,13 @@ import com.google.inject.Inject;
 @Features({ TransactionalFeature.class, AutomationFeature.class })
 @Deploy({ "org.nuxeo.ecm.platform.query.api", "org.nuxeo.ecm.retention.service.nuxeo-retention-service",
         "org.nuxeo.ecm.retention.service.nuxeo-retention-service:retention-rules-contrib-test.xml" })
+@Deploy("org.nuxeo.runtime.kv")
+@Deploy("org.nuxeo.ecm.core.bulk")
+@Deploy("org.nuxeo.ecm.core.bulk.test")
 @RepositoryConfig(init = DefaultRepositoryInit.class, cleanup = Granularity.METHOD)
 public class RetentionServiceTest {
+
+    public static Log log = LogFactory.getLog(RetentionServiceTest.class);
 
     @Inject
     CoreSession session;
@@ -113,7 +121,10 @@ public class RetentionServiceTest {
             doc = session.createDocument(doc);
             docs.add(doc);
         }
+
         session.save();
+        waitForWorkers();
+
         service.attachRule("myTestRuleId2", "Select * from Folder", session);
         DocumentModelList folders = session.query("Select * from Folder");
         for (DocumentModel f : folders) {
@@ -121,8 +132,9 @@ public class RetentionServiceTest {
             f = session.saveDocument(f);
         }
 
-        waitForWorkers();
         session.save();
+        waitForWorkers();
+
         for (DocumentModel documentModel : docs) {
             documentModel = session.getDocument(documentModel.getRef());
             assertTrue(documentModel.hasFacet(RetentionService.RECORD_FACET));
@@ -174,10 +186,12 @@ public class RetentionServiceTest {
         context.setProperty("DATE_TO_CHECK",
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
         Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+
         waitForWorkers();
+
         doc = session.getDocument(doc.getRef());
-        record = doc.getAdapter(Record.class);
         assertFalse(doc.isLocked());
+        record = doc.getAdapter(Record.class);
         assertEquals("expired", record.getStatus());
     }
 
@@ -205,6 +219,8 @@ public class RetentionServiceTest {
         service.attachRule(rule.getId(), doc);
         session.save();
 
+        waitForWorkers();
+
         try (CloseableCoreSession sessionAsJdoe = settings.openCoreSession("jdoe")) {
             ACP acp = doc.getACP();
             ACL localACL = acp.getOrCreateACL(ACL.LOCAL_ACL);
@@ -221,7 +237,7 @@ public class RetentionServiceTest {
             waitForWorkers();
 
             // check that cutoff date was set to currentDate + 1
-            assertTrue(record.getMinCutoffAt().getTime().after(Calendar.getInstance().getTime()));
+            assertTrue(record.getMinCutoffAt().getTime().after(new Date()));
 
             Calendar maxRetention = record.getMinCutoffAt();
             Calendar checkRetention = Calendar.getInstance(maxRetention.getTimeZone());
@@ -238,6 +254,7 @@ public class RetentionServiceTest {
             evts.waitForAsyncCompletion();
 
             waitForWorkers();
+
             doc = session.getDocument(doc.getRef());
             assertTrue(doc.isLocked());
             record = doc.getAdapter(Record.class);
@@ -346,8 +363,9 @@ public class RetentionServiceTest {
 
         assertTrue(record.getReminderStartDate().getTime().after(record.getMinCutoffAt().getTime()));
         assertTrue(record.getReminderStartDate().getTime().before(record.getMaxRetentionAt().getTime()));
-        List<String> docsAboutToExpire = service.queryDocsAndNotifyRetentionAboutToExpire(
-                Date.from(maxRetention.minusDays(2).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()), false);
+        @SuppressWarnings("deprecation")
+        List<String> docsAboutToExpire = service.queryDocsAboutToExpire(
+                Date.from(maxRetention.minusDays(2).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
         assertTrue(docsAboutToExpire.size() == 1);
         assertEquals(record.getDoc().getId(), docsAboutToExpire.get(0));
     }

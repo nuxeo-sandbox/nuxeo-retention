@@ -5,9 +5,9 @@
   <service>
     <provide interface="org.nuxeo.ecm.retention.service.RetentionService"/>
   </service>
-  
+
   <extension-point name="rules">
     <object class="org.nuxeo.ecm.retention.service.RetentionRuleDescriptor" />
   </extension-point>
-  
+
 </component>

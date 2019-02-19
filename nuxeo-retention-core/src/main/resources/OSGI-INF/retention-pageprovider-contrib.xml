@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <component name="org.nuxeo.ecm.retention.provider.contrib">
 
-  <extension target="org.nuxeo.ecm.platform.query.api.PageProviderService"
-    point="providers">
+  <extension target="org.nuxeo.ecm.platform.query.api.PageProviderService" point="providers">
 
     <coreQueryPageProvider name="unmanaged_records">
       <pattern>
@@ -23,7 +22,7 @@
 
     <coreQueryPageProvider name="active_records">
       <pattern>
-       <![CDATA[
+        <![CDATA[
         SELECT * FROM Document WHERE
         ecm:isCheckedInVersion = 0 AND
         ecm:mixinType = 'Record' AND
@@ -35,10 +34,22 @@
       <maxPageSize>5000</maxPageSize>
       <property name="maxResults">5000</property>
     </coreQueryPageProvider>
-    
-   <genericPageProvider name="active_records_reminder" class="org.nuxeo.ecm.platform.query.nxql.CoreQueryAndFetchPageProvider">
+
+    <coreQueryPageProvider name="RetentionConfigurations">
+      <property name="maxResults">PAGE_SIZE</property>
+      <pattern escapeParameters="true" quoteParameters="false">
+        <![CDATA[
+          SELECT * FROM RetentionConfig WHERE dc:title LIKE '?%' AND
+          ecm:mixinType != 'HiddenInNavigation' AND ecm:isVersion = 0 AND
+          ecm:isTrashed = 0
+          ]]>
+      </pattern>
+      <pageSize>30</pageSize>
+    </coreQueryPageProvider>
+
+    <genericPageProvider name="active_records_reminder" class="org.nuxeo.ecm.platform.query.nxql.CoreQueryAndFetchPageProvider">
       <pattern>
-       <![CDATA[
+        <![CDATA[
         SELECT ecm:uuid FROM Document WHERE
         ecm:isCheckedInVersion = 0 AND
         ecm:mixinType = 'Record' AND

@@ -16,23 +16,25 @@
  * Contributors:
  *     mcedica@nuxeo.com
  */
-package org.nuxeo.ecm.retention.rest;
+package org.nuxeo.ecm.retention.operations;
 
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
 import org.nuxeo.ecm.automation.core.annotations.Param;
+import org.nuxeo.ecm.automation.core.collectors.DocumentModelCollector;
+import org.nuxeo.ecm.automation.core.util.StringList;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = AttachRetentionRule.ID, category = "Retention", label = "Attach an existing retention rule to the doc")
-public class AttachRetentionRule {
+@Operation(id = RemoveRetentionRules.ID, category = "Retention", label = "Remove all retention rules from a doc")
+public class RemoveRetentionRules {
 
-    public static final String ID = "Retention.AttachRule";
+    public static final String ID = "Retention.RemoveRules";
 
-    @Param(name = "ruleId", required = true)
-    protected String ruleId;
+    @Param(name = "ruleIds", required = false, description = "Clear rules from document.  If no rules are specified, all rules are removed")
+    StringList ruleIds;
 
     @Context
     RetentionService retentionService;
@@ -40,9 +42,15 @@ public class AttachRetentionRule {
     @Context
     CoreSession session;
 
-    @OperationMethod
+    @OperationMethod(collector = DocumentModelCollector.class)
     public DocumentModel attachRetentionRule(DocumentModel doc) {
-        retentionService.attachRule(ruleId, doc);
+        if (ruleIds == null || ruleIds.isEmpty()) {
+            retentionService.clearRules(doc);
+        } else {
+            for (String ruleId : ruleIds) {
+                retentionService.clearRule(ruleId, doc);
+            }
+        }
         return doc;
 
     }

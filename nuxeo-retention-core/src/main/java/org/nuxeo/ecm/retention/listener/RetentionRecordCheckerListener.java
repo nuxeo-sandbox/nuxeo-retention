@@ -19,12 +19,13 @@
 
 package org.nuxeo.ecm.retention.listener;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +39,8 @@ import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
+import avro.shaded.com.google.common.collect.Sets;
+
 /**
  * Listener that checks for retention triggered by an event specified in the rule
  * 
@@ -47,12 +50,25 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
 
     public static Log log = LogFactory.getLog(RetentionRecordCheckerListener.class);
 
-    List<String> ignoreEvents = Arrays.asList(new String[] { "sessionSaved", "loginSuccess",
-            DocumentEventTypes.DOCUMENT_REMOVED, RetentionService.RETENTION_CHECKER_EVENT });
+    HashSet<String> ignoreEvents = Sets.newHashSet("sessionSaved", "loginSuccess", DocumentEventTypes.DOCUMENT_REMOVED,
+            RetentionService.RETENTION_CHECKER_EVENT, RetentionService.RETENTION_CHECK_REMINDER_EVENT);
+
+    @Override
+    public boolean acceptEvent(Event event) {
+        if (ignoreEvents.contains(event.getName())) {
+            return false;
+        }
+        // log.warn("Received event: " + event.getName() + ", " + event.getContext().getPrincipal().getActingUser());
+        EventContext eventCtx = event.getContext();
+        if (!(eventCtx instanceof DocumentEventContext)) {
+            return false;
+        }
+        return true;
+    }
 
     @Override
     public void handleEvent(EventBundle events) {
-        Map<String, List<String>> docsToCheckAndEvents = new HashMap<String, List<String>>();
+        Map<String, Set<String>> docsToCheckAndEvents = new HashMap<String, Set<String>>();
 
         Map<String, Boolean> documentModifiedIgnored = new HashMap<String, Boolean>();
         for (Event event : events) {
@@ -72,13 +88,13 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
             }
 
             if (docsToCheckAndEvents.containsKey(docId)) {
-                List<String> eventsToCheck = docsToCheckAndEvents.get(docId);
+                Set<String> eventsToCheck = docsToCheckAndEvents.get(docId);
                 if (!eventsToCheck.contains(event.getName())) {
                     eventsToCheck.add(event.getName());
                 }
                 docsToCheckAndEvents.put(docId, eventsToCheck);
             } else {
-                List<String> evs = new ArrayList<String>();
+                Set<String> evs = new HashSet<String>();
                 evs.add(event.getName());
                 docsToCheckAndEvents.put(docId, evs);
             }
@@ -89,20 +105,8 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
         }
 
         // ToDo: check how many events max in a bundle
-        Framework.getService(RetentionService.class).evalRules(docsToCheckAndEvents,
-                Calendar.getInstance().getTime());
+        Framework.getService(RetentionService.class).evalRules(docsToCheckAndEvents, new Date());
 
     }
 
-    @Override
-    public boolean acceptEvent(Event event) {
-        if (ignoreEvents.contains(event.getName())) {
-            return false;
-        }
-        EventContext eventCtx = event.getContext();
-        if (!(eventCtx instanceof DocumentEventContext)) {
-            return false;
-        }
-        return true;
-    }
 }

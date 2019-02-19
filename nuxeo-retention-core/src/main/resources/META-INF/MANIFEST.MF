@@ -11,8 +11,10 @@ Nuxeo-Component: OSGI-INF/retention-service-framework.xml,
  OSGI-INF/coretype-contrib.xml,
  OSGI-INF/record-adapter-contrib.xml,
  OSGI-INF/security-policy-contrib.xml,
- OSGI-INF/retention-rest-contrib.xml,
+ OSGI-INF/retention-actions-contrib.xml,
+ OSGI-INF/retention-operation-contrib.xml,
  OSGI-INF/retention-default-scheduler-contrib.xml,
  OSGI-INF/retention-pageprovider-contrib.xml,
  OSGI-INF/retention-work-contrib.xml,
- OSGI-INF/retention-audit-contrib.xml
+ OSGI-INF/retention-audit-contrib.xml,
+ OSGI-INF/retention-vocab-contrib.xml
