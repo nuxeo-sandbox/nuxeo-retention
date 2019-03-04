@@ -53,7 +53,6 @@
 
     <nuxeo-input role="widget" value="{{document.properties.rule:retentionReminderInDays}}" label="Reminder Days" min="0"
       type="number"></nuxeo-input>
-
     <nuxeo-input role="widget" value="{{document.properties.rule:beginAction}}" label="Begin Action" type="text"></nuxeo-input>
 
     <label>Begin Condition</label>
@@ -62,7 +61,11 @@
       <nuxeo-input role="widget" value="{{document.properties.rule:beginCondition.event}}" label="Event" type="text"></nuxeo-input>
     </div>
 
+    <!--
     <nuxeo-input role="widget" value="{{document.properties.rule:endAction}}" label="End Action" type="text"></nuxeo-input>
+    -->
+    <nuxeo-directory-suggestion role="widget" value="{{document.properties.retentionconfig:endAction}}" label="End Action(s)" multiple="true" directory-name="RetentionEnd" min-chars="0"></nuxeo-directory-suggestion>
+
 
     <label>End Condition</label>
     <div class="layout horizontal flex">

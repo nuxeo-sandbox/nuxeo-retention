@@ -3,14 +3,17 @@
 @group Nuxeo UI
 @element retention-widget
 -->
+<!-- WARNING - IMPORTANT
+in case a _list_ of rules were stored, the wdget only displays the first one (see _documentChanged())
+-->
 <dom-module id="retention-widget">
   <template>
     <style include="iron-flex iron-flex-alignment">
       *[role=widget] {
         padding: 5px;
       }
-
-      /*
+      
+            /*
       ** Set back to default values.
       ** These are overridden in themes/base.html
       */
@@ -23,27 +26,33 @@
       paper-card {
         --paper-card-content: {
           padding-top: 0;
-        }
-
-        ;
-
-        --paper-card-header-text: {
+        };
+        --paper-card-header-text:{
           margin-bottom: 0;
-        }
-
-        ;
-      }
-
+        };
+      } 
+      
       .chip {
         background-color: #7e90a5;
         border-radius: 3px;
         color: #fff;
-        padding: 0.06em 0.3em;
+        padding: 0.06em 0.6em;
         text-transform: uppercase;
         vertical-align: baseline;
         white-space: nowrap;
-        margin-left: 5px;
-      }
+        margin-left: 0px;
+      } 
+      /*
+      .retentionAction {
+        background-color: #7e90a5;
+        border-radius: 3px;
+        color: #fff;
+        padding: 0.06em 0.9em;
+        text-transform: capitalize;
+        vertical-align: baseline;
+        white-space: nowrap;
+        margin-left: 10px;
+      }*/
       .retentioninfoLabel {
         border-radius: 3px;
         vertical-align: baseline;
@@ -74,41 +83,34 @@
       paper-card.underRetention {
         --paper-card-header-color: #AA0000;
       }
-
     </style>
 
+    <nuxeo-document id="retentionConfigDoc"></nuxeo-document>
     <template is="dom-if" if="[[isUnderRetention(document)]]">
-      <!-- waiting to ingest from the "Retention Demo" studio config
-      <nuxeo-operation id="getRetentionInfoOp"
-                       op="javascript.api_getNuxeoRetentionInfo"
-                       input="[[document]]"
-                       auto
-                       on-response="_handleNuxeoRetentionInfoResponse"></nuxeo-operation>
-      -->
       <paper-card heading="WARNING: READ-ONLY RECORD"
                   class="underRetention">
 
         <template is="dom-if" if="[[hasRetentionInfo]]">
           <div class="card-content layout horizontal">
             <div class="retentioninfoLabel">Rule:</div>
-            <div class="retentioninfoLabel ruleTitle" style="margin-left: 0px !important">[[retentionInfo.title]]</div>
+            <div class="retentioninfoLabel ruleTitle" style="margin-left: 0px !important">[[configDoc.title]]</div>
           </div>
         </template>
 
         <div class="card-content layout horizontal">
           <div class="retentioninfoLabel">Retain until </div>
           <div class="chip">[[formatDate(document.properties.record:max_retention_at)]]</div>
-        </div>
 
-        <template is="dom-if" if="[[hasRetentionInfo]]">
-            <div class="retentioninfoLabel">Then</div>
-            <template is="dom-repeat" items="[[retentionInfo.endRetentionActions]]" as="action">
-              <div class="retentionAction">[[action]]</div>
-              <template is="dom-if" if="[[_needArrow(index)]]">
-                <div style="font-size: 40px">&#8594;</div>
+          <template is="dom-if" if="[[hasRetentionInfo]]">
+              <div class="retentioninfoLabel">Then</div>
+              <template is="dom-repeat" items="[[configDoc.properties.retentionconfig:endAction]]" as="action">
+                <div class="retentionAction">[[action]]</div>
+                <template is="dom-if" if="[[_needArrow(index)]]">
+                  <div style="font-size: 40px">&#8594;</div>
+                </template>
               </template>
-            </template>
-        </template>
+          </template>
+        </div>
 
       </paper-card>
     </template>
@@ -126,7 +128,8 @@
          * @schema dublincore
          */
         document: {
-          type: Object
+          type: Object,
+          observer: "_documentChanged"
         },
 
         // =============== waiting to ingest from the "Retention Demo" studio config:
@@ -134,7 +137,7 @@
           type: Boolean,
           value: false
         },
-        retentionInfo: {
+        configDoc: {
           type: Object,
           value: null
         },
@@ -145,15 +148,34 @@
         // =============== /waiting
       },
 
-      /*
-      _handleNuxeoRetentionInfoResponse: function(p1, data) {
-        if(data && data.response && data.response.result === "OK") {
-          this.hasRetentionInfo = true;
-          this.retentionInfo = data.response;
-          this.maxActions = this.retentionInfo.endRetentionActions.length - 1;
-          console.log("maxActions: " + this.maxActions);
+      /* IMPORTANT: The widget handles only the first rule */
+      _documentChanged: function(newDoc, previousDoc) {
+        if(newDoc && newDoc.properties["record:rules"]) {
+          let ruleDocId = newDoc.properties["record:rules"][0].rule_id;
+          if(!ruleDocId) {
+            return;
+          }
+
+          let getDocElement = this.$.retentionConfigDoc;
+          getDocElement.docId = ruleDocId;
+          getDocElement.schemas = "dublincore,retention_config";
+          getDocElement
+                .execute()
+                .then(function(data, p2, p3) {
+                  this.hasRetentionInfo = true;
+                  this.configDoc = data;
+                  let endActions = this.configDoc.properties["retentionconfig:endAction"];
+                  if(endActions.length) {
+                    this.maxActions = endActions.length - 1;
+                  }
+                  //console.log("maxActions: " + this.maxActions);
+                }.bind(this))
+                .catch(function(err) {
+                  console.error("COuld not get the RetentionConfig data: " + error);
+                }.bind(this))
+
         }
-      },*/
+      },
 
       _needArrow: function(idx) {
         return idx < this.maxActions;
