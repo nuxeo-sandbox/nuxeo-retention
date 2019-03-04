@@ -15,6 +15,7 @@ limitations under the License.
 -->
 <link rel="import" href="retention-behavior.html">
 <link rel="import" href="retention-action.html">
+<link rel="import" href="retention-widget.html">
 
 <nuxeo-slot-content name="retentionForFile" slot="DOCUMENT_ACTIONS" order="0">
   <template>
@@ -45,3 +46,51 @@ limitations under the License.
     </nuxeo-filter>
   </template>
 </nuxeo-slot-content>
+
+<!-- Overriding some default WebUI buttons, so they are not displayed
+   when a document is under retention:
+       Edit
+       Delete
+       Replace blob
+       Delete blob
+   WARNING: Assumes we always have the facets of the document, but this should be the case anyway
+        -->
+<nuxeo-slot-content name="editDocumentAction" slot="DOCUMENT_ACTIONS" order="10">
+  <template>
+    <nuxeo-filter document="[[document]]"  expression="document.facets.indexOf(&#x27;Record&#x27;) &lt; 0" user="[[user]]">
+      <template>
+        <nuxeo-document-edit-button document="[[document]]"></nuxeo-document-edit-button>
+      </template>
+    </nuxeo-filter>
+  </template>
+</nuxeo-slot-content>
+<nuxeo-slot-content name="deleteDocumentAction" slot="DOCUMENT_ACTIONS" order="10">
+  <template>
+    <nuxeo-filter document="[[document]]"  expression="document.facets.indexOf(&#x27;Record&#x27;) &lt; 0" user="[[user]]">
+      <template>
+        <nuxeo-delete-document-button document="[[document]]"></nuxeo-delete-document-button>
+      </template>
+    </nuxeo-filter>
+  </template>
+</nuxeo-slot-content>
+
+<nuxeo-slot-content name="deleteBlobAction" slot="BLOB_ACTIONS" order="40">
+  <template>
+    <nuxeo-filter document="[[document]]"  expression="document.facets.indexOf(&#x27;Record&#x27;) &lt; 0" user="[[user]]">
+      <template>
+        <nuxeo-delete-blob-button document="[[document]]" xpath="[[xpath]]"></nuxeo-delete-blob-button>
+      </template>
+   </nuxeo-filter>
+  </template>
+</nuxeo-slot-content>
+
+<nuxeo-slot-content name="replaceBlobAction" slot="BLOB_ACTIONS" order="40">
+  <template>
+    <nuxeo-filter document="[[document]]"  expression="document.facets.indexOf(&#x27;Record&#x27;) &lt; 0" user="[[user]]">
+      <template>
+        <nuxeo-replace-blob-button document="[[document]]" xpath="[[xpath]]"></nuxeo-replace-blob-button>
+      </template>
+   </nuxeo-filter>
+  </template>
+</nuxeo-slot-content>
+
