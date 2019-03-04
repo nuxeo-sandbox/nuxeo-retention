@@ -1,0 +1,47 @@
+<script>
+  var Nuxeo = Nuxeo || {};
+  (function() {
+
+    /**
+     * @polymerBehavior Nuxeo.RetentionBehavior
+     */
+    Nuxeo.RetentionBehavior = {
+
+      isUnderRetention(document) {
+        return document && document.facets && document.facets.indexOf('Record') > -1;
+      },
+
+      isNotUnderRetention(document) {
+        return !this.isUnderRetention(doc);
+      },
+
+      /* Just checks if not under retention and if user chas write access
+       *
+       */
+       canBeSentToRetention: function(document) {
+
+        if(this.isUnderRetention(document)) {
+          return false;
+        }
+
+        if(!document) {
+          return false
+        }
+
+        if(!document.contextParameters || !document.contextParameters.permissions) {
+          console.log("No 'permissions' context parameter => use the permissions enricher please")
+          return false;
+        }
+
+        debugger;
+
+        let permissions = document.contextParameters.permissions;
+        return   permissions.indexOf("ReadWrite") > -1
+              || permissions.indexOf("Write") > -1
+              || permissions.indexOf("Everything") > -1;
+
+      },
+
+    };
+  })();
+</script>

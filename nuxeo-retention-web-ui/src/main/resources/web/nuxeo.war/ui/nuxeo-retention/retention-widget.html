@@ -44,15 +44,72 @@
         white-space: nowrap;
         margin-left: 5px;
       }
+      .retentioninfoLabel {
+        border-radius: 3px;
+        vertical-align: baseline;
+        white-space: nowrap;
+        border-style: solid;
+        border-color: white;
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+
+      .retentionAction {
+        border-radius: 3px;
+        color: #7e90a5;
+        padding: 0.06em 0.9em;
+        text-transform: capitalize;
+        vertical-align: baseline;
+        white-space: nowrap;
+        border-style: solid;
+        border-color: #7e90a5;
+      }
+
+      .ruleTitle {
+        font-size: larger;
+        font-weight: bold;
+        color: #7e90a5;
+      }
+
+      paper-card.underRetention {
+        --paper-card-header-color: #AA0000;
+      }
 
     </style>
 
-    <template is="dom-if" if="[[_isRecord(document)]]">
-      <paper-card heading="WARNING: READ-ONLY RECORD">
+    <template is="dom-if" if="[[isUnderRetention(document)]]">
+      <!-- waiting to ingest from the "Retention Demo" studio config
+      <nuxeo-operation id="getRetentionInfoOp"
+                       op="javascript.api_getNuxeoRetentionInfo"
+                       input="[[document]]"
+                       auto
+                       on-response="_handleNuxeoRetentionInfoResponse"></nuxeo-operation>
+      -->
+      <paper-card heading="WARNING: READ-ONLY RECORD"
+                  class="underRetention">
+
+        <template is="dom-if" if="[[hasRetentionInfo]]">
+          <div class="card-content layout horizontal">
+            <div class="retentioninfoLabel">Rule:</div>
+            <div class="retentioninfoLabel ruleTitle" style="margin-left: 0px !important">[[retentionInfo.title]]</div>
+          </div>
+        </template>
+
         <div class="card-content layout horizontal">
-          <div>Retain until </div>
+          <div class="retentioninfoLabel">Retain until </div>
           <div class="chip">[[formatDate(document.properties.record:max_retention_at)]]</div>
         </div>
+
+        <template is="dom-if" if="[[hasRetentionInfo]]">
+            <div class="retentioninfoLabel">Then</div>
+            <template is="dom-repeat" items="[[retentionInfo.endRetentionActions]]" as="action">
+              <div class="retentionAction">[[action]]</div>
+              <template is="dom-if" if="[[_needArrow(index)]]">
+                <div style="font-size: 40px">&#8594;</div>
+              </template>
+            </template>
+        </template>
+
       </paper-card>
     </template>
 
@@ -61,7 +118,7 @@
   <script>
     Polymer({
       is: 'retention-widget',
-      behaviors: [Nuxeo.LayoutBehavior],
+      behaviors: [Nuxeo.LayoutBehavior, Nuxeo.RetentionBehavior],
       properties: {
 
         //You can use either @schema or @doctype annotation in your model
@@ -70,11 +127,36 @@
          */
         document: {
           type: Object
+        },
+
+        // =============== waiting to ingest from the "Retention Demo" studio config:
+        hasRetentionInfo: {
+          type: Boolean,
+          value: false
+        },
+        retentionInfo: {
+          type: Object,
+          value: null
+        },
+        maxActions: {
+          type: Number,
+          value: 0
         }
+        // =============== /waiting
       },
 
-      _isRecord: function (document) {
-        return document.facets.indexOf("Record") > -1;
+      /*
+      _handleNuxeoRetentionInfoResponse: function(p1, data) {
+        if(data && data.response && data.response.result === "OK") {
+          this.hasRetentionInfo = true;
+          this.retentionInfo = data.response;
+          this.maxActions = this.retentionInfo.endRetentionActions.length - 1;
+          console.log("maxActions: " + this.maxActions);
+        }
+      },*/
+
+      _needArrow: function(idx) {
+        return idx < this.maxActions;
       }
 
     });

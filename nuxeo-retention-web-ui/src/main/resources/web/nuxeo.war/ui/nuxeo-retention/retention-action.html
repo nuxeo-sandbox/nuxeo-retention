@@ -12,7 +12,7 @@
 
     <nuxeo-operation id="applyRetention" op="Retention.AttachRule" input="[[document.uid]]" params="[[_params(config)]]"></nuxeo-operation>
 
-    <template is="dom-if" if="[[_isNotRecord(document)]]">
+    <template is="dom-if" if="[[canBeSentToRetention(document)]]">
       <div class="action" on-click="_toggleDialog">
         <paper-icon-button icon="[[icon]]" noink></paper-icon-button>
         <span class="label" hidden$="[[!showLabel]]">[[label]]</span>
@@ -37,6 +37,7 @@
   <script>
     Polymer({
       is: 'retention-action',
+      behaviors:[Nuxeo.RetentionBehavior],
       properties: {
 
         document: {
