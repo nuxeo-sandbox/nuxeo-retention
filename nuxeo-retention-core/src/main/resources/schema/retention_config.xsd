@@ -54,8 +54,8 @@
 
   <xs:element name="docTypes" type="nxs:docTypesList" />
   <xs:element name="facets" type="nxs:facetsList" />
-  <xs:element name="beginAction" type="nxs:beginActionList" />
-  <xs:element name="endAction" type="nxs:endActionList" />
+  <xs:element name="beginActions" type="nxs:beginActionList" />
+  <xs:element name="endActions" type="nxs:endActionList" />
   <xs:element name="states" type="nxs:statesList" />
 
 </xs:schema>
