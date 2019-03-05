@@ -122,7 +122,17 @@ void attachRule(String ruleId, String query, CoreSession session);
 - A listener notified on 'checkRetentionEvent' queries  for: 
           1) unmanaged Records with the record:min_cutoff_at < currentDate ( the retention       should start)
           2) active Record with record:max_retention_at <= currentDate ( the retention should end).
-       A scheduler is configured to trigger a 'checkRetentionEvent' daily. 
+       A scheduler is configured to trigger a 'checkRetentionEvent' daily.
+
+
+### Events Sent by the Plugin
+Misc. events are triggered b-y the plugin:
+
+* `retentionAboutToExpire`: Event triggered for documents whose `record:reminder_start_date` value is reached
+* `retentionActive`: The document enters under active retention
+* `retentionExpired`: The document exists active retention
+
+It is then possible to listen to any of these events and triggers any logic that is required by the application.
 
 ### Enforcing that a document under active retention can not be modified.
 
