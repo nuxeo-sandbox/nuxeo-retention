@@ -95,7 +95,8 @@ public class RetentionRule implements Rule {
                 (Map<String, Serializable>) doc.getPropertyValue(RULE_END_CONDITION_PROPERTY));
         this.beginDelay = parsePeriod((String) doc.getPropertyValue(RULE_BEGIN_DELAY_PERIOD_PROPERTY));
         this.retentionDuration = parsePeriod((String) doc.getPropertyValue(RULE_RETENTION_DURATION_PERIOD_PROPERTY));
-        this.retentionReminder = ((Long) doc.getPropertyValue(RULE_RETENTION_REMINDER_PROPERTY)).intValue();
+        Long retReminder = (Long) doc.getPropertyValue(RULE_RETENTION_REMINDER_PROPERTY);
+        this.retentionReminder = retReminder == null ? 0 : retReminder.intValue();
         this.beginAction = (String) doc.getPropertyValue(RULE_BEGIN_ACTION_PROPERTY);
         this.endAction = (String) doc.getPropertyValue(RULE_END_ACTION_PROPERTY);
 
