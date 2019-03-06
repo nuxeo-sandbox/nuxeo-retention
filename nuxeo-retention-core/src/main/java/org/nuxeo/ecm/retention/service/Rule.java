@@ -33,9 +33,20 @@ public interface Rule extends Descriptor {
     
     int getRetentionReminderDays();
 
+    
+    /*
+     * In plural forms, we have a single automation chain
+     */
     String getBeginAction();
 
     String getEndAction();
+    
+    /*
+     * In plural forms, we have a list of operations
+     */
+    String[] getBeginActions();
+
+    String[] getEndActions();
 
     RuleCondition getEndCondition();
 

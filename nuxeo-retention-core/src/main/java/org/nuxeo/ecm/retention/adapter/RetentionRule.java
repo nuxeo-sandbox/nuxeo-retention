@@ -15,6 +15,7 @@
  *
  * Contributors:
  *     mcedica@nuxeo.com
+ *     Thibaud Arguillere
  */
 
 package org.nuxeo.ecm.retention.adapter;
@@ -55,7 +56,11 @@ public class RetentionRule implements Rule {
 
     public static final String RULE_BEGIN_ACTION_PROPERTY = "rule:beginAction";
 
+    public static final String RULE_BEGIN_ACTIONS_PROPERTY = "rule:beginActions";
+
     public static final String RULE_END_ACTION_PROPERTY = "rule:endAction";
+
+    public static final String RULE_END_ACTIONS_PROPERTY = "rule:endActions";
 
     public static final String RULE_END_CONDITION_EXPRESSION_PROPERTY = "rule:endCondition/expression";
 
@@ -71,7 +76,11 @@ public class RetentionRule implements Rule {
 
     protected String beginAction;
 
+    protected String[] beginActions;
+
     protected String endAction;
+
+    protected String[] endActions;
 
     protected RetentionRuleCondition endCondition;
 
@@ -98,7 +107,9 @@ public class RetentionRule implements Rule {
         Long retReminder = (Long) doc.getPropertyValue(RULE_RETENTION_REMINDER_PROPERTY);
         this.retentionReminder = retReminder == null ? 0 : retReminder.intValue();
         this.beginAction = (String) doc.getPropertyValue(RULE_BEGIN_ACTION_PROPERTY);
+        this.beginActions = (String[]) doc.getPropertyValue(RULE_BEGIN_ACTIONS_PROPERTY);
         this.endAction = (String) doc.getPropertyValue(RULE_END_ACTION_PROPERTY);
+        this.endActions = (String[]) doc.getPropertyValue(RULE_END_ACTIONS_PROPERTY);
 
     }
 
@@ -127,8 +138,18 @@ public class RetentionRule implements Rule {
     }
 
     @Override
+    public String[] getBeginActions() {
+        return beginActions;
+    }
+
+    @Override
     public String getEndAction() {
         return endAction;
+    }
+
+    @Override
+    public String[] getEndActions() {
+        return endActions;
     }
 
     @Override

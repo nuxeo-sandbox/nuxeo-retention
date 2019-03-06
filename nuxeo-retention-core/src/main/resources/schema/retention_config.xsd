@@ -20,22 +20,6 @@
     </xs:list>
   </xs:simpleType>
 
-  <xs:simpleType name="beginActionList">
-    <xs:list>
-      <xs:simpleType>
-        <xs:restriction base="xs:string" ref:resolver="directoryResolver" ref:directory="RetentionBegin" />
-      </xs:simpleType>
-    </xs:list>
-  </xs:simpleType>
-
-  <xs:simpleType name="endActionList">
-    <xs:list>
-      <xs:simpleType>
-        <xs:restriction base="xs:string" ref:resolver="directoryResolver" ref:directory="RetentionEnd" />
-      </xs:simpleType>
-    </xs:list>
-  </xs:simpleType>
-
   <xs:simpleType name="statesList">
     <xs:list>
       <xs:simpleType>
@@ -54,8 +38,6 @@
 
   <xs:element name="docTypes" type="nxs:docTypesList" />
   <xs:element name="facets" type="nxs:facetsList" />
-  <xs:element name="beginActions" type="nxs:beginActionList" />
-  <xs:element name="endActions" type="nxs:endActionList" />
   <xs:element name="states" type="nxs:statesList" />
 
 </xs:schema>

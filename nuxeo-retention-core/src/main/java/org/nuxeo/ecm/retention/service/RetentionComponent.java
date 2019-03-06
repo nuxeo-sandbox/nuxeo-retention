@@ -43,6 +43,10 @@ import org.jboss.el.ExpressionFactoryImpl;
 import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationContext;
 import org.nuxeo.ecm.automation.OperationException;
+import org.nuxeo.ecm.automation.core.operations.document.DeleteDocument;
+import org.nuxeo.ecm.automation.core.operations.document.LockDocument;
+import org.nuxeo.ecm.automation.core.operations.document.TrashDocument;
+import org.nuxeo.ecm.automation.core.operations.document.UnlockDocument;
 import org.nuxeo.ecm.core.api.CoreInstance;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -80,6 +84,10 @@ import org.nuxeo.runtime.model.Descriptor;
 public class RetentionComponent extends DefaultComponent implements RetentionService {
 
     public static final String RULES_EP = "rules";
+
+    public enum ActionType {
+        BEGIN, END
+    }
 
     public static Log log = LogFactory.getLog(RetentionComponent.class);
 
@@ -395,7 +403,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public void endRetention(Record record, RetentionRule rule, CoreSession session) {
-        executeRuleAction(rule.getEndAction(), record.getDoc(), session);
+        executeRuleAction(ActionType.END, rule, record.getDoc(), session);
         notifyEvent(session, RETENTION_EXPIRED_EVENT, record.getDoc());
         record.setStatus(RETENTION_STATE.expired.name());
         record.save(session);
@@ -445,7 +453,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public void startRetention(Record record, RetentionRule rule, boolean save, CoreSession session) {
-        executeRuleAction(rule.getBeginAction(), record.getDoc(), session);
+        executeRuleAction(ActionType.BEGIN, rule, record.getDoc(), session);
         if (!RETENTION_STATE.active.name().equals(record.getStatus())) {
             record.setStatus(RETENTION_STATE.active.name());
             notifyEvent(session, RETENTION_ACTIVE_EVENT, record.getDoc());
@@ -529,6 +537,69 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         context.setCommit(false); // no session save at end
         context.setInput(doc);
         return context;
+    }
+
+    protected void executeRuleAction(ActionType actionType, RetentionRule rule, DocumentModel doc,
+            CoreSession session) {
+        String actionID = actionType == ActionType.BEGIN ? rule.getBeginAction() : rule.getEndAction();
+        boolean hasSingleAction = StringUtils.isNotBlank(actionID);
+        String[] actionIDs = actionType == ActionType.BEGIN ? rule.getBeginActions() : rule.getEndActions();
+        boolean hasSeveralActions = actionIDs != null && actionIDs.length > 0;
+
+        // We should not have both one single action (automation chain) and a list of operations
+        if (hasSingleAction && hasSeveralActions) {
+            throw new NuxeoException(
+                    "Cannot have a rule with both single and multiple actions to run (rule id " + rule.getId());
+        }
+
+        if (!hasSingleAction && !hasSeveralActions) {
+            return;
+        }
+
+        AutomationService automationService = Framework.getService(AutomationService.class);
+        if (hasSingleAction) {
+            // get base context
+            OperationContext context = getExecutionContext(doc, session);
+            try {
+                automationService.run(context, actionID);
+            } catch (OperationException e) {
+                throw new NuxeoException("Error running chain: " + actionID, e);
+            }
+        } else {
+            for(String operationId : actionIDs) {
+                // Do not lock document if already locked, and unlock if already unlocked (triggers an error)
+                // Also, if it's time to delete, unlock it first, etc.
+                // (more generally, be ready to handle specific operations and context)
+                switch(operationId) {
+                case LockDocument.ID:
+                    if(doc.isLocked()) {
+                        continue;
+                    }
+                    break;
+                    
+                case UnlockDocument.ID:
+                    if(!doc.isLocked()) {
+                        continue;
+                    }
+                    break;
+                    
+                case DeleteDocument.ID:
+                case TrashDocument.ID:
+                    if(doc.isLocked()) {
+                        session.removeLock(doc.getRef());
+                        doc = session.getDocument(doc.getRef());
+                    }
+                    break;
+                }
+                OperationContext context = getExecutionContext(doc, session);
+                try {
+                    automationService.run(context, operationId);
+                } catch (OperationException e) {
+                    throw new NuxeoException("Error running operation: " + operationId, e);
+                }
+            }
+        }
+
     }
 
     protected void executeRuleAction(String actionId, DocumentModel doc, CoreSession session) {

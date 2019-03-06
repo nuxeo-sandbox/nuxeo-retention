@@ -92,6 +92,16 @@ public class RetentionRuleDescriptor implements Rule {
     }
 
     @Override
+    public String[] getBeginActions() {
+        return null;
+    }
+
+    @Override
+    public String[] getEndActions() {
+        return null;
+    }
+
+    @Override
     public RetentionRuleConditionDescriptor getEndCondition() {
         return endCondition;
     }
