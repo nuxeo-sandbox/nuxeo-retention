@@ -53,7 +53,8 @@
       .biggerTopMargin {
          margin-top: 20px;
       }
-      </style>
+    </style>
+
     <nuxeo-card heading="Info">
       <nuxeo-input role="widget"
               value="{{document.properties.dc:title}}"
@@ -188,9 +189,6 @@
 
     </nuxeo-card>
 
-
-
-
     <nuxeo-card heading="Retention End">
       <div class="layout horizontal flex">
         <label class="in-card noBorder">End Condition:</label>
@@ -228,7 +226,7 @@
   <script>
     Polymer({
       is: 'nuxeo-retentionconfig-edit-layout',
-      behaviors: [Nuxeo.LayoutBehavior],
+      behaviors: [Nuxeo.LayoutBehavior,Nuxeo.RetentionBehavior],
       properties: {
 
         /**
@@ -240,6 +238,14 @@
 
       },
 
+      validate: function() {
+        if(!this.validateRetentionConfiguration(this.document)) {
+          return false;
+        }
+
+        return true;
+      },
+/*
       validate: function() {
         if(!this._checkBeginActions()) {
           alert("A Retention Configuration data cannot have both a single Automation Chain as Begin Action _and_ one or more Predefined Begin Action(s)");
@@ -275,7 +281,7 @@
         }
 
         return true;
-      },
+      },*/
 
       _period: function (value, part) {
         if (value && value > 0) {

@@ -7,64 +7,220 @@
   <template>
     <style include="iron-flex iron-flex-alignment nuxeo-styles">
       *[role=widget] {
-        padding: 5px;
+          padding: 5px;
+      }
+
+      hidden {
+        display: none;
+      }
+
+      nuxeo-card {
+        padding-left: 0;
+      }
+
+      label.in-card {
+        padding-top: 27px; /* THIS IS NOT GOOD... TBD: Align the label involved at bottom*/
+        padding-left: 15px;
+        margin-left: 15px;
+        margin-right: 10px;
+        font-weight: 600 !important;
+        border-left-style: solid;
+        border-left-width: thin;
+      }
+
+      label.in-card.noBorder {
+        padding-left: 0;
+        margin-left: 5px;
+        border-left-style: hidden;
+      }
+
+      .textSeparator {
+        padding-left: 5px;
+        padding-top: 5px;
+        margin-left: 0;
+        margin-right: 20px;
+        font-weight: 600;
+      }
+
+      .textWider {
+        min-width: 300px;
+      }
+
+      .textLessWide {
+        max-width: 150px;
+      }
+
+      .biggerTopMargin {
+         margin-top: 20px;
       }
     </style>
-    <nuxeo-input role="widget" value="{{document.properties.dc:title}}" label="Title" type="text"></nuxeo-input>
 
-    <nuxeo-input role="widget" value="{{document.properties.dc:description}}" label="Description" type="text"></nuxeo-input>
+    <nuxeo-card heading="Info">
+      <nuxeo-input role="widget"
+              value="{{document.properties.dc:title}}"
+              label="[[i18n('title')]]"
+              type="text"
+              required></nuxeo-input>
 
-    <nuxeo-directory-suggestion role="widget" value="{{document.properties.retentionconfig:docTypes}}" label="Types"
-      multiple="true" directory-name="RetentionDoctypes" min-chars="0"></nuxeo-directory-suggestion>
+      <nuxeo-input role="widget"
+              value="{{document.properties.dc:description}}"
+              label="[[i18n('label.description')]]"
+              type="text"></nuxeo-input>
+    </nuxeo-card>
 
-    <nuxeo-directory-suggestion role="widget" value="{{document.properties.retentionconfig:facets}}" label="Facets"
-      multiple="true" directory-name="RetentionFacets" min-chars="0"></nuxeo-directory-suggestion>
+    <nuxeo-card heading="Retention Context">
+      <nuxeo-directory-suggestion
+              role="widget"
+              value="{{document.properties.retentionconfig:docTypes}}"
+              label="Types"
+              multiple="true"
+              directory-name="RetentionDoctypes"
+              min-chars="0"></nuxeo-directory-suggestion>
 
-    <nuxeo-directory-suggestion value="{{document.properties.retentionconfig:states}}" label="States" multiple="true"
-      directory-name="RetentionStates" role="widget" min-chars="0"></nuxeo-directory-suggestion>
+      <nuxeo-directory-suggestion
+              role="widget"
+              value="{{document.properties.retentionconfig:facets}}"
+              label="Facets"
+              multiple="true"
+              directory-name="RetentionFacets"
+              min-chars="0"></nuxeo-directory-suggestion>
 
-    <label>Retention Delay</label>
-    <div class="layout horizontal flex">
-      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:delayDays}}" on-input="_delayDuration"
-        label="Days" min="0" type="number"></nuxeo-input>
-      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:delayMonths}}" on-input="_delayDuration"
-        label="Months" min="0" type="number"></nuxeo-input>
-      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:delayYears}}" on-input="_delayDuration"
-        label="Years" min="0" type="number"></nuxeo-input>
-      <nuxeo-input role="widget" id="DelayPeriod" value="{{document.properties.rule:beginDelayPeriod}}" label="Delay Period"
-        type="text" readonly="true"></nuxeo-input>
-    </div>
+      <nuxeo-directory-suggestion
+              role="widget" 
+              value="{{document.properties.retentionconfig:states}}"
+              label="States" multiple="true"
+              directory-name="RetentionStates"
+              min-chars="0"></nuxeo-directory-suggestion>
+    </nuxeo-card>
 
-    <label>Retention Duration</label>
-    <div class="layout horizontal flex">
-      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:durationYears}}" on-input="_retentionDuration"
-        min="0" label="Years" type="number"></nuxeo-input>
-      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:durationMonths}}" on-input="_retentionDuration"
-        min="0" label="Months" type="number"></nuxeo-input>
-      <nuxeo-input role="widget" value="{{document.properties.retentionconfig:durationDays}}" on-input="_retentionDuration"
-        min="0" label="Days" type="number"></nuxeo-input>
-      <nuxeo-input role="widget" id="DurationPeriod" value="{{document.properties.rule:retentionDurationPeriod}}" label="Duration Period"
-        type="text" readonly="true"></nuxeo-input>
-    </div>
+    <nuxeo-card heading="Retention Delay">
+      <div class="layout horizontal flex">
+        <nuxeo-input role="widget"
+                      value="{{document.properties.retentionconfig:delayDays}}"
+                      on-input="_delayDuration"
+                      label="Days"
+                      min="0"
+                      type="number"></nuxeo-input>
+        <nuxeo-input role="widget"
+                      value="{{document.properties.retentionconfig:delayMonths}}"
+                      on-input="_delayDuration"
+                      label="Months"
+                      min="0"
+                      type="number"></nuxeo-input>
+        <nuxeo-input role="widget"
+                      value="{{document.properties.retentionconfig:delayYears}}"
+                      on-input="_delayDuration"
+                      label="Years"
+                      min="0"
+                      type="number"></nuxeo-input>
+        <nuxeo-input id="DelayPeriod"
+                      role="widget"
+                      value="{{document.properties.rule:beginDelayPeriod}}"
+                      label="Delay Period"
+                      type="text"
+                      readonly="true"></nuxeo-input>
+      </div>
+    </nuxeo-card>
 
-    <nuxeo-input role="widget" value="{{document.properties.rule:retentionReminderInDays}}" label="Reminder Days" min="0"
-      type="number"></nuxeo-input>
+    <nuxeo-card heading="Retention Duration">
+      <div class="layout horizontal flex">
+        <nuxeo-input role="widget"
+                      value="{{document.properties.retentionconfig:durationYears}}"
+                      on-input="_retentionDuration"
+                      min="0"
+                      label="Years"
+                      type="number"></nuxeo-input>
+        <nuxeo-input role="widget"
+                      value="{{document.properties.retentionconfig:durationMonths}}"
+                      on-input="_retentionDuration"
+                      min="0"
+                      label="Months"
+                      type="number"></nuxeo-input>
+        <nuxeo-input role="widget"
+                      value="{{document.properties.retentionconfig:durationDays}}"
+                      on-input="_retentionDuration"
+                      min="0"
+                      label="Days"
+                      type="number"></nuxeo-input>
+        <nuxeo-input id="DurationPeriod"
+                      role="widget"
+                      value="{{document.properties.rule:retentionDurationPeriod}}"
+                      label="Duration Period"
+                      type="text"
+                      readonly="true"></nuxeo-input>
+      </div>
+    </nuxeo-card>
 
-    <nuxeo-input role="widget" value="{{document.properties.rule:beginAction}}" label="Begin Action" type="text"></nuxeo-input>
+    <nuxeo-card heading="Retention Begin">
+      <div class="layout horizontal flex">
+        <nuxeo-input role="widget"
+                class="textLessWide"
+                      value="{{document.properties.rule:retentionReminderInDays}}"
+                      label="Reminder Days"
+                      min="0"
+                      type="number"></nuxeo-input>
+        <label class="in-card">Begin Condition:</label>
+        <nuxeo-input role="widget"
+                      class="textWider"
+                      value="{{document.properties.rule:beginCondition.expression}}"
+                      label="Expression (EL)"
+                      type="text"></nuxeo-input>
+        <nuxeo-input role="widget"
+                      value="{{document.properties.rule:beginCondition.event}}"
+                      label="Event"
+                      type="text"></nuxeo-input>
+      </div>
+      <div class="layout horizontal flex biggerTopMargin">
+          <nuxeo-input role="widget"
+                        class="textWider"
+                        value="{{document.properties.rule:beginAction}}"
+                        label="Begin Action (Automation Chain)"
+                        type="text"></nuxeo-input>
+          <div class="textSeparator">OR</div>
+          <nuxeo-directory-suggestion
+                    class="textWider"
+                    role="widget"
+                    value="{{document.properties.rule:beginActions}}"
+                    label="Predefined Begin Action(s)"
+                    multiple="true"
+                    directory-name="RetentionBegin"
+                    min-chars="0"></nuxeo-directory-suggestion>
+      </div>
 
-    <label>Begin Condition</label>
-    <div class="layout horizontal flex">
-      <nuxeo-input role="widget" value="{{document.properties.rule:beginCondition.expression}}" label="Expression" type="text"></nuxeo-input>
-      <nuxeo-input role="widget" value="{{document.properties.rule:beginCondition.event}}" label="Event" type="text"></nuxeo-input>
-    </div>
+    </nuxeo-card>
 
-    <nuxeo-input role="widget" value="{{document.properties.rule:endAction}}" label="End Action" type="text"></nuxeo-input>
+    <nuxeo-card heading="Retention End">
+      <div class="layout horizontal flex">
+        <label class="in-card noBorder">End Condition:</label>
+        <nuxeo-input role="widget"
+                      class="textWider"
+                      value="{{document.properties.rule:endCondition.expression}}"
+                      label="Expression (EL)"
+                      type="text"></nuxeo-input>
+        <nuxeo-input role="widget"
+                      value="{{document.properties.rule:endCondition.event}}"
+                      label="Event"
+                      type="text"></nuxeo-input>
+      </div>
+      <div class="layout horizontal flex biggerTopMargin">
+          <nuxeo-input role="widget"
+                        class="textWider"
+                        value="{{document.properties.rule:endAction}}"
+                        label="End Action (Automation Chain)"
+                        type="text"></nuxeo-input>
+          <div class="textSeparator">OR</div>
+          <nuxeo-directory-suggestion
+                    class="textWider"
+                    role="widget"
+                    value="{{document.properties.rule:endActions}}"
+                    label="Predefined End Action(s)"
+                    multiple="true"
+                    directory-name="RetentionEnd"
+                    min-chars="0"></nuxeo-directory-suggestion>
+      </div>
 
-    <label>End Condition</label>
-    <div class="layout horizontal flex">
-      <nuxeo-input role="widget" value="{{document.properties.rule:endCondition.expression}}" label="Expression" type="text"></nuxeo-input>
-      <nuxeo-input role="widget" value="{{document.properties.rule:endCondition.event}}" label="Event" type="text"></nuxeo-input>
-    </div>
+    </nuxeo-card>
+
   </template>
 
   <script>

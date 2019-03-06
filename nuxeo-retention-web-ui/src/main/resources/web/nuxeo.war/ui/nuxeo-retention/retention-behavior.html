@@ -42,6 +42,24 @@
 
       },
 
+      validateRetentionConfiguration: function(doc) {
+        let singleAction = this.document.properties["rule:beginAction"];
+        let multipleActions = this.document.properties["rule:beginActions"];
+        if(singleAction && (multipleActions && multipleActions.length > 0)) {
+          alert("A Retention Configuration data cannot have both a single Automation Chain as Begin Action _and_ one or more Predefined Begin Action(s)");
+          return false;
+        }
+
+        singleAction = this.document.properties["rule:endAction"];
+        multipleActions = this.document.properties["rule:endActions"];
+        if(singleAction && (multipleActions && multipleActions.length > 0)) {
+          alert("A Retention Configuration data cannot have both a single Automation Chain as End Action _and_ one or more Predefined Begin Action(s)");
+          return false;
+        }
+
+        return true;
+      }
+
     };
   })();
 </script>
