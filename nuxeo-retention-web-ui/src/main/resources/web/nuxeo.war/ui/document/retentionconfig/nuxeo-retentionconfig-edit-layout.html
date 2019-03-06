@@ -19,7 +19,7 @@
       }
 
       label.in-card {
-        padding-top: 5px;
+        padding-top: 27px; /* THIS IS NOT GOOD... TBD: Align the label involved at bottom*/
         padding-left: 15px;
         margin-left: 15px;
         margin-right: 10px;
@@ -28,17 +28,43 @@
         border-left-width: thin;
       }
 
+      label.in-card.noBorder {
+        padding-left: 0;
+        margin-left: 5px;
+        border-left-style: hidden;
+      }
+
       .textSeparator {
+        padding-left: 5px;
         padding-top: 5px;
-        margin-left: 20px;
+        margin-left: 0;
         margin-right: 20px;
         font-weight: 600;
       }
+
+      .textWider {
+        min-width: 300px;
+      }
+
+      .textLessWide {
+        max-width: 150px;
+      }
+
+      .biggerTopMargin {
+         margin-top: 20px;
+      }
       </style>
     <nuxeo-card heading="Info">
-      <nuxeo-input role="widget" value="{{document.properties.dc:title}}" label="Title" type="text"></nuxeo-input>
+      <nuxeo-input role="widget"
+              value="{{document.properties.dc:title}}"
+              label="[[i18n('title')]]"
+              type="text"
+              required></nuxeo-input>
 
-      <nuxeo-input role="widget" value="{{document.properties.dc:description}}" label="Description" type="text"></nuxeo-input>
+      <nuxeo-input role="widget"
+              value="{{document.properties.dc:description}}"
+              label="[[i18n('label.description')]]"
+              type="text"></nuxeo-input>
     </nuxeo-card>
 
     <nuxeo-card heading="Retention Context">
@@ -127,13 +153,14 @@
     <nuxeo-card heading="Retention Begin">
       <div class="layout horizontal flex">
         <nuxeo-input role="widget"
+                class="textLessWide"
                       value="{{document.properties.rule:retentionReminderInDays}}"
                       label="Reminder Days"
                       min="0"
                       type="number"></nuxeo-input>
         <label class="in-card">Begin Condition:</label>
         <nuxeo-input role="widget"
-                      style="min-width: 300px"
+                      class="textWider"
                       value="{{document.properties.rule:beginCondition.expression}}"
                       label="Expression (EL)"
                       type="text"></nuxeo-input>
@@ -142,14 +169,15 @@
                       label="Event"
                       type="text"></nuxeo-input>
       </div>
-      <div class="layout horizontal flex" style="margin-top: 20px;">
+      <div class="layout horizontal flex biggerTopMargin">
           <nuxeo-input role="widget"
+                        class="textWider"
                         value="{{document.properties.rule:beginAction}}"
                         label="Begin Action (Automation Chain)"
                         type="text"></nuxeo-input>
           <div class="textSeparator">OR</div>
           <nuxeo-directory-suggestion
-                    style="min-width: 400px"
+                    class="textWider"
                     role="widget"
                     value="{{document.properties.retentionconfig:beginActions}}"
                     label="Predefined Begin Action(s)"
@@ -160,34 +188,40 @@
 
     </nuxeo-card>
 
+
+
+
     <nuxeo-card heading="Retention End">
-    <!--
-    <nuxeo-input role="widget"
-                  value="{{document.properties.rule:endAction}}"
-                  label="End Action"
-                  type="text"></nuxeo-input>
-    -->
-    <nuxeo-directory-suggestion
-                  role="widget"
-                  value="{{document.properties.retentionconfig:endActions}}"
-                  label="Predefined Begin End Action(s)"
-                  multiple="true"
-                  directory-name="RetentionEnd"
-                  min-chars="0"></nuxeo-directory-suggestion>
+      <div class="layout horizontal flex">
+        <label class="in-card noBorder">End Condition:</label>
+        <nuxeo-input role="widget"
+                      class="textWider"
+                      value="{{document.properties.rule:endCondition.expression}}"
+                      label="Expression (EL)"
+                      type="text"></nuxeo-input>
+        <nuxeo-input role="widget"
+                      value="{{document.properties.rule:endCondition.event}}"
+                      label="Event"
+                      type="text"></nuxeo-input>
+      </div>
+      <div class="layout horizontal flex biggerTopMargin">
+          <nuxeo-input role="widget"
+                        class="textWider"
+                        value="{{document.properties.rule:endAction}}"
+                        label="End Action (Automation Chain)"
+                        type="text"></nuxeo-input>
+          <div class="textSeparator">OR</div>
+          <nuxeo-directory-suggestion
+                    class="textWider"
+                    role="widget"
+                    value="{{document.properties.retentionconfig:endActions}}"
+                    label="Predefined End Action(s)"
+                    multiple="true"
+                    directory-name="RetentionEnd"
+                    min-chars="0"></nuxeo-directory-suggestion>
+      </div>
 
-
-    <label>End Condition</label>
-    <div class="layout horizontal flex">
-      <nuxeo-input role="widget"
-                    value="{{document.properties.rule:endCondition.expression}}"
-                    label="Expression (EL)"
-                    type="text"></nuxeo-input>
-      <nuxeo-input role="widget"
-                    value="{{document.properties.rule:endCondition.event}}"
-                    label="Event"
-                    type="text"></nuxeo-input>
-    </div>
-  </nuxeo-card>
+    </nuxeo-card>
 
   </template>
 
@@ -204,6 +238,43 @@
           type: Object,
         },
 
+      },
+
+      validate: function() {
+        if(!this._checkBeginActions()) {
+          alert("A Retention Configuration data cannot have both a single Automation Chain as Begin Action _and_ one or more Predefined Begin Action(s)");
+          return false;
+        }
+        if(!this._checkEndActions()) {
+          alert("A Retention Configuration data cannot have both a single Automation Chain as End Action _and_ one or more Predefined End Action(s)")
+          return false;
+        }
+
+        return true;
+      },
+
+      _checkBeginActions: function() {
+        let singleAction = this.document.properties["rule:beginAction"];
+        let multipleActions = this.document.properties["retentionconfig:beginActions"];
+        // Both filled: not ok
+        if(singleAction !== "" && (multipleActions && multipleActions.length > 0)) {
+          console.log("Begin Action cannot have single _and_ multiple actions");
+          return false;
+        }
+
+        return true;
+      },
+
+      _checkEndActions: function() {
+        let singleAction = this.document.properties["rule:endAction"];
+        let multipleActions = this.document.properties["retentionconfig:endActions"];
+        // Both filled: not ok
+        if(singleAction !== "" && (multipleActions && multipleActions.length > 0)) {
+          console.log("End action cannot have single _and_ multiple actions");
+          return false;
+        }
+
+        return true;
       },
 
       _period: function (value, part) {
