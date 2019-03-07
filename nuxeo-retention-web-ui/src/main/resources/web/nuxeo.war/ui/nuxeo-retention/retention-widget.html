@@ -4,7 +4,7 @@
 @element retention-widget
 -->
 <!-- WARNING - IMPORTANT
-in case a _list_ of rules were stored, the wdget only displays the first one (see _documentChanged())
+in case a _list_ of rules were stored, the widget only displays the first one (see _documentChanged())
 -->
 <dom-module id="retention-widget">
   <template>
@@ -42,17 +42,7 @@ in case a _list_ of rules were stored, the wdget only displays the first one (se
         white-space: nowrap;
         margin-left: 0px;
       } 
-      /*
-      .retentionAction {
-        background-color: #7e90a5;
-        border-radius: 3px;
-        color: #fff;
-        padding: 0.06em 0.9em;
-        text-transform: capitalize;
-        vertical-align: baseline;
-        white-space: nowrap;
-        margin-left: 10px;
-      }*/
+
       .retentioninfoLabel {
         border-radius: 3px;
         vertical-align: baseline;
@@ -85,25 +75,27 @@ in case a _list_ of rules were stored, the wdget only displays the first one (se
       }
     </style>
 
-    <nuxeo-document id="retentionConfigDoc"></nuxeo-document>
+    <nuxeo-document
+              id="retentionConfigDoc"
+              headers='{"X-NXfetch.document": "properties", "X-NXtranslate.directoryEntry": "label"}'></nuxeo-document>
     <template is="dom-if" if="[[isUnderRetention(document)]]">
-      <paper-card heading="WARNING: READ-ONLY RECORD"
+      <paper-card heading="[[i18n('retention.label.warningReadOnly')]]"
                   class="underRetention">
 
         <template is="dom-if" if="[[hasRetentionInfo]]">
           <div class="card-content layout horizontal">
-            <div class="retentioninfoLabel">Rule:</div>
+            <div class="retentioninfoLabel">[[i18n('retention.label.rule')]]:</div>
             <div class="retentioninfoLabel ruleTitle" style="margin-left: 0px !important">[[configDoc.title]]</div>
           </div>
         </template>
 
         <div class="card-content layout horizontal">
-          <div class="retentioninfoLabel">Retain until </div>
+          <div class="retentioninfoLabel">[[i18n('retention.label.retainUntil')]]</div>
           <div class="chip">[[formatDate(document.properties.record:max_retention_at)]]</div>
 
           <template is="dom-if" if="[[hasRetentionInfo]]">
-              <div class="retentioninfoLabel">Then</div>
-              <template is="dom-repeat" items="[[configDoc.properties.rule:endActions]]" as="action">
+              <div class="retentioninfoLabel">[i18n('retention.label.then')]]<</div>
+              <template is="dom-repeat" items="[[endActionLabels]]" as="action">
                 <div class="retentionAction">[[action]]</div>
                 <template is="dom-if" if="[[_needArrow(index)]]">
                   <div style="font-size: 40px">&#8594;</div>
@@ -141,6 +133,10 @@ in case a _list_ of rules were stored, the wdget only displays the first one (se
           type: Object,
           value: null
         },
+        endActionLabels: {
+          type: Array,
+          value: []
+        },
         maxActions: {
           type: Number,
           value: 0
@@ -165,17 +161,30 @@ in case a _list_ of rules were stored, the wdget only displays the first one (se
                   this.configDoc = data;
                   let endActions = this.configDoc.properties["rule:endActions"];
                   if(endActions.length) {
-                  	this.hasRetentionInfo = true;
-                    this.maxActions = endActions.length - 1;
+                    this.hasRetentionInfo = true;
+                    // Our nuxeo-document resolve the array of directory entried
+                    let endActionLabels = [];
+                    endActions.forEach( (dirEntry) => {
+                      endActionLabels.push(dirEntry.properties.label);
+                    });
+                    this.endActionLabels = endActionLabels;
+                      this.maxActions = endActions.length - 1;
+                  } else {
+                    // Display the name of the automation chain
+                    let endAction = this.configDoc.properties["rule:endAction"];
+                    if(endAction) {
+                      this.hasRetentionInfo = true;
+                      this.endActionLabels = [endAction];
+                      this.maxActions = endActions.length - 1;
+                    }
                   }
-                  //console.log("maxActions: " + this.maxActions);
                 }.bind(this))
                 .catch(function(err) {
-                  // The ID could be hte unique name of a rule configured via XML
-                  // We display only the first _dynamic_ rul 
-                  console.error("Could not get the RetentionConfig data: " + err);
+                  // The ID could be the unique name of a rule configured via XML,
+                  // so our nuxeo-document will fail
+                  // We display only the first _dynamic_ rule and ignore the other
+                  console.error(this.i18n("retention.message.couldNotGetConfig") + err);
                 }.bind(this))
-
         }
       },
 

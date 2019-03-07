@@ -7,28 +7,31 @@
   <template>
     <style>
       /* Add your custom styles here */
-
     </style>
 
-    <nuxeo-operation id="applyRetention" op="Retention.AttachRule" input="[[document.uid]]" params="[[_params(config)]]"></nuxeo-operation>
+    <nuxeo-operation
+                id="applyRetention"
+                op="Retention.AttachRule"
+                input="[[document.uid]]"
+                params="[[_params(config)]]"></nuxeo-operation>
 
     <template is="dom-if" if="[[canBeSentToRetention(document)]]">
       <div class="action" on-click="_toggleDialog">
         <paper-icon-button icon="[[icon]]" noink></paper-icon-button>
-        <span class="label" hidden$="[[!showLabel]]">[[label]]</span>
+        <span class="label" hidden$="[[!showLabel]]">[[_label]]</span>
       </div>
-      <paper-tooltip>[[label]]</paper-tooltip>
+      <paper-tooltip>[[_label]]</paper-tooltip>
     </template>
 
     <nuxeo-dialog id="dialog" with-backdrop>
-      <h2>Apply Retention Rule</h2>
+      <h2>[[i18n('retention.label.applyRetentionRule')]]</h2>
 
-      <nuxeo-document-suggestion page-provider="RetentionConfigurations" value="{{config}}" label="Retention Configuration"
+      <nuxeo-document-suggestion page-provider="RetentionConfigurations" value="{{config}}" label="[[i18n('retention.label.availableConfigurations')]]"
         min-chars="0"></nuxeo-document-suggestion>
 
       <div class="buttons">
-        <paper-button dialog-dismiss>Cancel</paper-button>
-        <paper-button class="primary" dialog-confirm on-click="_apply">Apply</paper-button>
+        <paper-button dialog-dismiss>[[i18n('label.action.cancel')]]</paper-button>
+        <paper-button class="primary" dialog-confirm on-click="_apply">[[i18n('retention.label.doApplyRule')]]</paper-button>
       </div>
     </nuxeo-dialog>
 
@@ -37,7 +40,7 @@
   <script>
     Polymer({
       is: 'retention-action',
-      behaviors:[Nuxeo.RetentionBehavior],
+      behaviors:[Nuxeo.I18nBehavior, Nuxeo.RetentionBehavior],
       properties: {
 
         document: {
@@ -49,9 +52,13 @@
         },
 
         label: {
-          type: String,
-          value: 'Apply Retention'
+          type: String
         },
+
+        _label: {
+          type: String,
+          computed: '_computeLabel(i18n)'
+        }
 
         showLabel: {
           type: Boolean,
@@ -79,17 +86,20 @@
 
       _apply: function () {
         if (this.document) {
-          this.$.applyRetention.execute().then(() => {
-            this.fire('document-updated');
-            this.fire('notify', {
-              message: "Retention Applied"
-            });
-          }).catch((error) => {
-            console.log(error);
-            this.fire('notify', {
-              message: "Retention Failed: " + error
-            });
-          });
+          this.$.applyRetention
+                .execute()
+                .then(function() {
+                    this.fire('document-updated');
+                    this.fire('notify', {
+                      message: this.i18n("retention.message.retentionApplied")
+                    });
+                  }.bind(this))
+                .catch(function(error) {
+                    console.log(error);
+                    this.fire('notify', {
+                      message: this.i18n("retention.message.retentionFailed" + error)
+                    });
+                  }.bind(this));
         }
       },
 
@@ -98,6 +108,13 @@
           "ruleId": config
         };
       },
+
+      _computeLabel: function() {
+        if(label) {
+          return label;
+        }
+        return this.i18n('retention.label.applyRetention');
+      }
 
     });
 

@@ -8,6 +8,8 @@ A document under active retention can not be modified or deleted.
 TODO:
 
 * Add doc about vocabularies (localization, and overriding)
+* Add doc about UI element disabled when under retention, (delete/edit)
+* Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
 * Add doc about retention-widget:
   * How to use it
   * It only displays first rule (in case of list of rules)
@@ -18,6 +20,8 @@ TODO:
     * Retention start
     * Retention start action
     * ... (in shot: more about the retention)
+* In "Apply Retention" dialog, filter available rules for the context (doc type, facet, lifecycle state)
+* Add more unit tests
 
 <hr>
 

@@ -71,7 +71,7 @@
 
     </style>
 
-    <nuxeo-card heading="Info">
+    <nuxeo-card heading="[[i18n('retention.label.info')]]">
       <div role="widget">
         <label>[[i18n('label.dublincore.title')]]</label>
         <div name="title">[[document.properties.dc:title]]</div>
@@ -83,12 +83,12 @@
       </div>
     </nuxeo-card>
 
-    <nuxeo-card heading="Retention Context">
+    <nuxeo-card heading="[[i18n('retention.label.retentionContext')]]">
       <div class="layout horizontal">
         <nuxeo-directory-suggestion
                 role="widget"
                 value="[[document.properties.retentionconfig:docTypes]]"
-                label="Type(s)"
+                label="[[i18n('retention.label.field.docTypes')]]"
                 multiple="true"
                 directory-name="RetentionDoctypes"
                 readonly></nuxeo-directory-suggestion>
@@ -97,7 +97,7 @@
                 role="widget"
                 class="separatorLeft"
                 value="[[document.properties.retentionconfig:facets]]"
-                label="Facet(s)"
+                label="[[i18n('retention.label.field.facets')]]"
                 multiple="true"
                 directory-name="RetentionFacets"
                 readonly></nuxeo-directory-suggestion>
@@ -106,75 +106,75 @@
                 role="widget" 
                 class="separatorLeft"
                 value="[[document.properties.retentionconfig:states]]"
-                label="State(s)"
+                label="[[i18n('retention.label.field.states')]]"
                 multiple="true"
                 directory-name="RetentionStates"
                 readonly></nuxeo-directory-suggestion>
       </div>
     </nuxeo-card>
 
-    <nuxeo-card heading="Retention Delay">
+    <nuxeo-card heading="[[i18n('retention.label.retentionDelay')]]">
       <div class="layout horizontal flex">
         <div role="widget">
-          <label>Days</label>
+          <label>[[i18n("retention.label.field.days")]]</label>
           <div>[[document.properties.retentionconfig:delayDays]]</div>
         </div>
         <div role="widget">
-          <label>Months</label>
+          <label>[[i18n("retention.label.field.months")]]</label>
           <div>[[document.properties.retentionconfig:delayMonths]]</div>
         </div>
         <div role="widget">
-          <label>Years</label>
+          <label>[[i18n("retention.label.field.years")]]</label>
           <div>[[document.properties.retentionconfig:delayYears]]</div>
         </div>
       </div>
     </nuxeo-card>
 
-    <nuxeo-card heading="Retention Duration">
+    <nuxeo-card heading="[[i18n('retention.label.retentionDuration')]]">
       <div class="layout horizontal flex">
         <div role="widget">
-          <label>Years</label>
+          <label>[[i18n("retention.label.field.years")]]</label>
           <div>[[document.properties.retentionconfig:durationYears]]</div>
         </div>
         <div role="widget">
-          <label>Months</label>
+          <label>[[i18n("retention.label.field.months")]]</label>
           <div>[[document.properties.retentionconfig:durationMonths]]</div>
         </div>
         <div role="widget">
-          <label>Days</label>
+          <label>[[i18n("retention.label.field.days")]]</label>
           <div>[[document.properties.retentionconfig:durationDays]]</div>
         </div>
       </div>
     </nuxeo-card>
 
-    <nuxeo-card heading="Retention Begin">
+    <nuxeo-card heading="[[i18n('retention.label.retentionBegin')]]">
       <div class="layout horizontal flex">
         <div role="widget">
-          <label>Reminder Days</label>
+          <label>[[i18n("retention.label.field.reminderDays")]]</label>
           <div>[[document.properties.rule:retentionReminderInDays]]</div>
         </div>
-        <label class="in-card">Begin Condition:</label>
+        <label class="in-card">[[i18n("retenrion.label.beginCondition")]]</label>
         <div role="widget">
-          <label>Expression (EL)</label>
+          <label>[[i18n("retention.label.field.expression")]]</label>
           <div>[[document.properties.rule:beginCondition.expression]]</div>
         </div>
         <div role="widget">
-          <label>Event</label>
+          <label>[i18n("retention.label.field.event")]]</label>
           <div>[[document.properties.rule:beginCondition.event]]</div>
         </div>
       </div>
 
       <div class="layout horizontal flex biggerTopMargin">
         <div role="widget">
-          <label>Begin Action (Automation Chain) Days</label>
+          <label>[[i18n('retention.label.field.beginAction')]]</label>
           <div>[[document.properties.rule:beginAction]]</div>
         </div>
-        <div class="textSeparator">OR</div>
+        <div class="textSeparator">[[i18n("retention.label.or")]]</div>
         <nuxeo-directory-suggestion
                   class="textWider"
                   role="widget"
                   value="[[document.properties.rule:beginActions]]"
-                  label="Predefined Begin Action(s)"
+                  label="[[i18n('retention.label.field.beginActions')]]"
                   multiple="true"
                   directory-name="RetentionBegin"
                   readonly></nuxeo-directory-suggestion>
@@ -182,21 +182,21 @@
 
     </nuxeo-card>
 
-    <nuxeo-card heading="Retention End">
+    <nuxeo-card heading="[[i18n('retention.label.retentionEnd')]]">
       <div class="layout horizontal flex">
-        <label class="in-card noBorder">End Condition:</label>
+        <label class="in-card noBorder">[[i18n("retenrion.label.endCondition")]]</label>
         <div role="widget" class="textWider">
-          <label>Expression (EL)</label>
+          <label>[[i18n("retention.label.field.expression")]]</label>
           <div>[[document.properties.rule:endCondition.expression]]</div>
         </div>
         <div role="widget" class="textWider">
-          <label>Event</label>
+          <label>[[i18n("retention.label.field.event")]]</label>
           <div>[[document.properties.rule:endCondition.event]]</div>
         </div>
       </div>
       <div class="layout horizontal flex biggerTopMargin">
         <div role="widget" class="textWider">
-          <label>End Action (Automation Chain)</label>
+          <label>[[i18n("retention.label.field.endAction")]]</label>
           <div>[[document.properties.rule:endAction]]</div>
         </div>
         <div class="textSeparator">OR</div>
@@ -204,7 +204,7 @@
                   class="textWider"
                   role="widget"
                   value="[[document.properties.rule:endActions]]"
-                  label="Predefined End Action(s)"
+                  label="[[i18n('retention.label.field.endActions')]]"
                   multiple="true"
                   directory-name="RetentionEnd"
                   readonly></nuxeo-directory-suggestion>

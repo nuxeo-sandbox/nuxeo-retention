@@ -42,18 +42,26 @@
 
       },
 
-      validateRetentionConfiguration: function(doc) {
+      validateRetentionConfiguration: function(doc, i18nFunc) {
         let singleAction = this.document.properties["rule:beginAction"];
         let multipleActions = this.document.properties["rule:beginActions"];
         if(singleAction && (multipleActions && multipleActions.length > 0)) {
-          alert("A Retention Configuration data cannot have both a single Automation Chain as Begin Action _and_ one or more Predefined Begin Action(s)");
+          if(typeof i18nFunc === "function") {
+            alert(i18nFunc("retention.config.message.beginActionsError"));
+          } else {
+            alert("A Retention Configuration data cannot have both a single Automation Chain as Begin Action _and_ one or more Predefined Begin Action(s)");
+          }
           return false;
         }
 
         singleAction = this.document.properties["rule:endAction"];
         multipleActions = this.document.properties["rule:endActions"];
         if(singleAction && (multipleActions && multipleActions.length > 0)) {
-          alert("A Retention Configuration data cannot have both a single Automation Chain as End Action _and_ one or more Predefined Begin Action(s)");
+          if(typeof i18nFunc === "function") {
+            alert(i18nFunc("retention.config.message.endActionsError"));
+          } else {
+            alert("A Retention Configuration data cannot have both a single Automation Chain as End Action _and_ one or more Predefined Begin Action(s)");
+          }
           return false;
         }
 
