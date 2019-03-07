@@ -13,7 +13,7 @@ in case a _list_ of rules were stored, the wdget only displays the first one (se
         padding: 5px;
       }
       
-            /*
+      /*
       ** Set back to default values.
       ** These are overridden in themes/base.html
       */
@@ -103,7 +103,7 @@ in case a _list_ of rules were stored, the wdget only displays the first one (se
 
           <template is="dom-if" if="[[hasRetentionInfo]]">
               <div class="retentioninfoLabel">Then</div>
-              <template is="dom-repeat" items="[[configDoc.properties.retentionconfig:endAction]]" as="action">
+              <template is="dom-repeat" items="[[configDoc.properties.rule:endActions]]" as="action">
                 <div class="retentionAction">[[action]]</div>
                 <template is="dom-if" if="[[_needArrow(index)]]">
                   <div style="font-size: 40px">&#8594;</div>
@@ -158,20 +158,22 @@ in case a _list_ of rules were stored, the wdget only displays the first one (se
 
           let getDocElement = this.$.retentionConfigDoc;
           getDocElement.docId = ruleDocId;
-          getDocElement.schemas = "dublincore,retention_config";
+          getDocElement.schemas = "dublincore,retention_rule";
           getDocElement
                 .execute()
-                .then(function(data, p2, p3) {
-                  this.hasRetentionInfo = true;
+                .then(function(data) {
                   this.configDoc = data;
-                  let endActions = this.configDoc.properties["retentionconfig:endAction"];
+                  let endActions = this.configDoc.properties["rule:endActions"];
                   if(endActions.length) {
+                  	this.hasRetentionInfo = true;
                     this.maxActions = endActions.length - 1;
                   }
                   //console.log("maxActions: " + this.maxActions);
                 }.bind(this))
                 .catch(function(err) {
-                  console.error("COuld not get the RetentionConfig data: " + error);
+                  // The ID could be hte unique name of a rule configured via XML
+                  // We display only the first _dynamic_ rul 
+                  console.error("Could not get the RetentionConfig data: " + err);
                 }.bind(this))
 
         }
