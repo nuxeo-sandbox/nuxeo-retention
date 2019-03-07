@@ -1,4 +1,3 @@
 id,label,obsolete
-"Document.Lock","Lock",0
-"Document.Notify","Notify",0
-"Document.Move","Move",0
+"Document.Lock","label.retention.beginaction.lock",0
+"Document.Notify","label.retention.beginaction.notify",0

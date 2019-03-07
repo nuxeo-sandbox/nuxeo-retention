@@ -2,7 +2,24 @@
 
 ## Principles & Concepts
 
-A document under active retention can not be modified or deleted. 
+A document under active retention can not be modified or deleted.
+
+<hr>
+TODO:
+
+* Add doc about vocabularies (localization, and overriding)
+* Add doc about retention-widget:
+  * How to use it
+  * It only displays first rule (in case of list of rules)
+  * Only _dynamic_ rule
+  * Only _end_ actions
+  * TBD in dev - Add and display only if relevant (info not empty):
+    * Retention delay
+    * Retention start
+    * Retention start action
+    * ... (in shot: more about the retention)
+
+<hr>
 
 ### Rules definition
 
@@ -33,7 +50,7 @@ Each rule is composed of:
  - A retention end action : *what we do after entering cutoff*
     - Automation 
   
-
+### TODO: Explain Vocabularies and localization
 
 ### Record facet
 

@@ -1,5 +1,5 @@
 id,label,obsolete
-"File","File",0
-"Audio","Audio",0
-"Picture","Picture",0
-"Video","Video",0
+"File","label.retention.doctype.file",0
+"Audio","label.retention.doctype.audio",0
+"Picture","label.retention.doctype.picture",0
+"Video","label.retention.doctype.video",0
