@@ -5,13 +5,12 @@
   "retention.label.doApplyRule": "Apply",
   "retention.message.retentionApplied": "Retention applied",
   "retention.message.retentionFailed": "Retention failed",
-
   "retention.label.warningReadOnly": "READ-ONLY RECORD",
   "retention.label.rule": "Rule",
   "retention.label.retainUntil": "Retain Until ",
   "retention.label.then": "Then",
-  "retention.message.couldNotGetConfig": "Could not get the RetentionConfig data: ",
 
+  "retention.message.couldNotGetConfig": "Could not get the RetentionConfig data: ",
   "retention.config.message.beginActionsError": "A Retention Configuration data cannot have both a single Automation Chain as Begin Action _and_ one or more Predefined Begin Action(s)",
   "retention.config.message.endActionsError": "A Retention Configuration data cannot have both a single Automation Chain as End Action _and_ one or more Predefined Begin Action(s)",
 
@@ -20,9 +19,9 @@
   "retention.label.retentionDelay": "Retention Delay",
   "retention.label.retentionDuration": "Retention Duration",
   "retention.label.retentionBegin": "Retention Begin",
-  "retenrion.label.beginCondition": "Begin Condition:",
+  "retention.label.beginCondition": "Begin Condition:",
   "retention.label.retentionEnd": "Retention End",
-  "retenrion.label.endCondition": "End Condition:",
+  "retention.label.endCondition": "End Condition:",
   "retention.label.or": "Or",
 
   "retention.label.field.docTypes": "Type(s)",
@@ -39,6 +38,6 @@
   "retention.label.field.beginAction": "Begin Action (Automation Chain)",
   "retention.label.field.beginActions": "Predefined Begin Action(s)",
   "retention.label.field.endAction": "End Action (Automation Chain)",
-  "retention.label.field.endActions": "Predefined End Action(s)",
+  "retention.label.field.endActions": "Predefined End Action(s)"
   
 }

@@ -94,7 +94,7 @@ in case a _list_ of rules were stored, the widget only displays the first one (s
           <div class="chip">[[formatDate(document.properties.record:max_retention_at)]]</div>
 
           <template is="dom-if" if="[[hasRetentionInfo]]">
-              <div class="retentioninfoLabel">[i18n('retention.label.then')]]<</div>
+              <div class="retentioninfoLabel">[[i18n('retention.label.then')]]</div>
               <template is="dom-repeat" items="[[endActionLabels]]" as="action">
                 <div class="retentionAction">[[action]]</div>
                 <template is="dom-if" if="[[_needArrow(index)]]">

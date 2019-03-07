@@ -153,13 +153,13 @@
           <label>[[i18n("retention.label.field.reminderDays")]]</label>
           <div>[[document.properties.rule:retentionReminderInDays]]</div>
         </div>
-        <label class="in-card">[[i18n("retenrion.label.beginCondition")]]</label>
+        <label class="in-card">[[i18n("retention.label.beginCondition")]]</label>
         <div role="widget">
           <label>[[i18n("retention.label.field.expression")]]</label>
           <div>[[document.properties.rule:beginCondition.expression]]</div>
         </div>
         <div role="widget">
-          <label>[i18n("retention.label.field.event")]]</label>
+          <label>[[i18n("retention.label.field.event")]]</label>
           <div>[[document.properties.rule:beginCondition.event]]</div>
         </div>
       </div>
@@ -184,7 +184,7 @@
 
     <nuxeo-card heading="[[i18n('retention.label.retentionEnd')]]">
       <div class="layout horizontal flex">
-        <label class="in-card noBorder">[[i18n("retenrion.label.endCondition")]]</label>
+        <label class="in-card noBorder">[[i18n("retention.label.endCondition")]]</label>
         <div role="widget" class="textWider">
           <label>[[i18n("retention.label.field.expression")]]</label>
           <div>[[document.properties.rule:endCondition.expression]]</div>
@@ -199,7 +199,7 @@
           <label>[[i18n("retention.label.field.endAction")]]</label>
           <div>[[document.properties.rule:endAction]]</div>
         </div>
-        <div class="textSeparator">OR</div>
+        <div class="textSeparator">[[i18n("retention.label.or")]]</div>
         <nuxeo-directory-suggestion
                   class="textWider"
                   role="widget"

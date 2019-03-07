@@ -5,13 +5,12 @@
   "retention.label.doApplyRule": "OK",
   "retention.message.retentionApplied": "Document lmis en rétention.",
   "retention.message.retentionFailed": "La mise en rétention a échoué.",
-
   "retention.label.warningReadOnly": "DOCUMENT EN RÉTENTION",
   "retention.label.rule": "Règle",
   "retention.label.retainUntil": "Fin de rétention : ",
   "retention.label.then": "Puis",
-  "retention.message.couldNotGetConfig": "Erreur au chargement des données de configuration de la règle de rétention : ",
 
+  "retention.message.couldNotGetConfig": "Erreur au chargement des données de configuration de la règle de rétention : ",
   "retention.config.message.beginActionsError": "Il n'est pas possible de configurer les actions de démarrage avec à la fois une simple Automation Chain _et_ une ou plusieurs Actions Prédéfinies",
   "retention.config.message.endActionsError": "Il n'est pas possible de configurer les actions de fin avec à la fois une simple Automation Chain _et_ une ou plusieurs Actions Prédéfinies",
 
@@ -20,9 +19,9 @@
   "retention.label.retentionDelay": "Délai avant rétention",
   "retention.label.retentionDuration": "Durée de rétention",
   "retention.label.retentionBegin": "Début de rétention",
-  "retenrion.label.beginCondition": "Condition de départ :",
+  "retention.label.beginCondition": "Condition de départ :",
   "retention.label.retentionEnd": "Fin de rétention",
-  "retenrion.label.endCondition": "Condition de fin :",
+  "retention.label.endCondition": "Condition de fin :",
   "retention.label.or": "Ou",
 
   "retention.label.field.docTypes": "Type(s)",
@@ -39,6 +38,6 @@
   "retention.label.field.beginAction": "Action de début (Automation Chain)",
   "retention.label.field.beginActions": "Action(s) de début (prédéfinies)",
   "retention.label.field.endAction": "Action de début (Automation Chain)",
-  "retention.label.field.endActions": "Action(s) de début (prédéfinies)",
-  
+  "retention.label.field.endActions": "Action(s) de début (prédéfinies)"
+
 }
