@@ -53,6 +53,11 @@
       .biggerTopMargin {
          margin-top: 20px;
       }
+
+      /* CSS the place holders */
+      nuxeo-input {
+        --paper-input-container-color: lightgrey;
+      }
     </style>
 
     <nuxeo-card heading="[[i18n('retention.label.info')]]">
@@ -161,6 +166,7 @@
                       min="0"
                       type="number"></nuxeo-input>
         <label class="in-card">[[i18n("retention.label.beginCondition")]]</label>
+        <paper-icon-button icon="icons:help-outline" noink on-tap="_doConditionHelp"></paper-icon-button>
         <nuxeo-input role="widget"
                       class="textWider"
                       value="{{document.properties.rule:beginCondition.expression}}"
@@ -175,7 +181,6 @@
           <nuxeo-input role="widget"
                         class="textWider"
                         value="{{document.properties.rule:beginAction}}"
-                        label="[[i18n('retention.label.field.beginAction')]]"
                         type="text"></nuxeo-input>
           <div class="textSeparator">[[i18n("retention.label.or")]]</div>
           <nuxeo-directory-suggestion
@@ -193,6 +198,7 @@
     <nuxeo-card heading="[[i18n('retention.label.retentionEnd')]]">
       <div class="layout horizontal flex">
         <label class="in-card noBorder">[[i18n("retention.label.endCondition")]]</label>
+        <paper-icon-button icon="icons:help-outline" noink on-tap="_doConditionHelp"></paper-icon-button>
         <nuxeo-input role="widget"
                       class="textWider"
                       value="{{document.properties.rule:endCondition.expression}}"
@@ -222,6 +228,21 @@
 
     </nuxeo-card>
 
+    <nuxeo-dialog id="conditionHelpDialog" with-backdrop modal>
+      <div>
+        <span style="font-weight: bold">Expression</span> uses the <span style="font-style:italic;">EL</span> language:<br/>
+        <code style="margin-left:25px">document.getCurrentLifeCycleState() == 'Approved'</code>
+      </div>
+      <div>
+        <span style="font-weight: bold">Event</span> is the <span style="font-style:italic;">name</span> of an event:<br/>
+        <code style="margin-left:25px">documentModified</code> or <code>documentMoved</code>
+      </div>
+
+      <div class="buttons">
+        <paper-button class="primary" dialog-confirm>OK</paper-button>
+      </div>
+    </nuxeo-dialog>
+
   </template>
 
   <script>
@@ -237,6 +258,10 @@
           type: Object,
         },
 
+      },
+
+      _doConditionHelp: function() {
+        this.$.conditionHelpDialog.toggle();
       },
 
       validate: function() {
