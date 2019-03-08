@@ -41,18 +41,32 @@ Each rule is composed of:
        - Must have the `retention_rule` schema
        - Note: Adding the `RetentionRule` facet to a document adds this schema
  - A condition for retention start:
-     - event: A string, like "documentCreated", "documentModified", ...)
-     - condition: A string, and `EL` expression (i.e: `document.getType()=='File'`, or `document.getPropertyValue('record:min_cutoff_at').before(currentDate)`, ...)     - **WARNING**: This is EL. Not MVEL, not JavaScript, no FreeMarker, ... 
+     - event: A string, like `documentCreated`, `documentModified", ...)
+     - condition: A string, and `EL` expression (i.e: `document.getType()=='File'`, or `document.getPropertyValue('record:min_cutoff_at').before(currentDate)`, ...)
+     - **WARNING**: This is EL. Not MVEL, not JavaScript, no FreeMarker, ... 
  - A _begin_ action: *what we do after entering cutoff*
-     - Automation
+     - The ID (name) of and Automation Chain
+     - Field: `rule:beginAction`
+ - **Or** A list of predefined actions, each being an operation.
+   - Field: `rule:beginActions` (plural)
+   - The plugin provides the `RetentionBegin` vocabulary for this purpose
+   - This vocabulary can be localized, and the ID of each item is the ID of the operation
+   - NOTE: It is not possible to have both a single Automation chain _and_ a list of predefined operations
  - A condition for retention end
-     - event: A string, like "documentCreated", "documentModified", ...)
+     - event: A string, like `documentMoved`
      - condition: A string, and `EL` expression (see above)
  - A `beginDelayPeriod`: Java period which i'm not sure what it's doing
  - The retention duration (a Java period)
  - A duration in days for the reminder before end of retention. An event will be triggered when _(end of retention - reminderDays)_ is reached.
  - A retention end action : *what we do after entering cutoff*
-    - Automation 
+    - Automation
+    - The ID (name) of and Automation Chain
+    - Field: `rule:endAction`
+ - **Or** A list of predefined actions, each being an operation.
+   - Field: `rule:endActions` (plural)
+   - The plugin provides the `RetentionBegin` vocabulary for this purpose
+   - This vocabulary can be localized, and the ID of each item is the ID of the operation
+   - NOTE: It is not possible to have both a single Automation chain _and_ a list of predefined operations
   
 ### TODO: Explain Vocabularies and localization
 
