@@ -567,26 +567,26 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 throw new NuxeoException("Error running chain: " + actionID, e);
             }
         } else {
-            for(String operationId : actionIDs) {
+            for (String operationId : actionIDs) {
                 // Do not lock document if already locked, and unlock if already unlocked (triggers an error)
                 // Also, if it's time to delete, unlock it first, etc.
                 // (more generally, be ready to handle specific operations and context)
-                switch(operationId) {
+                switch (operationId) {
                 case LockDocument.ID:
-                    if(doc.isLocked()) {
+                    if (doc.isLocked()) {
                         continue;
                     }
                     break;
-                    
+
                 case UnlockDocument.ID:
-                    if(!doc.isLocked()) {
+                    if (!doc.isLocked()) {
                         continue;
                     }
                     break;
-                    
+
                 case DeleteDocument.ID:
                 case TrashDocument.ID:
-                    if(doc.isLocked()) {
+                    if (doc.isLocked()) {
                         session.removeLock(doc.getRef());
                         doc = session.getDocument(doc.getRef());
                     }

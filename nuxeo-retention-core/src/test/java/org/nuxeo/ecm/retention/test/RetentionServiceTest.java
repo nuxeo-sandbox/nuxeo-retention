@@ -72,7 +72,6 @@ import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.operations.AttachRetentionRule;
 import org.nuxeo.ecm.retention.operations.CreateRetentionRule;
-import org.nuxeo.ecm.retention.service.RetentionComponent;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
@@ -112,18 +111,18 @@ public class RetentionServiceTest {
 
     @Inject
     AutomationService automationService;
-    
+
     @Test
     public void testStaticConfigurationWithActions() {
-        
+
         RetentionRule rule = service.getRetentionRule("RuleWithActions", session);
         assertNotNull(rule);
-        
+
         String actions[] = rule.getBeginActions();
         assertNotNull(actions);
         assertEquals(1, actions.length);
         assertEquals("Document.Lock", actions[0]);
-        
+
         actions = rule.getEndActions();
         assertNotNull(actions);
         assertEquals(3, actions.length);
@@ -131,14 +130,15 @@ public class RetentionServiceTest {
         assertEquals("Document.Trash", actions[1]);
         assertEquals("Document.Delete", actions[2]);
     }
-    
+
     @Test
     public void testStaticConfigurationShouldFail() {
-        
+
         try {
+            @SuppressWarnings("unused")
             RetentionRule rule = service.getRetentionRule("TooManyActionsShouldFailValidation", session);
             assertTrue("Loading this rule should have fail", false);
-        } catch(NuxeoException e) {
+        } catch (NuxeoException e) {
             // It is normal to be here
         }
     }

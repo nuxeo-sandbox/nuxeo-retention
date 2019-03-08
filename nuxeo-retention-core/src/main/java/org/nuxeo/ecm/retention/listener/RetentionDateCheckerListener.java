@@ -26,7 +26,7 @@ import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
 public class RetentionDateCheckerListener implements EventListener {
-    
+
     public static final String DATE_TO_CHECK = "DATE_TO_CHECK";
 
     @Override

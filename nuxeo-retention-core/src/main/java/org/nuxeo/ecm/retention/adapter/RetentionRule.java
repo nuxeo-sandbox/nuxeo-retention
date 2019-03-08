@@ -115,7 +115,7 @@ public class RetentionRule implements Rule {
         this.beginActions = (String[]) doc.getPropertyValue(RULE_BEGIN_ACTIONS_PROPERTY);
         this.endAction = (String) doc.getPropertyValue(RULE_END_ACTION_PROPERTY);
         this.endActions = (String[]) doc.getPropertyValue(RULE_END_ACTIONS_PROPERTY);
-        
+
         this.checkRuleLooksValid();
 
     }
@@ -127,13 +127,15 @@ public class RetentionRule implements Rule {
      * @since 10.10
      */
     protected void checkRuleLooksValid() {
-        if(StringUtils.isNotBlank(beginAction) && beginActions != null && beginActions.length > 0) {
-            throw new NuxeoException("Rule Validation error with rule ID " + id + ": It is not possible to set both a single beginAction and 1-n beginActions");
+        if (StringUtils.isNotBlank(beginAction) && beginActions != null && beginActions.length > 0) {
+            throw new NuxeoException("Rule Validation error with rule ID " + id
+                    + ": It is not possible to set both a single beginAction and 1-n beginActions");
         }
-        if(StringUtils.isNotBlank(endAction) && endActions != null && endActions.length > 0) {
-            throw new NuxeoException("Rule Validation error with rule ID " + id + ": It is not possible to set both a single endAction and 1-n endActions");
+        if (StringUtils.isNotBlank(endAction) && endActions != null && endActions.length > 0) {
+            throw new NuxeoException("Rule Validation error with rule ID " + id
+                    + ": It is not possible to set both a single endAction and 1-n endActions");
         }
-        
+
         // . . . other validation (say: we do have an end date, ...)
     }
 

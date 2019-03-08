@@ -22,7 +22,6 @@ import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.runtime.model.Descriptor;
 
 /**
- * 
  * @since 9.2
  */
 public interface Rule extends Descriptor {
@@ -30,19 +29,18 @@ public interface Rule extends Descriptor {
     RuleCondition getBeginCondition();
 
     String getBeginDelay();
-    
+
     String getRetentionDuration();
-    
+
     int getRetentionReminderDays();
 
-    
     /*
      * In singular word, we have a single automation chain
      */
     String getBeginAction();
 
     String getEndAction();
-    
+
     /*
      * In plural words, we have a list of operations
      */

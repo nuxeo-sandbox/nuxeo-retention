@@ -63,8 +63,9 @@ public class CreateRetentionRule {
 
     @OperationMethod
     public String createRetentionRule(DocumentModel doc) {
-        return retentionService.createOrUpdateDynamicRuleOnDocument(beginDelayPeriod, retentionPeriod, retentionReminder,
-                beginAction, endAction, beginCondExpression, beginCondEvent, endCondExpression, doc, session);
+        return retentionService.createOrUpdateDynamicRuleOnDocument(beginDelayPeriod, retentionPeriod,
+                retentionReminder, beginAction, endAction, beginCondExpression, beginCondEvent, endCondExpression, doc,
+                session);
 
     }
 }

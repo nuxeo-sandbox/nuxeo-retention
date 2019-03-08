@@ -72,7 +72,7 @@ public interface RetentionService {
      * @since 9.2
      */
     boolean clearRule(String ruleId, DocumentModel doc);
-    
+
     /**
      * Removes the retention facet from doc
      * 
