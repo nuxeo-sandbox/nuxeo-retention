@@ -6,25 +6,27 @@ This plugin allows for defining retention rule(s) and attach the rule(s) to any 
 
 Rules allow for setting:
 
-* Conditions to start the retention, with or without delay
-* Conditions to end the retention, with or without a reminder
-* Actions to run when the retention starts and ends (typically, lock the document, or when the retention ends, delete it, ...)
+* Condition to start the retention, with or without delay
+* Condition to end the retention, with or without a reminder
+* Action(s) to run when the retention starts and ends (typically, lock the document, or when the retention ends, delete it, ...)
 
 The plugin works out of the box, and the rules can be defined:
 
-* Dynamically, using the `RetentionCOnfiguraiton` document (or any custom document having the `RetentionRule` facet
+* Dynamically, using the `RetentionConfiguration` document (or any custom document having the `RetentionRule` facet)
 * Statically, via XML configuration within Nuxeo Studio.
 
-Once rules are defined, they can be attached to a single document or to a list of documents in a single action.
+Once rules are defined, they can be attached to a single document or to a list of documents in a single action (Automation in Studio or API call in a Java plugin).
+
+Also, several rules can be attached to a document, they will be evaluated and handled one after the other, in the order they were attached.
 
 The plugin regularly (once/day by default) checks:
 
 * For document that will enter retention
 * For document that need to exit retention
 
-For each of these event and each of the document concerned by them, an event is triggered allowing for taking action accordingly with the application business rules (notify, archive, ...)
+For each of these events and each of the document concerned by them, an event is triggered allowing for taking action accordingly with the application business rules (notify, archive, ...)
 
-Please, see at the end this READM the "TODO - Work in Progess" topic.
+Please, see at the end this README the "TODO - Work in Progess" topic.
 
 
 
@@ -44,23 +46,23 @@ Each rule is composed of:
        - Must have the `retention_rule` schema
        - Note: Adding the `RetentionRule` facet to a document adds this schema
  - A condition for retention start:
-     - event: A string, like `documentCreated`, `documentModified", ...)
+     - event: A string, like `documentCreated`, `documentModified`, ...)
      - condition: A string, and `EL` expression (i.e: `document.getType()=='File'`, or `document.getPropertyValue('record:min_cutoff_at').before(currentDate)`, ...)
      - **WARNING**: This is EL. Not MVEL, not JavaScript, no FreeMarker, ... 
  - A _begin_ action: *what we do after entering cutoff*
      - The ID (name) of and Automation Chain
      - Field: `rule:beginAction`
- - **Or** A list of predefined actions, each being an operation.
+ - **Or** A list of pre-defined actions, each being an operation.
    - Field: `rule:beginActions` (plural)
    - The plugin provides the `RetentionBegin` vocabulary for this purpose
    - This vocabulary can be localized, and the ID of each item is the ID of the operation
-   - NOTE: It is not possible to have both a single Automation chain _and_ a list of predefined operations
+   - NOTE: It is not possible to have both a single Automation chain _and_ a list of pre-defined operations
  - A condition for retention end
      - event: A string, like `documentMoved`
      - condition: A string, and `EL` expression (see above)
- - A `beginDelayPeriod`: Java period which i'm not sure what it's doing
+ - A `beginDelayPeriod`: Java period
  - The retention duration (a Java period)
- - A duration in days for the reminder before end of retention. An event will be triggered when _(end of retention - reminderDays)_ is reached.
+ - A duration, in days for the reminder before end of retention. An event will be triggered when _(end of retention - reminderDays)_ is reached.
  - A retention end action : *what we do after entering cutoff*
     - Automation
     - The ID (name) of and Automation Chain
@@ -69,10 +71,8 @@ Each rule is composed of:
    - Field: `rule:endActions` (plural)
    - The plugin provides the `RetentionEnd` vocabulary
    - This vocabulary can be localized, and the ID of each item is the ID of the operation
-   - NOTE: It is not possible to have both a single Automation chain _and_ a list of predefined operations
+   - NOTE: It is not possible to have both a single Automation chain _and_ a list of pre-defined operations
   
-### TODO: Explain Vocabularies and localization
-
 ### Record facet
 
 When a retention rule is applied on the document we store the data into the `Record` facet that is added to each document under retention.
@@ -82,7 +82,7 @@ The facet holds the `record` schema:
    - List of associated rule(s) (`record:rules`)
    - Retention start (target or actual): `record:min_cutoff_at`
    - Retention end  (target or actual) : `record:max_retention_at`
-   - The`record:reminder_start_date` field: When this value is not null and is reached, the `retentionAboutToExpire` event is fired. Configuration can listen to this event and act accordingly ( mail notificaiton, ...)
+   - The`record:reminder_start_date` field: When this value is not null and is reached, the `retentionAboutToExpire` event is fired. Configuration can listen to this event and act accordingly ( mail notification, ...)
 
 
 
@@ -93,18 +93,18 @@ The facet holds the `record` schema:
 There are two ways to contribute retention rules:
 
 - **Statically**, by contributing to the "rules" extension point in the RetentionService
-- **Dynamically** via the `RetentionRule` facet: In this case, the id of the rule is the id of the document holding the facet. The facet comes with the `retention_rule` schema (prefix `rule`), that holds the values for the rule (see "Rules Definition")
+- **Dynamically** via the `RetentionRule` facet: In this case, the id of the rule is the id of the document holding the facet. The facet comes with the `retention_rule` schema (prefix `rule`), which holds the values for the rule (see "Rules Definition").
 
 #### Static configuration
 
-These are the steps to contribute with new rules as a extension point:
+These are the steps to contribute with new rules as an extension point:
 
 - Access to Nuxeo Studio
 - Browse to *CONFIGURATION > Advanced Settings > XML Extensions*
 - Create a new *XML extension* called *RETENTION* (or whatever name you want to use)
 - Add your rules. In this example we will add 2 rules:
-  * Retain *File* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
-  * Retain *Picture* document types during 3 month. Initially lock and then unlock and trash (not delete) at the end of the period. Reminder sent one week before the end of the period.
+  * Retain *File* document types for 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
+  * Retain *Picture* document types for 3 months. Initially lock and then unlock and trash (not delete) at the end of the period. Reminder sent one week before the end of the period.
 
 ```xml
 <extension target="org.nuxeo.ecm.retention.RetentionService" point="rules">
@@ -161,7 +161,7 @@ void attachRule(String ruleId, String query, CoreSession session);`
 Also, an operation is provided: `Retention.AttachRule`:
 
 * Input is the document a rule must be attached to
-* `ruleId` is a strong parameter, the ID of a rule to attache:
+* `ruleId` is a strong parameter, the ID of a rule to attach:
   * Either the if of static (XML) rule
   * Or the UID of a Document with the `RetentionRule` facet
 
@@ -199,7 +199,7 @@ Misc. events are triggered by the plugin:
 It is then possible to listen to any of these events and trigger any logic that is required by the application.
 
 
-### Enforcing that a Document Under Active Retention Can Not Be Modified.
+### Enforcing that a Document Under Active Retention Cannot Be Modified.
 
 This is implemented with a Security policy that denies write access to a document under retention active.
 
@@ -207,14 +207,66 @@ This is implemented with a Security policy that denies write access to a documen
 ## User Interface
 The plugin provides layouts, dialogs and widgets to handle retention.
 
+### Overriding Default Slots
+The plugin override default slots to make sure the UI does not display a button to modify/delete a document that is under retention: The delete and edit document buttons, and all the delete/replace blob buttons.
+
+The buttons are hidden even if the current user is Administrator
+
 
 ### Deployment
-All its UI is deployed at `{server}/nuxeo.war/ui/nuxeo-retention` and {server}/nuxeo.war/ui/document/retentionconfiguration`.
+All its UI elements are deployed at `{server}/nuxeo.war/ui/nuxeo-retention` and `{server}/nuxeo.war/ui/document/retentionconfiguration`.
 
-#### The nuxeo-retention folder
+#### `nuxeo-retention` folder
 
-* `retention-behavior.html`, provides shared utilities
-* `retention-action.html`: A UI button that will display a nuxeo document suggestion to select a RetentionRule
+* `nuxeo-retention.html` is loaded at startup and just loads the other elements
+
+* `retention-behavior.html` provides shared utilities
+
+* `retention-action.html`:
+  * A UI button that will display a nuxeo document suggestion to select a RetentionRule
+  * It uses a page provider to fetch all documents with the `RetentionRule` facet
+  * The behavior will display the button only if the document is not already under retention
+  * Once a rule is selected it is immediately attached to the document, possibly starting the retention immediately depending on its configuration
+
+* `retention-widget.html` displays a view letting the user knows the document is under retention, until when and what will happen once the retention ends
+  * This element is not installed by default everywhere, you must explicitly use it in your layouts
+  * (if the document is not under retention, nothing is displayed)
+  * For example, to add it to a `File` document you could:
+    * Configure the `nuxeo-file-view-layout.html` element
+    * Just add `<retention-widget...>`:
+
+```
+<dom-module id="nuxeo-file-view-layout">
+
+  <template>
+    <style>
+      nuxeo-document-viewer {
+        @apply --paper-card;
+      }
+    </style>
+    <!-- retention-widget is deployed by the nuxeo-retention plugin -->
+    <retention-widget document="[[document]]"></retention-widget>
+    <nuxeo-document-viewer role="widget" document="[[document]]"></nuxeo-document-viewer>
+  </template>
+
+  . . .
+```
+
+The `retention-widget.html` has some limitations:
+
+* It only displays _first_ rule (in case there are a list of rules)
+* Only _dynamic_ rule
+* Only _end_ action(s)
+
+
+#### `retentionconfiguration` folder
+
+The ui/document/retentionconfigiration folder contains the different layouts that allows for creation, editing and displaying the  retentionConfiguration.
+
+
+### Overriding the UI
+
+To override the action, the widget, the layouts, ..., simply create in Studio the same hierarchy in Designer: a `nuxeo-retention` folder for example, with the element you want to override. To tune the action for example, duplicate the original (copy/paste the content) in your Studio and change the behavior.
 
 
 ## Build
@@ -261,8 +313,6 @@ The first time the document is modified, it will pass under retention active.
 ## TODO - Work in Progess or Paused
 
 
-* Add doc about vocabularies (localization, and overriding)
-* Add doc about UI element disabled when under retention, (delete/edit)
 * Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
 * Add doc about operations
 * Add doc about retention-widget:
