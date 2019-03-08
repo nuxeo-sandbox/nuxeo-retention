@@ -2,29 +2,31 @@
 
 ## Principles & Concepts
 
-A document under active retention can not be modified or deleted.
+This plugin allows for defining retention rule(s) and attach the rule(s) to any number of documents. A document under active retention can then not be modified or deleted.
 
-<hr>
-TODO:
+Rules allow for setting:
 
-* Add doc about vocabularies (localization, and overriding)
-* Add doc about UI element disabled when under retention, (delete/edit)
-* Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
-* Add doc about operations
-* Add doc about retention-widget:
-  * How to use it
-  * It only displays first rule (in case of list of rules)
-  * Only _dynamic_ rule
-  * Only _end_ actions
-  * TBD in dev - Add and display only if relevant (info not empty):
-    * Retention delay
-    * Retention start
-    * Retention start action
-    * ... (in shot: more about the retention)
-* In "Apply Retention" dialog, filter available rules for the context (doc type, facet, lifecycle state)
-* Add more unit tests
+* Conditions to start the retention, with or without delay
+* Conditions to end the retention, with or without a reminder
+* Actions to run when the retention starts and ends (typically, lock the document, or when the retention ends, delete it, ...)
 
-<hr>
+The plugin works out of the box, and the rules can be defined:
+
+* Dynamically, using the `RetentionCOnfiguraiton` document (or any custom document having the `RetentionRule` facet
+* Statically, via XML configuration within Nuxeo Studio.
+
+Once rules are defined, they can be attached to a single document or to a list of documents in a single action.
+
+The plugin regularly (once/day by default) checks:
+
+* For document that will enter retention
+* For document that need to exit retention
+
+For each of these event and each of the document concerned by them, an event is triggered allowing for taking action accordingly with the application business rules (notify, archive, ...)
+
+Please, see at the end this READM the "TODO - Work in Progess" topic.
+
+
 
 ### Rules Definition
 
@@ -37,7 +39,7 @@ A rule can be defined:
 Each rule is composed of:
 
  - An id
-     - The name of an XML contribution (see below)
+     - The unique name of an XML contribution (see below)
      - Or the UUID of a document defining the rules:
        - Must have the `retention_rule` schema
        - Note: Adding the `RetentionRule` facet to a document adds this schema
@@ -65,7 +67,7 @@ Each rule is composed of:
     - Field: `rule:endAction`
  - **Or** A list of predefined actions, each being an operation.
    - Field: `rule:endActions` (plural)
-   - The plugin provides the `RetentionBegin` vocabulary for this purpose
+   - The plugin provides the `RetentionEnd` vocabulary
    - This vocabulary can be localized, and the ID of each item is the ID of the operation
    - NOTE: It is not possible to have both a single Automation chain _and_ a list of predefined operations
   
@@ -90,20 +92,19 @@ The facet holds the `record` schema:
 
 There are two ways to contribute retention rules:
 
-- Statically, by contributing to the "rules" extension point in the RetentionService
-- Dynamically via the `RetentionRule` facet: In this case, the id of the rule is the id of the document holding the facet. The facet comes with the `retention_rule` schema (prefix `rule`), that holds the values for the rule (see "Rules Definition")
+- **Statically**, by contributing to the "rules" extension point in the RetentionService
+- **Dynamically** via the `RetentionRule` facet: In this case, the id of the rule is the id of the document holding the facet. The facet comes with the `retention_rule` schema (prefix `rule`), that holds the values for the rule (see "Rules Definition")
 
-### Static configuration
+#### Static configuration
 
 These are the steps to contribute with new rules as a extension point:
 
 - Access to Nuxeo Studio
 - Browse to *CONFIGURATION > Advanced Settings > XML Extensions*
 - Create a new *XML extension* called *RETENTION* (or whatever name you want to use)
-- Add your rules. In this example we will add 3 rules:
+- Add your rules. In this example we will add 2 rules:
   * Retain *File* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
-  * Retain *Picture* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
-  * Retain *Video* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.  
+  * Retain *Picture* document types during 3 month. Initially lock and then unlock and trash (not delete) at the end of the period. Reminder sent one week before the end of the period.
 
 ```xml
 <extension target="org.nuxeo.ecm.retention.RetentionService" point="rules">
@@ -123,35 +124,32 @@ These are the steps to contribute with new rules as a extension point:
     <id>pictureRetentionWithReminder</id>
     <begin-condition expression="document.getType()=='Picture'"></begin-condition>
     <begin-delay></begin-delay>
-    <retention-duration>P1Y</retention-duration>
-    <retention-reminder-days>3</retention-reminder-days>
+    <retention-duration>P3M</retention-duration>
+    <retention-reminder-days>7</retention-reminder-days>
     <begin-action>Document.Lock</begin-action>
-    <end-action>Document.Delete</end-action>
-    <end-condition expression=""></end-condition>
-  </rule>
-  
-    <rule>
-    <id>videoRetentionWithReminder</id>
-    <begin-condition expression="document.getType()=='Video'"></begin-condition>
-    <begin-delay></begin-delay>
-    <retention-duration>P1Y</retention-duration>
-    <retention-reminder-days>3</retention-reminder-days>
-    <begin-action>Document.Lock</begin-action>
-    <end-action>Document.Delete</end-action>
+    <end-actions>
+      <action order="0" operation="Document.Unlock"></action>
+      <action order="1" operation="Document.Trash"></action>
+    </end-actions>
     <end-condition expression=""></end-condition>
   </rule>
   
 </extension>
 ```
 
+#### Dynamic Configuration
+Just create and fill a document which has the `RetentionRule`` facet. The plugin provides out of the box the `RetentionConfiguration` document type for this purpose, with its layouts for the UI, allowing for setting the different fields (begin action(s), end action(s), delays, duration, ...)
+
+*See below "User Interface" topic.*
+
 ### Attach a Rule
 
-When a rule is attached top a document:
+As soon as a rule is attached to a document:
 
 * The `Record` facet is added (if not already present)
 * Evaluation of the rule is done immediately. So, for example, the document may immediately go to retention, because there is no delay specified in the rule.
 
-##### Attach a Rule with Java API
+#### Attach a Rule with Java API
 The following APIs are exposed in the `RetentionService`:
 
 - A method to attach a rule on a single document:     
@@ -159,7 +157,7 @@ The following APIs are exposed in the `RetentionService`:
 - A method to attach a rule to a query result
 void attachRule(String ruleId, String query, CoreSession session);`
 
-##### Attach a Rule with Automation
+#### Attach a Rule with Automation
 Also, an operation is provided: `Retention.AttachRule`:
 
 * Input is the document a rule must be attached to
@@ -167,7 +165,10 @@ Also, an operation is provided: `Retention.AttachRule`:
   * Either the if of static (XML) rule
   * Or the UID of a Document with the `RetentionRule` facet
 
-##### Detaching a Rule
+#### Attaching a Dynamic Rule from the UI
+*See below "User Interface" topic.*
+
+#### Detaching a Rule
 
 * JavaAPI from the `RetentionService` (`RetentionService#clearRule` and `RetentionService#clearRules`)
 * Or Automation, then `Retention.RemoveRules` operation:
@@ -201,6 +202,19 @@ It is then possible to listen to any of these events and trigger any logic that 
 ### Enforcing that a Document Under Active Retention Can Not Be Modified.
 
 This is implemented with a Security policy that denies write access to a document under retention active.
+
+
+## User Interface
+The plugin provides layouts, dialogs and widgets to handle retention.
+
+
+### Deployment
+All its UI is deployed at `{server}/nuxeo.war/ui/nuxeo-retention` and {server}/nuxeo.war/ui/document/retentionconfiguration`.
+
+#### The nuxeo-retention folder
+
+* `retention-behavior.html`, provides shared utilities
+* `retention-action.html`: A UI button that will display a nuxeo document suggestion to select a RetentionRule
 
 
 ## Build
@@ -241,27 +255,70 @@ POST /Retention.AttachRule
 
 The first time the document is modified, it will pass under retention active.
 
+<p>&nbsp;</p>
+
+<hr>
+## TODO - Work in Progess or Paused
 
 
-## Deploy (how to install build product)
+* Add doc about vocabularies (localization, and overriding)
+* Add doc about UI element disabled when under retention, (delete/edit)
+* Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
+* Add doc about operations
+* Add doc about retention-widget:
+  * How to use it
+  * It only displays first rule (in case of list of rules)
+  * Only _dynamic_ rule
+  * Only _end_ actions
+  * TBD in dev - Add and display only if relevant (info not empty):
+    * Retention delay
+    * Retention start
+    * Retention start action
+    * ... (in shot: more about the retention)
+* In RetentionConfiguration, facets, types and states are not used to filter and handle the list of available rules => in "Apply Retention" dialog, filter available rules for the context (doc type, facet, lifecycle state)
+* Add more unit tests
 
-Direct to MP package if any. Otherwise provide steps to deploy on Nuxeo Platform: << Copy the built artifacts into `$NUXEO_HOME/templates/custom/bundles/` and activate the `custom` template. >>.
+<hr>
 
-# Resources (Documentation and other links)
+## Build and Deploy
 
-# Contributing / Reporting issues
+#### Build
+
+Assuming maven is installed:
+
+```
+cd /path/to/nuxeo-retention
+mvn clean install
+```
+
+#### Deploy
+
+The build creates the marketplace package at `nuxeo-retention/nuxeo-retention-package/target/nuxeo-retention-package-{version}.zip`
+
+Install this package, for example using the `nuxeoctl` command line:
+
+```
+#assuming you are in the bin directory, with the correct permissions
+# Installing version 10.10-SNAPSHOT
+./nuxeoctl mp-install /path/to/nuxeo-retention-package-10.10-SNAPSHIT.zip
+```
+
+
+## Resources (Documentation and other links)
+
+## Contributing / Reporting issues
 
 Link to JIRA component (or project if there is no component for that project).
 Sample: https://jira.nuxeo.com/browse/NXP/component/14503/
 Sample: https://jira.nuxeo.com/secure/CreateIssue!default.jspa?project=NXP
 
-# License
+## License
 
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 Sample: https://github.com/nuxeo/nuxeo-drive
 
-# About Nuxeo
+## About Nuxeo
 
 The [Nuxeo Platform](http://www.nuxeo.com/products/content-management-platform/) is an open source customizable and extensible content management platform for building business applications. It provides the foundation for developing [document management](http://www.nuxeo.com/solutions/document-management/), [digital asset management](http://www.nuxeo.com/solutions/digital-asset-management/), [case management application](http://www.nuxeo.com/solutions/case-management/) and [knowledge management](http://www.nuxeo.com/solutions/advanced-knowledge-base/). You can easily add features using ready-to-use addons or by extending the platform using its extension point system.
 
