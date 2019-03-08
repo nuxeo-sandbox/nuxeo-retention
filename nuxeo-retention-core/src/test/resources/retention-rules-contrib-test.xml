@@ -81,6 +81,31 @@
       <end-condition expression="">
       </end-condition>
     </rule>
+    
+    <rule>
+      <id>RuleWithActions</id>
+      <retention-duration expression="">1Y</retention-duration> 
+      <begin-actions>
+      	<action order="1" operation="Document.Lock"></action>
+	  </begin-actions>
+      <!--  These operations called one after the other don't really make sense
+            it's for testing -->
+      <end-actions>
+      	<action order="1" operation="Document.Unlock"></action>
+      	<action order="2" operation="Document.Trash"></action>
+      	<action order="3" operation="Document.Delete"></action>
+	  </end-actions>
+    </rule>
+    
+    <rule>
+      <id>TooManyActionsShouldFailValidation</id>
+      <retention-duration expression="">1Y</retention-duration>
+      <!--  Cannot have both a begin-action and begin-actions -->
+      <begin-action>Document.Lock</begin-action>
+      <begin-actions>
+      	<action order="1" operation="Document.Lock"></action>
+	  </begin-actions>
+    </rule>
 
   </extension>
 

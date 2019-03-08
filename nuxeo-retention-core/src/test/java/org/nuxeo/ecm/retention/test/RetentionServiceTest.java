@@ -54,6 +54,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.DocumentSecurityException;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.security.ACE;
 import org.nuxeo.ecm.core.api.security.ACL;
 import org.nuxeo.ecm.core.api.security.ACP;
@@ -111,6 +112,36 @@ public class RetentionServiceTest {
 
     @Inject
     AutomationService automationService;
+    
+    @Test
+    public void testStaticConfigurationWithActions() {
+        
+        RetentionRule rule = service.getRetentionRule("RuleWithActions", session);
+        assertNotNull(rule);
+        
+        String actions[] = rule.getBeginActions();
+        assertNotNull(actions);
+        assertEquals(1, actions.length);
+        assertEquals("Document.Lock", actions[0]);
+        
+        actions = rule.getEndActions();
+        assertNotNull(actions);
+        assertEquals(3, actions.length);
+        assertEquals("Document.Unlock", actions[0]);
+        assertEquals("Document.Trash", actions[1]);
+        assertEquals("Document.Delete", actions[2]);
+    }
+    
+    @Test
+    public void testStaticConfigurationShouldFail() {
+        
+        try {
+            RetentionRule rule = service.getRetentionRule("TooManyActionsShouldFailValidation", session);
+            assertTrue("Loading this rule should have fail", false);
+        } catch(NuxeoException e) {
+            // It is normal to be here
+        }
+    }
 
     @Test
     public void testRetentionService() throws InterruptedException {

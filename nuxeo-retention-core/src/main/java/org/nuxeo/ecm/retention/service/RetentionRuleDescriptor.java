@@ -18,12 +18,16 @@
  */
 package org.nuxeo.ecm.retention.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 
  * @since 9.2
  */
 import org.apache.commons.lang3.StringUtils;
 import org.nuxeo.common.xmap.annotation.XNode;
+import org.nuxeo.common.xmap.annotation.XNodeList;
 import org.nuxeo.common.xmap.annotation.XObject;
 
 @XObject(value = "rule")
@@ -38,8 +42,14 @@ public class RetentionRuleDescriptor implements Rule {
     @XNode(value = "begin-action")
     protected String beginAction;
 
+    @XNodeList(value = "begin-actions/action", type = ArrayList.class, componentType = RetentionRuleActionsDescriptor.class)
+    protected List<RetentionRuleActionsDescriptor> beginActionsDesc = new ArrayList<RetentionRuleActionsDescriptor>(0);
+
     @XNode(value = "end-action")
     protected String endAction;
+
+    @XNodeList(value = "end-actions/action", type = ArrayList.class, componentType = RetentionRuleActionsDescriptor.class)
+    protected List<RetentionRuleActionsDescriptor> endActionsDesc = new ArrayList<RetentionRuleActionsDescriptor>(0);
 
     @XNode(value = "end-condition")
     protected RetentionRuleConditionDescriptor endCondition;
@@ -49,10 +59,13 @@ public class RetentionRuleDescriptor implements Rule {
     @XNode(value = "begin-delay")
     public void setBeginDelay(String value) {
         beginDelay = value;
-
     }
 
     protected String retentionDuration;
+
+    protected String[] beginActions = null;
+
+    protected String[] endActions = null;
 
     @XNode(value = "retention-duration")
     public void setRetentionDuration(String value) {
@@ -93,12 +106,18 @@ public class RetentionRuleDescriptor implements Rule {
 
     @Override
     public String[] getBeginActions() {
-        return null;
+        if (beginActions == null) {
+            beginActions = getActionsList(beginActionsDesc);
+        }
+        return beginActions;
     }
 
     @Override
     public String[] getEndActions() {
-        return null;
+        if (endActions == null) {
+            endActions = getActionsList(endActionsDesc);
+        }
+        return endActions;
     }
 
     @Override
@@ -114,6 +133,21 @@ public class RetentionRuleDescriptor implements Rule {
     @Override
     public int getRetentionReminderDays() {
         return retentionReminderDays;
+    }
+
+    protected String[] getActionsList(List<RetentionRuleActionsDescriptor> actionsDesc) {
+        if (actionsDesc.size() == 0) {
+            return new String[0];
+        }
+
+        actionsDesc.sort((RetentionRuleActionsDescriptor action1,
+                RetentionRuleActionsDescriptor action2) -> action1.getOrder() - action2.getOrder());
+        ArrayList<String> actions = new ArrayList<String>();
+        for (RetentionRuleActionsDescriptor actionDesc : actionsDesc) {
+            actions.add(actionDesc.getOperation());
+        }
+        return actions.stream().toArray(String[]::new);
+
     }
 
 }

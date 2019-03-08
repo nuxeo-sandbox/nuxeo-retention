@@ -15,6 +15,7 @@
  *
  * Contributors:
  *     mcedica@nuxeo.com
+ *     Thibaud Arguillere
  */
 
 package org.nuxeo.ecm.retention.service;

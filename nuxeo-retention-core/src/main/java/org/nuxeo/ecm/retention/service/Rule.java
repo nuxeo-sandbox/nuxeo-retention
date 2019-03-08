@@ -18,9 +18,11 @@
  */
 package org.nuxeo.ecm.retention.service;
 
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.runtime.model.Descriptor;
 
 /**
+ * 
  * @since 9.2
  */
 public interface Rule extends Descriptor {
@@ -35,14 +37,14 @@ public interface Rule extends Descriptor {
 
     
     /*
-     * In plural forms, we have a single automation chain
+     * In singular word, we have a single automation chain
      */
     String getBeginAction();
 
     String getEndAction();
     
     /*
-     * In plural forms, we have a list of operations
+     * In plural words, we have a list of operations
      */
     String[] getBeginActions();
 

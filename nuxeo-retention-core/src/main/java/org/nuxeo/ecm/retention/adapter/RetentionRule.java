@@ -91,8 +91,13 @@ public class RetentionRule implements Rule {
         this.retentionDuration = parsePeriod(ruleDescriptor.getRetentionDuration());
         this.retentionReminder = ruleDescriptor.getRetentionReminderDays();
         this.beginAction = ruleDescriptor.getBeginAction();
+        this.beginActions = ruleDescriptor.getBeginActions();
         this.endAction = ruleDescriptor.getEndAction();
+        this.endActions = ruleDescriptor.getEndActions();
         this.endCondition = new RetentionRuleCondition(ruleDescriptor.getEndCondition());
+
+        this.checkRuleLooksValid();
+
     }
 
     @SuppressWarnings("unchecked")
@@ -110,7 +115,26 @@ public class RetentionRule implements Rule {
         this.beginActions = (String[]) doc.getPropertyValue(RULE_BEGIN_ACTIONS_PROPERTY);
         this.endAction = (String) doc.getPropertyValue(RULE_END_ACTION_PROPERTY);
         this.endActions = (String[]) doc.getPropertyValue(RULE_END_ACTIONS_PROPERTY);
+        
+        this.checkRuleLooksValid();
 
+    }
+
+    /**
+     * We don't allow for both a single beginAction and several beginActions.
+     * (mainly because no order between each of them have been implemented)
+     * 
+     * @since 10.10
+     */
+    protected void checkRuleLooksValid() {
+        if(StringUtils.isNotBlank(beginAction) && beginActions != null && beginActions.length > 0) {
+            throw new NuxeoException("Rule Validation error with rule ID " + id + ": It is not possible to set both a single beginAction and 1-n beginActions");
+        }
+        if(StringUtils.isNotBlank(endAction) && endActions != null && endActions.length > 0) {
+            throw new NuxeoException("Rule Validation error with rule ID " + id + ": It is not possible to set both a single endAction and 1-n endActions");
+        }
+        
+        // . . . other validation (say: we do have an end date, ...)
     }
 
     @Override
@@ -188,8 +212,10 @@ public class RetentionRule implements Rule {
     public class RetentionRuleCondition implements RuleCondition {
 
         public RetentionRuleCondition(RetentionRuleConditionDescriptor conditionDesc) {
-            this.expression = conditionDesc.getExpression();
-            this.event = conditionDesc.getEvent();
+            if (conditionDesc != null) {
+                this.expression = conditionDesc.getExpression();
+                this.event = conditionDesc.getEvent();
+            }
         }
 
         public RetentionRuleCondition(Map<String, Serializable> conditionProperty) {
@@ -197,9 +223,9 @@ public class RetentionRule implements Rule {
             this.event = (String) conditionProperty.get("event");
         }
 
-        protected String expression;
+        protected String expression = null;
 
-        protected String event;
+        protected String event = null;
 
         @Override
         public String getEvent() {
