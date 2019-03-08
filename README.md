@@ -10,6 +10,7 @@ TODO:
 * Add doc about vocabularies (localization, and overriding)
 * Add doc about UI element disabled when under retention, (delete/edit)
 * Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
+* Add doc about operations
 * Add doc about retention-widget:
   * How to use it
   * It only displays first rule (in case of list of rules)
@@ -25,7 +26,7 @@ TODO:
 
 <hr>
 
-### Rules definition
+### Rules Definition
 
 A rule can be defined:
 
@@ -88,15 +89,17 @@ The facet holds the `record` schema:
 ### Defining Rule 
 
 There are two ways to contribute retention rules:
-- statically, by contributing to the "rules" extension point in the RetentionService
-- dynamically via the facet 'RetentionRule': in this case, the id of the rule is the id of the document where the facet is added ( using as a base storage for the rule)
+
+- Statically, by contributing to the "rules" extension point in the RetentionService
+- Dynamically via the `RetentionRule` facet: In this case, the id of the rule is the id of the document holding the facet. The facet comes with the `retention_rule` schema (prefix `rule`), that holds the values for the rule (see "Rules Definition")
 
 ### Static configuration
 
 These are the steps to contribute with new rules as a extension point:
+
 - Access to Nuxeo Studio
 - Browse to *CONFIGURATION > Advanced Settings > XML Extensions*
-- Create a new *XML extension* called *RETENTION*
+- Create a new *XML extension* called *RETENTION* (or whatever name you want to use)
 - Add your rules. In this example we will add 3 rules:
   * Retain *File* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
   * Retain *Picture* document types during 1 year. Initially locked and deleted at the end of the period. Reminder sent 3 days before the end of the period.
@@ -143,35 +146,61 @@ These are the steps to contribute with new rules as a extension point:
 
 ### Attach a Rule
 
-The following APIs are exposed in the RetentionService:
-- a method to attach a rule on a single document:     
-void attachRule(String ruleId, DocumentModel doc);
-- a method to attach a rule to a query result
-void attachRule(String ruleId, String query, CoreSession session);
+When a rule is attached top a document:
+
+* The `Record` facet is added (if not already present)
+* Evaluation of the rule is done immediately. So, for example, the document may immediately go to retention, because there is no delay specified in the rule.
+
+##### Attach a Rule with Java API
+The following APIs are exposed in the `RetentionService`:
+
+- A method to attach a rule on a single document:     
+`void attachRule(String ruleId, DocumentModel doc);`
+- A method to attach a rule to a query result
+void attachRule(String ruleId, String query, CoreSession session);`
+
+##### Attach a Rule with Automation
+Also, an operation is provided: `Retention.AttachRule`:
+
+* Input is the document a rule must be attached to
+* `ruleId` is a strong parameter, the ID of a rule to attache:
+  * Either the if of static (XML) rule
+  * Or the UID of a Document with the `RetentionRule` facet
+
+##### Detaching a Rule
+
+* JavaAPI from the `RetentionService` (`RetentionService#clearRule` and `RetentionService#clearRules`)
+* Or Automation, then `Retention.RemoveRules` operation:
+  * Input is the document a rule must be attached to
+  * `ruleIds` is a list of rule IDs to be removed from the document
+    * If not passed or empty, all rules are removed. 
 
 
+### Checking Rules to Start or End the Retention
 
-### Checking rules to start or end the retention
+- A post commit listener inspects all the documents with the `Record` facet for retention rules triggered by events
+- A listener notified on `checkRetentionEvent` queries  for:
+  1. Unmanaged Records with its `record:min_cutoff_at` lower than the current date (=> the retention       should start)
+  2. Active Record with `record:max_retention_at` less or equal to the current date (the retention should end).
 
-- A post commmit listener inspects all the documents with the 'Record' facet for retention rules triggered by events
-- A listener notified on 'checkRetentionEvent' queries  for: 
-          1) unmanaged Records with the record:min_cutoff_at < currentDate ( the retention       should start)
-          2) active Record with record:max_retention_at <= currentDate ( the retention should end).
-       A scheduler is configured to trigger a 'checkRetentionEvent' daily.
+A scheduler is configured to trigger a `checkRetentionEvent` daily.
+
+NOTE: This scheduler can be overridden to change the time at which it is triggered and/or the frequency
 
 
 ### Events Sent by the Plugin
-Misc. events are triggered b-y the plugin:
+Misc. events are triggered by the plugin:
 
 * `retentionAboutToExpire`: Event triggered for documents whose `record:reminder_start_date` value is reached
 * `retentionActive`: The document enters under active retention
-* `retentionExpired`: The document exists active retention
+* `retentionExpired`: The document exits active retention
 
-It is then possible to listen to any of these events and triggers any logic that is required by the application.
+It is then possible to listen to any of these events and trigger any logic that is required by the application.
 
-### Enforcing that a document under active retention can not be modified.
 
-This is implemented with a new Security policy that denies access to a document under retention active.
+### Enforcing that a Document Under Active Retention Can Not Be Modified.
+
+This is implemented with a Security policy that denies write access to a document under retention active.
 
 
 ## Build
@@ -182,31 +211,35 @@ This is implemented with a new Security policy that denies access to a document 
 ## Simple test:
 Create a dynamic retention rule that puts the document in retention when the document is modified and attach it to a document
 
-1. Create the dynamic retention rule for 100 days triggered on 'documentModified'.
-This rule is persisted as a facet on the input document.
-```js
+* Create the dynamic retention rule for 100 days triggered on 'documentModified'.
+This rule is persisted as a facet on the input document. `"docId"` is the ID of the document used to store the retention rule.
+
+```
 POST /Retention.CreateRule
 with:
 {
-"docId": "65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5", 
-"params":{
+  "docId": "65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5", 
+  "params":{
 	"retentionPeriod": "100D",
 	"beginCondEvent" :"documentModified"
-     }
+  }
 }
-=> this sends back the id of the rule.
 ```
-2. Attach the rule on the input document.
-```js
+=> this returns the id of the rule. In our example, say `65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5`
+
+* Attach the rule to the input document.
+* 
+```
 POST /Retention.AttachRule
 {
-"input": "01d0b119-ef17-49ed-8ffd-fef7ba48ce42", 
-"params":{
+  "input": "01d0b119-ef17-49ed-8ffd-fef7ba48ce42", 
+  "params":{
 	"ruleId": "65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5"
-     }
+  }
 }
 ```
-When the document is modified the first time it will pass under retention active.
+
+The first time the document is modified, it will pass under retention active.
 
 
 
