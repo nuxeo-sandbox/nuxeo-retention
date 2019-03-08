@@ -24,6 +24,7 @@
       <facet name="Commentable" />
       <facet name="Versionable" />
       <facet name="NXTag" />
+      <facet name="RetentionRule" />
     </doctype>
     <doctype name="Workspace" append="true">
       <subtypes>

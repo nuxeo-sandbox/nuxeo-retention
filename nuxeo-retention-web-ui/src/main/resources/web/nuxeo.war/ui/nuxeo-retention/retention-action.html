@@ -58,7 +58,7 @@
         _label: {
           type: String,
           computed: '_computeLabel(i18n)'
-        }
+        },
 
         showLabel: {
           type: Boolean,
@@ -110,8 +110,8 @@
       },
 
       _computeLabel: function() {
-        if(label) {
-          return label;
+        if(this.label) {
+          return this.label;
         }
         return this.i18n('retention.label.applyRetention');
       }
