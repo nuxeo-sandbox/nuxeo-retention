@@ -603,21 +603,6 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     }
 
-    protected void executeRuleAction(String actionId, DocumentModel doc, CoreSession session) {
-        if (StringUtils.isEmpty(actionId)) {
-            return;
-        }
-        // get base context
-        OperationContext context = getExecutionContext(doc, session);
-        AutomationService automationService = Framework.getService(AutomationService.class);
-        try {
-            automationService.run(context, actionId);
-        } catch (OperationException e) {
-            throw new NuxeoException("Error running chain: " + actionId, e);
-        }
-
-    }
-
     protected void notifyEvent(CoreSession session, String eventId, DocumentModel doc) throws NuxeoException {
         DocumentEventContext ctx = new DocumentEventContext(session, session.getPrincipal(), doc);
         ctx.setCategory(RETENTION_CATEGORY_EVENT);
