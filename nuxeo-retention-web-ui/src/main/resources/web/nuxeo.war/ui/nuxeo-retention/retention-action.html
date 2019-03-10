@@ -26,8 +26,12 @@
     <nuxeo-dialog id="dialog" with-backdrop>
       <h2>[[i18n('retention.label.applyRetentionRule')]]</h2>
 
-      <nuxeo-document-suggestion page-provider="RetentionConfigurations" value="{{config}}" label="[[i18n('retention.label.availableConfigurations')]]"
-        min-chars="0"></nuxeo-document-suggestion>
+      <nuxeo-document-suggestion
+              page-provider="RetentionConfigurations"
+              value="{{config}}"
+              label="[[i18n('retention.label.availableConfigurations')]]"
+              min-chars="0"
+              result-formatter="[[retentionRulesResultFormatter]]"></nuxeo-document-suggestion>
 
       <div class="buttons">
         <paper-button dialog-dismiss>[[i18n('label.action.cancel')]]</paper-button>
@@ -114,6 +118,15 @@
           return this.label;
         }
         return this.i18n('retention.label.applyRetention');
+      },
+
+      retentionRulesResultFormatter: function(doc) {
+
+        if (!doc || !doc.title || !doc.properties) { 
+          return "Bad result format"; 
+        }
+
+        return doc.title;
       }
 
     });
