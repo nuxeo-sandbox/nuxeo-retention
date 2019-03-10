@@ -1,13 +1,16 @@
 <?xml version="1.0"?>
 <component name="org.nuxeo.ecm.retention.RetentionService">
-  <implementation class="org.nuxeo.ecm.retention.service.RetentionComponent"/>
+	<implementation
+		class="org.nuxeo.ecm.retention.service.RetentionComponent" />
 
-  <service>
-    <provide interface="org.nuxeo.ecm.retention.service.RetentionService"/>
-  </service>
+	<service>
+		<provide
+			interface="org.nuxeo.ecm.retention.service.RetentionService" />
+	</service>
 
-  <extension-point name="rules">
-    <object class="org.nuxeo.ecm.retention.service.RetentionRuleDescriptor" />
-  </extension-point>
+	<extension-point name="rules">
+		<object
+			class="org.nuxeo.ecm.retention.service.RetentionRuleDescriptor" />
+	</extension-point>
 
 </component>

@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <component name="org.nuxeo.ecm.retention.security">
-  <require>org.nuxeo.ecm.core.security.defaultPolicies</require>
-  <extension target="org.nuxeo.ecm.core.security.SecurityService" point="policies">
-    <policy name="retention" class="org.nuxeo.ecm.retention.security.RetentionSecurityPolicy" order="15" />
-  </extension>
+	<require>org.nuxeo.ecm.core.security.defaultPolicies</require>
+	<extension
+		target="org.nuxeo.ecm.core.security.SecurityService" point="policies">
+		<policy name="retention"
+			class="org.nuxeo.ecm.retention.security.RetentionSecurityPolicy"
+			order="15" />
+	</extension>
 </component>

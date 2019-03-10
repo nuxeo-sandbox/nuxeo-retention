@@ -1,25 +1,29 @@
 <?xml version="1.0"?>
 <component name="org.nuxeo.ecm.retention.actions">
 
-  <extension target="org.nuxeo.ecm.core.bulk" point="actions">
-    <action name="aboutToExpireRetenionRule" bucketSize="100" batchSize="20"/>
-    <action name="attachRetentionRule" bucketSize="100" batchSize="20"/>
-    <action name="evaluateRetentionRule" bucketSize="100" batchSize="20"/>
-  </extension>
+	<extension target="org.nuxeo.ecm.core.bulk" point="actions">
+		<action name="aboutToExpireRetenionRule" bucketSize="100"
+			batchSize="20" />
+		<action name="attachRetentionRule" bucketSize="100"
+			batchSize="20" />
+		<action name="evaluateRetentionRule" bucketSize="100"
+			batchSize="20" />
+	</extension>
 
-  <extension target="org.nuxeo.runtime.stream.service" point="streamProcessor">
-    <streamProcessor name="aboutToExpireRetenionRule"
-      class="org.nuxeo.ecm.retention.actions.AboutToExpireRetentionRuleAction" logConfig="bulk" defaultConcurrency="2"
-      defaultPartitions="4">
-    </streamProcessor>
-    <streamProcessor name="attachRetentionRule"
-      class="org.nuxeo.ecm.retention.actions.AttachRetentionRuleAction" logConfig="bulk" defaultConcurrency="2"
-      defaultPartitions="4">
-    </streamProcessor>
-    <streamProcessor name="evaluateRetentionRuleAction"
-      class="org.nuxeo.ecm.retention.actions.EvaluateRetentionRuleAction" logConfig="bulk" defaultConcurrency="2"
-      defaultPartitions="4">
-    </streamProcessor>
-  </extension>
+	<extension target="org.nuxeo.runtime.stream.service"
+		point="streamProcessor">
+		<streamProcessor name="aboutToExpireRetenionRule"
+			class="org.nuxeo.ecm.retention.actions.AboutToExpireRetentionRuleAction"
+			logConfig="bulk" defaultConcurrency="2" defaultPartitions="4">
+		</streamProcessor>
+		<streamProcessor name="attachRetentionRule"
+			class="org.nuxeo.ecm.retention.actions.AttachRetentionRuleAction"
+			logConfig="bulk" defaultConcurrency="2" defaultPartitions="4">
+		</streamProcessor>
+		<streamProcessor name="evaluateRetentionRuleAction"
+			class="org.nuxeo.ecm.retention.actions.EvaluateRetentionRuleAction"
+			logConfig="bulk" defaultConcurrency="2" defaultPartitions="4">
+		</streamProcessor>
+	</extension>
 
 </component>

@@ -24,7 +24,6 @@ import static org.nuxeo.lib.stream.computation.AbstractComputation.OUTPUT_1;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,6 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.bulk.action.computation.AbstractBulkComputation;
 import org.nuxeo.ecm.core.bulk.message.BulkCommand;
-import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.lib.stream.computation.Topology;
 import org.nuxeo.runtime.api.Framework;

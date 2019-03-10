@@ -18,7 +18,6 @@
  */
 package org.nuxeo.ecm.retention.service;
 
-import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.runtime.model.Descriptor;
 
 /**

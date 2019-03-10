@@ -1,20 +1,25 @@
 <?xml version="1.0"?>
 <component name="org.nuxeo.ecm.retention.vocab" version="1.0">
-    <extension point="directories" target="org.nuxeo.ecm.directory.GenericDirectory">
-        <directory extends="template-vocabulary" name="RetentionBegin">
-            <dataFile>directories/retention_begin.csv</dataFile>
-        </directory>
-        <directory extends="template-vocabulary" name="RetentionEnd">
-            <dataFile>directories/retention_end.csv</dataFile>
-        </directory>
-        <directory extends="template-vocabulary" name="RetentionFacets">
-            <dataFile>directories/retention_facets.csv</dataFile>
-        </directory>
-        <directory extends="template-vocabulary" name="RetentionStates">
-            <dataFile>directories/retention_states.csv</dataFile>
-        </directory>
-        <directory extends="template-vocabulary" name="RetentionDoctypes">
-            <dataFile>directories/retention_doctypes.csv</dataFile>
-        </directory>
-    </extension>
+	<extension point="directories"
+		target="org.nuxeo.ecm.directory.GenericDirectory">
+		<directory extends="template-vocabulary"
+			name="RetentionBegin">
+			<dataFile>directories/retention_begin.csv</dataFile>
+		</directory>
+		<directory extends="template-vocabulary" name="RetentionEnd">
+			<dataFile>directories/retention_end.csv</dataFile>
+		</directory>
+		<directory extends="template-vocabulary"
+			name="RetentionFacets">
+			<dataFile>directories/retention_facets.csv</dataFile>
+		</directory>
+		<directory extends="template-vocabulary"
+			name="RetentionStates">
+			<dataFile>directories/retention_states.csv</dataFile>
+		</directory>
+		<directory extends="template-vocabulary"
+			name="RetentionDoctypes">
+			<dataFile>directories/retention_doctypes.csv</dataFile>
+		</directory>
+	</extension>
 </component>
