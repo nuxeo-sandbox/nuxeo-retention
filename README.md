@@ -2,7 +2,7 @@
 
 ## Principles & Concepts
 
-This plugin allows for defining retention rule(s) and attach the rule(s) to any number of documents. A document under active retention can then not be modified or deleted.
+This plugin allows for defining retention rule(s) and attach the rule(s) to any number of documents. A document under active retention cannot be modified or deleted.
 
 Rules allow for setting:
 
@@ -17,14 +17,16 @@ The plugin works out of the box, and the rules can be defined:
 
 Once rules are defined, they can be attached to a single document or to a list of documents in a single action (Automation in Studio or API call in a Java plugin).
 
-Also, several rules can be attached to a document, they will be evaluated and handled one after the other, in the order they were attached.
+Also, several rules can be attached to a document. They will be evaluated and handled one after the other, in the order they were attached.
 
-The plugin regularly (once/day by default) checks:
+The plugin regularly (once/day by default - this can be overridden) checks:
 
 * For document that will enter retention
 * For document that need to exit retention
 
 For each of these events and each of the document concerned by them, an event is triggered allowing for taking action accordingly with the application business rules (notify, archive, ...)
+
+The plugin provides the UI elements to handle retention: Layouts for configuring dynamic rules, action button to select a rule to apply, and widget displaying the retention status of a document.
 
 Please, see at the end this README the "TODO - Work in Progess" topic.
 
@@ -37,6 +39,7 @@ A rule can be defined:
 - Statically, via an XML contribution (see below)
 - Or dynamically, using a document storing the values in the `retention_rule` schema (prefix `rule`)
   - Note: Adding the `RetentionRule` facet to a document automatically adds the schema
+  - For convenience, the plugin provides the `RetentionConfiguration` document type and its layouts, so you can use it to allow users for configuring dynamic rules.
 
 Each rule is composed of:
 
@@ -48,7 +51,7 @@ Each rule is composed of:
  - A condition for retention start:
      - event: A string, like `documentCreated`, `documentModified`, ...)
      - condition: A string, and `EL` expression (i.e: `document.getType()=='File'`, or `document.getPropertyValue('record:min_cutoff_at').before(currentDate)`, ...)
-     - **WARNING**: This is EL. Not MVEL, not JavaScript, no FreeMarker, ... 
+     - **WARNING**: This is EL. Not MVEL, not JavaScript, no FreeMarker, ...
  - A _begin_ action: *what we do after entering cutoff*
      - The ID (name) of and Automation Chain
      - Field: `rule:beginAction`
@@ -72,7 +75,9 @@ Each rule is composed of:
    - The plugin provides the `RetentionEnd` vocabulary
    - This vocabulary can be localized, and the ID of each item is the ID of the operation
    - NOTE: It is not possible to have both a single Automation chain _and_ a list of pre-defined operations
-  
+
+<p>&nbsp;</p>
+
 ### Record facet
 
 When a retention rule is applied on the document we store the data into the `Record` facet that is added to each document under retention.
@@ -84,11 +89,11 @@ The facet holds the `record` schema:
    - Retention end  (target or actual) : `record:max_retention_at`
    - The`record:reminder_start_date` field: When this value is not null and is reached, the `retentionAboutToExpire` event is fired. Configuration can listen to this event and act accordingly ( mail notification, ...)
 
-
+<p>&nbsp;</p>
 
 ## How it works
 
-### Defining Rule 
+### Defining Rule
 
 There are two ways to contribute retention rules:
 
@@ -108,7 +113,7 @@ These are the steps to contribute with new rules as an extension point:
 
 ```xml
 <extension target="org.nuxeo.ecm.retention.RetentionService" point="rules">
-  
+
   <rule>
     <id>fileRetentionWithReminder</id>
     <begin-condition expression="document.getType()=='File'"></begin-condition>
@@ -119,7 +124,7 @@ These are the steps to contribute with new rules as an extension point:
     <end-action>Document.Delete</end-action>
     <end-condition expression=""></end-condition>
   </rule>
-  
+
     <rule>
     <id>pictureRetentionWithReminder</id>
     <begin-condition expression="document.getType()=='Picture'"></begin-condition>
@@ -133,12 +138,12 @@ These are the steps to contribute with new rules as an extension point:
     </end-actions>
     <end-condition expression=""></end-condition>
   </rule>
-  
+
 </extension>
 ```
 
 #### Dynamic Configuration
-Just create and fill a document which has the `RetentionRule`` facet. The plugin provides out of the box the `RetentionConfiguration` document type for this purpose, with its layouts for the UI, allowing for setting the different fields (begin action(s), end action(s), delays, duration, ...)
+Just create and fill a document which has the `RetentionRule` facet. The plugin provides out of the box the `RetentionConfiguration` document type for this purpose, with its layouts for the UI, allowing for setting the different fields (begin action(s), end action(s), delays, duration, ...)
 
 *See below "User Interface" topic.*
 
@@ -174,7 +179,7 @@ Also, an operation is provided: `Retention.AttachRule`:
 * Or Automation, then `Retention.RemoveRules` operation:
   * Input is the document a rule must be attached to
   * `ruleIds` is a list of rule IDs to be removed from the document
-    * If not passed or empty, all rules are removed. 
+    * If not passed or empty, all rules are removed.
 
 
 ### Checking Rules to Start or End the Retention
@@ -208,7 +213,7 @@ This is implemented with a Security policy that denies write access to a documen
 The plugin provides layouts, dialogs and widgets to handle retention.
 
 ### Overriding Default Slots
-The plugin override default slots to make sure the UI does not display a button to modify/delete a document that is under retention: The delete and edit document buttons, and all the delete/replace blob buttons.
+The plugin overrides default slots to make sure the UI does not display a button to modify/delete a document that is under retention: The delete and edit document buttons, and all the delete/replace blob buttons.
 
 The buttons are hidden even if the current user is Administrator
 
@@ -261,13 +266,22 @@ The `retention-widget.html` has some limitations:
 
 #### `retentionconfiguration` folder
 
-The ui/document/retentionconfigiration folder contains the different layouts that allows for creation, editing and displaying the  retentionConfiguration.
+The ui/document/retentionconfiguration folder contains the different layouts that allows for creation, editing and displaying the  retentionConfiguration.
+
+The `rule:beginActions` and `rule:endActions` are expected to store a list of operation to run. For convenience and better user experience, the plugin provides two vocabularies bound (in the UI) to these fields: `RetentionBegin` and `RetentionEnd`. It is possible to add values to these vocabularies, so you can add your own, custom operations to the list. See below "Overriding the actions vocabularies".
+
+  > Important: Each operation only receives the current document as input, no parameters.
 
 
 ### Overriding the UI
 
 To override the action, the widget, the layouts, ..., simply create in Studio the same hierarchy in Designer: a `nuxeo-retention` folder for example, with the element you want to override. To tune the action for example, duplicate the original (copy/paste the content) in your Studio and change the behavior.
 
+#### Overriding the actions vocabularies
+
+In the UI, the create and edit layouts for `RetentionConfiguration` document use vocabularies to improve the user experience when selecting a list of actions. It is possible to add your ow actions, and you probably want to to so since, by default, the plugin only suggests very few, like just `Document.Lock` or `Document.Unlock`.
+
+The vocabulary IDs are `RetentionBegin` and `RetentionEnd`. To override them you can just create a vocabulary of the same name in Studio and set its creation policy to _always_. At startup or hot reload, this vocabulary will then replace the one created by the plugin.
 
 ## Build
 
@@ -284,7 +298,7 @@ This rule is persisted as a facet on the input document. `"docId"` is the ID of 
 POST /Retention.CreateRule
 with:
 {
-  "docId": "65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5", 
+  "docId": "65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5",
   "params":{
 	"retentionPeriod": "100D",
 	"beginCondEvent" :"documentModified"
@@ -294,11 +308,11 @@ with:
 => this returns the id of the rule. In our example, say `65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5`
 
 * Attach the rule to the input document.
-* 
+*
 ```
 POST /Retention.AttachRule
 {
-  "input": "01d0b119-ef17-49ed-8ffd-fef7ba48ce42", 
+  "input": "01d0b119-ef17-49ed-8ffd-fef7ba48ce42",
   "params":{
 	"ruleId": "65a47c93-5ac7-4ad1-ada8-f0c8201e3ae5"
   }
