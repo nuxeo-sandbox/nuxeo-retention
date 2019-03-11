@@ -154,7 +154,7 @@ As soon as a rule is attached to a document:
 * The `Record` facet is added (if not already present)
 * Evaluation of the rule is done immediately. So, for example, the document may immediately go to retention, because there is no delay specified in the rule.
 
-#### Attach a Rule with Java API
+##### Attach a Rule with Java API
 The following APIs are exposed in the `RetentionService`:
 
 - A method to attach a rule on a single document:     
@@ -162,18 +162,41 @@ The following APIs are exposed in the `RetentionService`:
 - A method to attach a rule to a query result
 void attachRule(String ruleId, String query, CoreSession session);`
 
-#### Attach a Rule with Automation
-Also, an operation is provided: `Retention.AttachRule`:
+##### Attach a Rule with Automation
+Also, an operation is provided: `Retention.AttachRule`. It has two syntaxes, depending on the input, allowing for attaching a rule to the input document or, when no input document is passed, to list of documents found using a NXQL query
+
+_Attach rule to a single document_
 
 * Input is the document a rule must be attached to
-* `ruleId` is a strong parameter, the ID of a rule to attach:
+* `ruleId` is a string parameter, the ID of a rule to attach:
   * Either the if of static (XML) rule
   * Or the UID of a Document with the `RetentionRule` facet
+* `nxql` parameter is ignored if passed
+* * Returns the modified document
 
-#### Attaching a Dynamic Rule from the UI
+_Attach rule to a several documents_
+
+* Input is `null`
+* `ruleId` is a string parameter, the ID of a rule to attach:
+  * Either the if of static (XML) rule
+  * Or the UID of a Document with the `RetentionRule` facet
+* `nxql` is a string parameter, the NXQL to perform to find the retention to put under retention. For example:
+
+```
+SELECT * From Document WHERE
+       ecm:path STARTSWITH '/some/folder/'
+   AND ecm:currentLifeCycleState = 'Approved'
+   AND ecm:isTrashed = 0
+   AND ecm:isVersion = 0
+   AND ecm:isProxy = 0
+```
+
+This call uses the **B**ulk **A**ction **F**ramework (see [here](https://doc.nuxeo.com/nxdoc/bulk-action-framework/) and, so, runs asynchronously, in a separate worker. It returns `void`.
+
+##### Attaching a Dynamic Rule from the UI
 *See below "User Interface" topic.*
 
-#### Detaching a Rule
+##### Detaching a Rule
 
 * JavaAPI from the `RetentionService` (`RetentionService#clearRule` and `RetentionService#clearRules`)
 * Or Automation, then `Retention.RemoveRules` operation:
