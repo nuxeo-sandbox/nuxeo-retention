@@ -46,7 +46,7 @@ import org.nuxeo.runtime.stream.StreamProcessorTopology;
 
 public class AboutToExpireRetentionRuleAction implements StreamProcessorTopology {
 
-    public static final String ACTION_NAME = "aboutToExpireRetenionRule";
+    public static final String ACTION_NAME = "aboutToExpireRetentionRule";
 
     public static final String PARAM_DISABLE_AUDIT = "disableAuditLogger";
 
