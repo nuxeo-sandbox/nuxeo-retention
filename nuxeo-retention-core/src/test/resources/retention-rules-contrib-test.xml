@@ -106,6 +106,12 @@
       	<action order="1" operation="Document.Lock"></action>
 	  </begin-actions>
     </rule>
+    
+    <!-- No condition, no events, no delays, ... -->
+    <rule>
+      <id>SimpleRule</id>
+      <retention-duration expression="">1Y</retention-duration>
+    </rule>
 
   </extension>
 

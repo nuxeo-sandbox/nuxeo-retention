@@ -18,6 +18,9 @@
  */
 package org.nuxeo.ecm.retention.operations;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
@@ -26,13 +29,18 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = AttachRetentionRule.ID, category = "Retention", label = "Attach an existing retention rule to the doc. ruleId is either the unique name of an XML contribution or the UUID of a document with the RetentionRule facet")
+@Operation(id = AttachRetentionRule.ID, category = "Retention", label = "Attach an existing retention rule to the input document or to the documents returned by the NXQL query. ruleId is either the unique name of an XML contribution or the UUID of a document with the RetentionRule facet")
 public class AttachRetentionRule {
 
     public static final String ID = "Retention.AttachRule";
+    
+    public static Log log = LogFactory.getLog(AttachRetentionRule.class);
 
     @Param(name = "ruleId", required = true)
     protected String ruleId;
+
+    @Param(name = "nxql", required = false)
+    protected String nxql;
 
     @Context
     RetentionService retentionService;
@@ -42,8 +50,15 @@ public class AttachRetentionRule {
 
     @OperationMethod
     public DocumentModel attachRetentionRule(DocumentModel doc) {
+        if(StringUtils.isNotBlank(nxql)) {
+            log.warn("Operation " + AttachRetentionRule.ID + " called with an input document and a NXQL query: Ignoring the NXQL query and applying the rul to the input document.");
+        }
         retentionService.attachRule(ruleId, doc);
         return doc;
 
+    }
+    @OperationMethod
+    public void attachRetentionRule() {
+        retentionService.attachRule(ruleId, nxql, session);
     }
 }
