@@ -157,6 +157,7 @@ public interface RetentionService {
      * @since 9.2
      */
     String createOrUpdateDynamicRuleOnDocument(String beginDelayPeriod, String retentionPeriod, int retentionReminder,
-            String beginAction, String endAction, String beginCondExpression, String beginCondEvent,
-            String endCondExpression, DocumentModel doc, CoreSession session);
+            String beginAction, String[] beginActions, String endAction, String[] endActions,
+            String beginCondExpression, String beginCondEvent, String endCondExpression, DocumentModel doc,
+            CoreSession session);
 }

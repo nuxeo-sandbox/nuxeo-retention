@@ -26,7 +26,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = AttachRetentionRule.ID, category = "Retention", label = "Attach an existing retention rule to the doc")
+@Operation(id = AttachRetentionRule.ID, category = "Retention", label = "Attach an existing retention rule to the doc. ruleId is either the unique name of an XML contribution or the UUID of a document with the RetentionRule facet")
 public class AttachRetentionRule {
 
     public static final String ID = "Retention.AttachRule";

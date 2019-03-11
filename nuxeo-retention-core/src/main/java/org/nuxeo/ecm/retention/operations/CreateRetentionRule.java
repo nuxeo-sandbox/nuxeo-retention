@@ -22,11 +22,12 @@ import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
 import org.nuxeo.ecm.automation.core.annotations.Param;
+import org.nuxeo.ecm.automation.core.util.StringList;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = CreateRetentionRule.ID, category = "Retention", label = "Creates a new retention rule")
+@Operation(id = CreateRetentionRule.ID, category = "Retention", label = "Creates a new retention rule to the input document. Adds the RetentionRule facet if needed. Returns a string, the UUID of the input document.")
 public class CreateRetentionRule {
 
     public static final String ID = "Retention.CreateRule";
@@ -43,8 +44,14 @@ public class CreateRetentionRule {
     @Param(name = "beginAction", required = false)
     protected String beginAction;
 
+    @Param(name = "beginActions", required = false)
+    StringList beginActions;
+
     @Param(name = "endAction", required = false)
     protected String endAction;
+
+    @Param(name = "endActions", required = false)
+    StringList endActions;
 
     @Param(name = "beginCondExpression", required = false)
     protected String beginCondExpression;
@@ -63,9 +70,19 @@ public class CreateRetentionRule {
 
     @OperationMethod
     public String createRetentionRule(DocumentModel doc) {
+        String[] beginActionsStrArray = null;
+        String[] endActionsStrArray = null;
+        
+        if(beginActions != null && beginActions.size() > 0) {
+            beginActionsStrArray = beginActions.stream().toArray(String[]::new);
+        }
+        
+        if(endActions != null && endActions.size() > 0) {
+            endActionsStrArray = endActions.stream().toArray(String[]::new);
+        }
         return retentionService.createOrUpdateDynamicRuleOnDocument(beginDelayPeriod, retentionPeriod,
-                retentionReminder, beginAction, endAction, beginCondExpression, beginCondEvent, endCondExpression, doc,
-                session);
+                retentionReminder, beginAction, beginActionsStrArray, endAction, endActionsStrArray, beginCondExpression,
+                beginCondEvent, endCondExpression, doc, session);
 
     }
 }

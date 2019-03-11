@@ -487,8 +487,9 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public String createOrUpdateDynamicRuleOnDocument(String beginDelayPeriod, String retentionPeriod,
-            int retentionReminder, String beginAction, String endAction, String beginCondExpression,
-            String beginCondEvent, String endCondExpression, DocumentModel doc, CoreSession session) {
+            int retentionReminder, String beginAction, String[] beginActions, String endAction, String[] endActions,
+            String beginCondExpression, String beginCondEvent, String endCondExpression, DocumentModel doc,
+            CoreSession session) {
         if (!doc.hasFacet(RETENTION_RULE_FACET)) {
             doc.addFacet(RETENTION_RULE_FACET); // else is just updating an existing rule
         }
@@ -499,7 +500,9 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         doc.setPropertyValue(RetentionRule.RULE_RETENTION_DURATION_PERIOD_PROPERTY, retentionPeriod);
         doc.setPropertyValue(RetentionRule.RULE_RETENTION_REMINDER_PROPERTY, retentionReminder);
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_ACTION_PROPERTY, beginAction);
+        doc.setPropertyValue(RetentionRule.RULE_BEGIN_ACTIONS_PROPERTY, beginActions);
         doc.setPropertyValue(RetentionRule.RULE_END_ACTION_PROPERTY, endAction);
+        doc.setPropertyValue(RetentionRule.RULE_END_ACTIONS_PROPERTY, endActions);
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_EXPRESSION_TYPE_PROPERTY, beginCondExpression);
         doc.setPropertyValue(RetentionRule.RULE_BEGIN_CONDITION_EVENT_PROPERTY, beginCondEvent);
         doc.setPropertyValue(RetentionRule.RULE_END_CONDITION_EXPRESSION_PROPERTY, endCondExpression);
