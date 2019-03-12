@@ -40,7 +40,6 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -66,10 +65,11 @@ import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
-import org.nuxeo.ecm.core.work.api.WorkManager;
 import org.nuxeo.ecm.platform.usermanager.UserManager;
+import org.nuxeo.ecm.retention.TestUtils;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
+import org.nuxeo.ecm.retention.adapter.Record.RecordRule;
 import org.nuxeo.ecm.retention.operations.AttachRetentionRule;
 import org.nuxeo.ecm.retention.operations.CreateRetentionRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
@@ -78,7 +78,6 @@ import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.runtime.test.runner.TransactionalFeature;
-import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
 
@@ -99,9 +98,6 @@ public class RetentionServiceTest {
 
     @Inject
     RetentionService service;
-
-    @Inject
-    WorkManager workManager;
 
     @Inject
     UserManager userManager;
@@ -154,7 +150,7 @@ public class RetentionServiceTest {
         }
 
         session.save();
-        waitForWorkers();
+        TestUtils.waitForWorkers();
 
         service.attachRule("myTestRuleId2", "Select * from Folder", session);
         DocumentModelList folders = session.query("Select * from Folder");
@@ -164,7 +160,7 @@ public class RetentionServiceTest {
         }
 
         session.save();
-        waitForWorkers();
+        TestUtils.waitForWorkers();
 
         for (DocumentModel documentModel : docs) {
             documentModel = session.getDocument(documentModel.getRef());
@@ -181,11 +177,11 @@ public class RetentionServiceTest {
         doc = session.createDocument(doc);
         service.attachRule(rule.getId(), doc);
         doc = session.getDocument(doc.getRef());
-        waitForWorkers();
+        TestUtils.waitForWorkers();
         // modify the document to see if the rule is invoked
         doc.setPropertyValue("dc:title", "Blahhaa");
         doc = session.saveDocument(doc);
-        waitForWorkers();
+        TestUtils.waitForWorkers();
         assertTrue(doc.isLocked());
         Record record = doc.getAdapter(Record.class);
         assertNotNull(record);
@@ -218,7 +214,7 @@ public class RetentionServiceTest {
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
         Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
-        waitForWorkers();
+        TestUtils.waitForWorkers();
 
         doc = session.getDocument(doc.getRef());
         assertFalse(doc.isLocked());
@@ -233,7 +229,7 @@ public class RetentionServiceTest {
         DocumentModel doc = session.createDocumentModel("/", "root", "File");
         doc = session.createDocument(doc);
         service.attachRule(rule.getId(), doc);
-        waitForWorkers();
+        TestUtils.waitForWorkers();
         assertTrue(doc.isLocked());
         doc = session.getDocument(doc.getRef());
         Record record = doc.getAdapter(Record.class);
@@ -250,7 +246,7 @@ public class RetentionServiceTest {
         service.attachRule(rule.getId(), doc);
         session.save();
 
-        waitForWorkers();
+        TestUtils.waitForWorkers();
 
         try (CloseableCoreSession sessionAsJdoe = settings.openCoreSession("jdoe")) {
             ACP acp = doc.getACP();
@@ -265,7 +261,7 @@ public class RetentionServiceTest {
             doc = sessionAsJdoe.saveDocument(doc);
 
             // NXP-23478 save must complete before retention delay is checked
-            waitForWorkers();
+            TestUtils.waitForWorkers();
 
             // check that cutoff date was set to currentDate + 1
             assertTrue(record.getMinCutoffAt().getTime().after(new Date()));
@@ -284,7 +280,7 @@ public class RetentionServiceTest {
             evts.fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
             evts.waitForAsyncCompletion();
 
-            waitForWorkers();
+            TestUtils.waitForWorkers();
 
             doc = session.getDocument(doc.getRef());
             assertTrue(doc.isLocked());
@@ -353,7 +349,7 @@ public class RetentionServiceTest {
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
         Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
-        waitForWorkers();
+        TestUtils.waitForWorkers();
         file = session.getDocument(file.getRef());
         assertTrue(file.isLocked());
         record = file.getAdapter(Record.class);
@@ -383,7 +379,7 @@ public class RetentionServiceTest {
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
         Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
-        waitForWorkers();
+        TestUtils.waitForWorkers();
         file = session.getDocument(file.getRef());
         record = file.getAdapter(Record.class);
         assertNotNull(record);
@@ -430,7 +426,7 @@ public class RetentionServiceTest {
                 new SimpleDateFormat("yyyy-MM-dd").parse(maxRetention.plusDays(1).toString()));
         Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
-        waitForWorkers();
+        TestUtils.waitForWorkers();
         file = session.getDocument(file.getRef());
         record = file.getAdapter(Record.class);
         assertNotNull(record);
@@ -482,7 +478,7 @@ public class RetentionServiceTest {
 
             file.setPropertyValue("dc:title", "title");
             file = sessionAsJdoe.saveDocument(file);
-            waitForWorkers();
+            TestUtils.waitForWorkers();
 
             file = sessionAsJdoe.getDocument(file.getRef());
             assertTrue(file.hasFacet("Record"));
@@ -523,19 +519,76 @@ public class RetentionServiceTest {
         DocumentEventContext context = new DocumentEventContext(session, null, file);
         Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
 
-        waitForWorkers();
+        TestUtils.waitForWorkers();
         file = session.getDocument(file.getRef());
         Record record = file.getAdapter(Record.class);
         assertNotNull(record);
         assertEquals("expired", record.getStatus());
     }
 
-    protected void waitForWorkers() throws InterruptedException {
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
+    @Test
+    public void testClearSingleRule() throws Exception {
 
-        final boolean allCompleted = workManager.awaitCompletion(100, TimeUnit.SECONDS);
-        assertTrue(allCompleted);
+        RetentionRule rule = service.getRetentionRule("retentionWithDelay", session);
+        assertNotNull(rule);
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+
+        session.save();
+        TestUtils.waitForWorkers();
+
+        // Check we have everything
+        doc = session.getDocument(doc.getRef());
+        assertTrue(doc.hasFacet("Record"));
+
+        Record record = doc.getAdapter(Record.class);
+        assertTrue(record.hasAtLeastOneRule());
+
+        List<RecordRule> attachedRules = record.getRecordRules();
+        assertEquals(1, attachedRules.size());
+        assertEquals("retentionWithDelay", attachedRules.get(0).getRuleId());
+
+        // Now, remove the rule
+        service.clearRule("retentionWithDelay", doc);
+        doc = session.getDocument(doc.getRef());
+        // When clearing single rule the facet stays
+        assertTrue(doc.hasFacet("Record"));
+
+        record = doc.getAdapter(Record.class);
+        assertFalse(record.hasAtLeastOneRule());
+
+    }
+
+    @Test
+    public void testBulkClearRules() throws Exception {
+
+        // we are deploying a very simple static rule
+        RetentionRule rule = service.getRetentionRule("retentionWithDelay", session);
+        assertNotNull(rule);
+
+        int MAX_DOCS = 5;
+        DocumentModelList docs = TestUtils.createDocumentsInFolder(session, "/", "folderRetention", MAX_DOCS);
+
+        // Attach the rule using NXQL
+        String defaultFilter = " AND ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0";
+        String NXQL_DOCS_IN_FOLDER = "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' "
+                + defaultFilter;
+        service.attachRule(rule.getId(), NXQL_DOCS_IN_FOLDER, session);
+        TestUtils.waitForWorkers();
+
+        // Check it was attached
+        docs = session.query("SELECT * From Document WHERE ecm:mixinType = 'Record' " + defaultFilter);
+        assertEquals(MAX_DOCS, docs.size());
+
+        // Now, clear all rules and this should remove the "Record" facet
+        service.clearRules(NXQL_DOCS_IN_FOLDER);
+        TestUtils.waitForWorkers();
+
+        // Check it was removed
+        docs = session.query("SELECT * From Document WHERE ecm:mixinType = 'Record' " + defaultFilter);
+        assertEquals(0, docs.size());
+
     }
 
 }

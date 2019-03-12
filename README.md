@@ -160,7 +160,7 @@ The following APIs are exposed in the `RetentionService`:
 - A method to attach a rule on a single document:     
 `void attachRule(String ruleId, DocumentModel doc);`
 - A method to attach a rule to a query result
-void attachRule(String ruleId, String query, CoreSession session);`
+void attachRule(String ruleId, String query, CoreSession session);`. This call uses Nuxeo's Bulk Action Framework, ready for scaling and handling a very large number of document
 
 ##### Attach a Rule with Automation
 Also, an operation is provided: `Retention.AttachRule`. It has two syntaxes, depending on the input, allowing for attaching a rule to the input document or, when no input document is passed, to list of documents found using a NXQL query
@@ -191,7 +191,7 @@ SELECT * From Document WHERE
    AND ecm:isProxy = 0
 ```
 
-This call uses the **B**ulk **A**ction **F**ramework (see [here](https://doc.nuxeo.com/nxdoc/bulk-action-framework/) and, so, runs asynchronously, in a separate worker. It returns `void`.
+This call uses the **B**ulk **A**ction **F**ramework (see [here](https://doc.nuxeo.com/nxdoc/bulk-action-framework/)) and waits for completion, hence it should be called in an asynchronous process, not related to the UI at least.
 
 ##### Attaching a Dynamic Rule from the UI
 *See below "User Interface" topic.*
@@ -345,6 +345,11 @@ POST /Retention.AttachRule
 The first time the document is modified, it will pass under retention active.
 
 <p>&nbsp;</p>
+
+## Tuning the Plugin
+Besides overriding the UI and vocabularies, it is also possible to tune the settings when you plan to handle a lot of document sin a raw. The plugin uses theuses the **B**ulk **A**ction **F**ramework (see [here](https://doc.nuxeo.com/nxdoc/bulk-action-framework/)), which defines bucket sizes, batch sizes etc.
+
+To override the behavior, just declare the same extension point as the one you can find in `retention-action-contrib.xml` and tune the properties. DO not forget to add the `<require>org.nuxeo.ecm.retention.actions<require>` tag to make sure your extension is called after the default one. 
 
 <hr>
 ## TODO - Work in Progess or Paused

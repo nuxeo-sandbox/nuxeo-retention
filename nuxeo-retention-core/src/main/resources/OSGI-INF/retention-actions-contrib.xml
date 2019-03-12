@@ -6,6 +6,8 @@
 			batchSize="20" />
 		<action name="attachRetentionRule" bucketSize="100"
 			batchSize="20" />
+		<action name="clearRetentionRule" bucketSize="100"
+			batchSize="20" />
 		<action name="evaluateRetentionRule" bucketSize="100"
 			batchSize="20" />
 	</extension>
@@ -18,6 +20,10 @@
 		</streamProcessor>
 		<streamProcessor name="attachRetentionRule"
 			class="org.nuxeo.ecm.retention.actions.AttachRetentionRuleAction"
+			logConfig="bulk" defaultConcurrency="2" defaultPartitions="4">
+		</streamProcessor>
+		<streamProcessor name="clearRetentionRule"
+			class="org.nuxeo.ecm.retention.actions.ClearRetentionRuleAction"
 			logConfig="bulk" defaultConcurrency="2" defaultPartitions="4">
 		</streamProcessor>
 		<streamProcessor name="evaluateRetentionRuleAction"

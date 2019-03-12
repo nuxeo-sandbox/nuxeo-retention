@@ -10,6 +10,8 @@
 			class="org.nuxeo.ecm.retention.operations.CreateRetentionRule" />
 		<operation
 			class="org.nuxeo.ecm.retention.operations.RemoveRetentionRules" />
+		<operation
+			class="org.nuxeo.ecm.retention.operations.BatchRemoveRetentionRule" />
 	</extension>
 
 </component>

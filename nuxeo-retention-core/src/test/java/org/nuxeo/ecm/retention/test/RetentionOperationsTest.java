@@ -25,11 +25,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,20 +38,21 @@ import org.nuxeo.ecm.automation.OperationContext;
 import org.nuxeo.ecm.automation.test.AutomationFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
-import org.nuxeo.ecm.core.work.api.WorkManager;
+import org.nuxeo.ecm.retention.TestUtils;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.Record.RecordRule;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.operations.AttachRetentionRule;
+import org.nuxeo.ecm.retention.operations.BatchRemoveRetentionRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.runtime.test.runner.TransactionalFeature;
-import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
 
@@ -78,9 +77,6 @@ public class RetentionOperationsTest {
     @Inject
     AutomationService automationService;
 
-    @Inject
-    WorkManager workManager;
-
     @Test
     public void testAttachRuleWithDoc() throws Exception {
 
@@ -94,7 +90,7 @@ public class RetentionOperationsTest {
         doc = session.createDocument(doc);
 
         session.save();
-        waitForWorkers();
+        TestUtils.waitForWorkers();
 
         doc = session.getDocument(doc.getRef());
         assertFalse(doc.hasFacet("Record"));
@@ -130,20 +126,8 @@ public class RetentionOperationsTest {
         noChangeDoc = session.createDocument(noChangeDoc);
 
         // Create a folder whose documents should all be put under retention
-        DocumentModel folderRetention = session.createDocumentModel("/", "folderRetention", "Folder");
-        folderRetention = session.createDocument(folderRetention);
+        DocumentModelList docs = TestUtils.createDocumentsInFolder(session, "/", "folderRetention", 5);
 
-        List<DocumentModel> docs = new ArrayList<DocumentModel>();
-        DocumentModel doc;
-        for (int i = 0; i < 5; i++) {
-            doc = session.createDocumentModel("/folderRetention", "file-" + i, "File");
-            doc = session.createDocument(doc);
-            docs.add(doc);
-        }
-
-        session.save();
-        waitForWorkers();
-        
         // Just check all look good before attaching the rule
         noChangeDoc = session.getDocument(noChangeDoc.getRef());
         assertFalse(noChangeDoc.hasFacet("Record"));
@@ -151,7 +135,7 @@ public class RetentionOperationsTest {
             oneDoc.refresh();
             assertFalse(oneDoc.hasFacet("Record"));
         });
-        
+
         // Attach the rule using NXQL
         OperationContext ctx = new OperationContext();
         ctx.setInput(null);
@@ -162,24 +146,52 @@ public class RetentionOperationsTest {
                 "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' AND ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0");
 
         automationService.run(ctx, AttachRetentionRule.ID, params);
-        waitForWorkers();
-        
+        TestUtils.waitForWorkers();
+
         noChangeDoc = session.getDocument(noChangeDoc.getRef());
         assertFalse(noChangeDoc.hasFacet("Record"));
-        
+
         docs.forEach((oneDoc) -> {
             oneDoc = session.getDocument(oneDoc.getRef());
             assertTrue(oneDoc.hasFacet("Record"));
         });
-        
+
     }
 
-    protected void waitForWorkers() throws InterruptedException {
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
+    @Test
+    public void testClearRulesWithNxql() throws Exception {
 
-        final boolean allCompleted = workManager.awaitCompletion(100, TimeUnit.SECONDS);
-        assertTrue(allCompleted);
+        RetentionRule rule = service.getRetentionRule("retentionWithDelay", session);
+        assertNotNull(rule);
+
+        int MAX_DOCS = 5;
+        DocumentModelList docs = TestUtils.createDocumentsInFolder(session, "/", "folderRetention", MAX_DOCS);
+
+        // Attach the rule using NXQL
+        String defaultFilter = " AND ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0";
+        String NXQL_DOCS_IN_FOLDER = "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' "
+                + defaultFilter;
+        service.attachRule(rule.getId(), NXQL_DOCS_IN_FOLDER, session);
+        TestUtils.waitForWorkers();
+
+        // Check it was attached
+        docs = session.query("SELECT * From Document WHERE ecm:mixinType = 'Record' " + defaultFilter);
+        assertEquals(MAX_DOCS, docs.size());
+
+        // Now, clear all rules and this should remove the "Record" facet
+        OperationContext ctx = new OperationContext();
+        ctx.setInput(null);
+        ctx.setCoreSession(session);
+        Map<String, Serializable> params = new HashMap<String, Serializable>();
+        params.put("nxql",
+                "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' AND ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0");
+        automationService.run(ctx, BatchRemoveRetentionRule.ID, params);
+        TestUtils.waitForWorkers();
+
+        // Check it was removed
+        docs = session.query("SELECT * From Document WHERE ecm:mixinType = 'Record' " + defaultFilter);
+        assertEquals(0, docs.size());
+
     }
 
 }

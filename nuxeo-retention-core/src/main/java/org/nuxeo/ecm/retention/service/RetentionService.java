@@ -74,6 +74,16 @@ public interface RetentionService {
     boolean clearRule(String ruleId, DocumentModel doc);
 
     /**
+     * Performs the given query using an unrestricted session and clears the given rule to the documents.
+     * 
+     * @param ruleId
+     * @param query
+     * @return
+     * @since 10.10
+     */
+    void clearRule(String ruleId, String query);
+
+    /**
      * Removes the retention facet from doc
      * 
      * @since 9.2
@@ -81,7 +91,17 @@ public interface RetentionService {
     void clearRules(DocumentModel doc);
 
     /**
-     * Performs the give query using an unrestricted session and attaches the given rule to the documents. Starts the
+     * Performs the given query using an unrestricted session and removes the retention facet from the documents.
+     * 
+     * @param ruleId
+     * @param query
+     * @return
+     * @since 10.10
+     */
+    void clearRules(String query);
+
+    /**
+     * Performs the given query using an unrestricted session and attaches the given rule to the documents. Starts the
      * retention if the rule evaluates to true at the current time ( if the expression in the begin condition is true
      * and the retention is not triggered by an event)
      * 

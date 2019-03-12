@@ -73,6 +73,7 @@ import org.nuxeo.ecm.platform.query.api.PageProviderService;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.retention.actions.AboutToExpireRetentionRuleAction;
 import org.nuxeo.ecm.retention.actions.AttachRetentionRuleAction;
+import org.nuxeo.ecm.retention.actions.ClearRetentionRuleAction;
 import org.nuxeo.ecm.retention.actions.EvaluateRetentionRuleAction;
 import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
@@ -147,6 +148,20 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     }
 
     @Override
+    public void clearRule(String ruleId, String query) {
+        // Construct query
+        BulkCommand command = new BulkCommand.Builder(ClearRetentionRuleAction.ACTION_NAME, query).param(
+                ClearRetentionRuleAction.PARAM_RULE_ID, ruleId).user("Administrator").build();
+
+        // Submit command
+        BulkService bulkService = Framework.getService(BulkService.class);
+        String commandId = bulkService.submit(command);
+
+        waitForBAFCompletion(commandId);
+
+    }
+
+    @Override
     public void clearRules(DocumentModel doc) {
         CoreInstance.doPrivileged(doc.getCoreSession().getRepositoryName(), (CoreSession session) -> {
             if (doc.hasFacet(RECORD_FACET)) {
@@ -154,6 +169,20 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
                 session.saveDocument(doc);
             }
         });
+    }
+
+    @Override
+    public void clearRules(String query) {
+        // Construct query
+        BulkCommand command = new BulkCommand.Builder(ClearRetentionRuleAction.ACTION_NAME, query).param(
+                ClearRetentionRuleAction.PARAM_RULE_ID, null).user("Administrator").build();
+
+        // Submit command
+        BulkService bulkService = Framework.getService(BulkService.class);
+        String commandId = bulkService.submit(command);
+
+        waitForBAFCompletion(commandId);
+
     }
 
     private PageProviderService pageProvider() {
@@ -170,32 +199,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         BulkService bulkService = Framework.getService(BulkService.class);
         String commandId = bulkService.submit(command);
 
-        try {
-            boolean complete = false;
-            while (!complete) {
-                // Await end of computation
-                complete = bulkService.await(commandId, Duration.ofMinutes(1));
-            }
-
-        } catch (InterruptedException iex) {
-            // ignored
-        }
-
-        // Get status
-        BulkStatus status = bulkService.getStatus(commandId);
-        switch (status.getState()) {
-        case COMPLETED:
-            log.debug("Bulk attach completed: " + status);
-            break;
-        case ABORTED:
-            log.warn("Retention bulk attach aborted: " + status);
-            break;
-        case UNKNOWN:
-            log.error("Unknown status for bulk attach: " + status);
-            break;
-        default:
-            // continue
-        }
+        waitForBAFCompletion(commandId);
     }
 
     @Override
@@ -613,5 +617,35 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
         ctx.setProperty(CoreEventConstants.SESSION_ID, session.getSessionId());
         Event event = ctx.newEvent(eventId);
         Framework.getService(EventService.class).fireEvent(event);
+    }
+
+    protected void waitForBAFCompletion(String commandId) {
+        BulkService bulkService = Framework.getService(BulkService.class);
+        try {
+            boolean complete = false;
+            while (!complete) {
+                // Await end of computation
+                complete = bulkService.await(commandId, Duration.ofMinutes(1));
+            }
+
+        } catch (InterruptedException iex) {
+            // ignored
+        }
+
+        // Get status
+        BulkStatus status = bulkService.getStatus(commandId);
+        switch (status.getState()) {
+        case COMPLETED:
+            log.debug("Bulk attach completed: " + status);
+            break;
+        case ABORTED:
+            log.warn("Retention bulk attach aborted: " + status);
+            break;
+        case UNKNOWN:
+            log.error("Unknown status for bulk attach: " + status);
+            break;
+        default:
+            // continue
+        }
     }
 }

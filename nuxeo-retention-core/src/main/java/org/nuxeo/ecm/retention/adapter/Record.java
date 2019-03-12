@@ -138,6 +138,13 @@ public class Record {
         }
         doc.setPropertyValue(RETENTION_RULES, (Serializable) rr);
     }
+    
+    @SuppressWarnings("unchecked")
+    public boolean hasAtLeastOneRule() {
+        List<Map<String, Serializable>> rr = (List<Map<String, Serializable>>) doc.getPropertyValue(RETENTION_RULES);
+        
+        return rr != null && rr.size() > 0;
+    }
 
     @SuppressWarnings("unchecked")
     public boolean hasRule(String ruleId) {
