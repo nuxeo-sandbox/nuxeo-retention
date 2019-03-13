@@ -23,7 +23,7 @@
   * [Overriding the UI](#overriging-the-ui)
     * [Overriding the Actions Vocabularies](#overriding-the-actions-vocabularies)
 * [Tuning the PLugin](*tuning-the-plugin)
-* [TODO, Work in Progess or Paused](#todo-work-in-progess-or-paused)
+* [TODO](#todo)
 * [Build and Deploy](build-and-deploy)
 * [Simple Test](#simple-test)
 * [LICENSE](#license)
@@ -342,17 +342,15 @@ Besides overriding the UI and vocabularies, it is also possible to tune the sett
 
 To override the behavior, just declare the same extension point as the one you can find in `retention-action-contrib.xml` and tune the properties. DO not forget to add the `<require>org.nuxeo.ecm.retention.actions<require>` tag to make sure your extension is called after the default one. 
 
-<hr>
-## TODO, Work in Progess or Paused
+<p>&nbsp;</p>
 
+<hr>
+
+## TODO
 
 * Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
 * Add doc about operations
 * Add doc about retention-widget:
-  * How to use it
-  * It only displays first rule (in case of list of rules)
-  * Only _dynamic_ rule
-  * Only _end_ actions
   * TBD in dev - Add and display only if relevant (info not empty):
     * Retention delay
     * Retention start
