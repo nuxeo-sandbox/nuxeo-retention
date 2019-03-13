@@ -1,5 +1,10 @@
 [![Build Status](https://qa.nuxeo.org/jenkins/buildStatus/icon?job=Sandbox/sandbox_nuxeo-retention-master)](https://qa.nuxeo.org/jenkins/job/Sandbox/job/sandbox_nuxeo-retention-master/)
 
+* [Principles and Concepts](#principles-and-concepts)
+  * [Rules Definition](#rules-definition)
+  * [The `Record` Facet](#the-record-facet)
+* [How it works](#how-it-works)
+
 ## Principles & Concepts
 
 This plugin allows for defining retention rule(s) and attach the rule(s) to any number of documents. A document under active retention cannot be modified or deleted.
