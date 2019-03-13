@@ -22,7 +22,13 @@
     * [`retentionconfiguration` folder](#retentionconfiguration-folder)
   * [Overriding the UI](#overriging-the-ui)
     * [Overriding the Actions Vocabularies](#overriding-the-actions-vocabularies)
-* [Tuning the PLugin](*tuning-the-plugin)
+* [Operations](#operations)
+  * [`Retention.AttachRule`](#retention-attachrule)
+  * [`Retention.BulkAttachRule`](#retention-bulkattachrule)
+  * [`Retention.RemoveRules`](#retention-removerules)
+  * [`Retention.BulkRemoveRule`](#retention-bulkremoverule)
+  * [`Retention.CreateRule`](#retention-createrule)
+* [Tuning the Plugin](*tuning-the-plugin)
 * [TODO](#todo)
 * [Build and Deploy](build-and-deploy)
 * [Simple Test](#simple-test)
@@ -334,6 +340,98 @@ To override the action, the widget, the layouts, ..., simply create in Studio th
 In the UI, the create and edit layouts for `RetentionConfiguration` document use vocabularies to improve the user experience when selecting a list of actions. It is possible to add your ow actions, and you probably want to to so since, by default, the plugin only suggests very few, like just `Document.Lock` or `Document.Unlock`.
 
 The vocabulary IDs are `RetentionBegin` and `RetentionEnd`. To override them you can just create a vocabulary of the same name in Studio and set its creation policy to _always_. At startup or hot reload, this vocabulary will then replace the one created by the plugin.
+
+<p>&nbsp;</p>
+
+## Operations
+#### `Retention.AttachRule`
+Attach an existing retention rule to the input document.
+
+* Input: The document to attach the rule to
+* Output: The same document, modified and possibly sent to retention immediately
+* Paramaters:
+  * `ruleId`
+    * Required
+    * String, unique name of an XML contribution or the UUID of a document with the `RetentionRule` facet
+
+#### `Retention.BulkAttachRule`
+Attach an existing retention rule to the documents returned by an NXQL query.
+
+The call uses the _Bulk Action Framework_ and waits for completion: It should be ran asynchronously.
+
+* Input: `void`
+* Output: `void`
+* Paramaters:
+  * `ruleId`
+    * Required
+    * String, unique name of an XML contribution or the UUID of a document with the `RetentionRule` facet
+  * `nxql`
+    * Required
+    * The NXQL query to perform
+
+#### `Retention.RemoveRules`
+Remove a list of retention rules. If `ruleIds` is empty, removes all the rules and the `Record` facet.
+
+* Input: The document to which we want to remove 1-n rules
+* Output: The same document, after the rules were cleared
+* Paramaters:
+  * `ruleIds`
+    * List of rule IDs (String, separated by commas). either unique names of XML contribution(s) or UUID(s) of document(s) with the `RetentionRule` facet
+    * If empty or null all and every tules are removed and the `Record` facet is cleared
+
+
+#### `Retention.BulkRemoveRule`
+Clear an existing retention rule from the documents returned by the NXQL query. If `ruleId` is empty, the `Record` facet is removed (which removes all the rules).
+
+The call uses the _Bulk Action Framework_ and waits for completion: It should be ran asynchronously.
+
+* Input: `void`
+* Output: `void`
+* Paramaters:
+  * `ruleId`
+    * String, unique name of an XML contribution or the UUID of a document with the `RetentionRule` facet
+    * If empty or null, the `Record` facet is removed (which removes all the rules)
+  * `nxql`
+    * Required
+    * The NXQL query to perform
+
+
+#### `Retention.CreateRule`
+Creates a new retention rule to the input document. Adds the `RetentionRule` facet if needed. Returns a string, the UUID of the input document.
+
+* Input: The document used for storing the rule
+* Output: The input document, with the rule
+* Paramaters:
+  * NOTE:
+    * Is is not possible to have both `beginAction` and `beginActions` set
+    * Same for `endAction` and `endActions`
+    * (An error is thrown if both parameters are set)
+  * `beginDelayPeriod`
+    * String. A Java period as string (i.e.: `"P1Y"`, `"P5Y6M3D"`)
+    * Time to way before starting retention
+    * If empty, retention starts as soon as the rule is attached to a document
+  * `retentionPeriod`
+    * String. A Java period as string (i.e.: `"P1Y"`, `"P5Y6M3D"`)
+    * Duration of the retention
+  * `beginAction`
+    * String. The ID of an operation (or automation chain) to perform when the retention starts. The operation receives the document as input.
+  * `beginActions`
+    * A list of operations/automation chains to perform when the operation starts.
+    * Called in the order of the list
+    * Each receives the document as input and are called one after the other
+  * `endAction`
+    * String. The ID of an operation (or automation chain) to perform when the retention ends. The operation receives the document as input.
+  * `endActions`
+    * A list of operations/automation chains to perform when the operation ends.
+    * Called in the order of the list
+    * Each receives the document as input and are called one after the other
+  * `beginCondExpression`
+    * String
+    * An `EL` expression, automatically evaluated in listeners. If the condition returns `true` the retention starts
+  * `beginCondEvent`
+    * a Core Event (documentModified, documentModified, ...). If this event is triggered, the plugin checks if the document should be put under retention
+  * `endCondExpression`
+    * An `EL` expression, automatically evaluated in listeners. If the condition returns `true` the retention starts
 
 <p>&nbsp;</p>
 
