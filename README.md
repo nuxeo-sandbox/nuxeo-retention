@@ -4,6 +4,30 @@
   * [Rules Definition](#rules-definition)
   * [The `Record` Facet](#the-record-facet)
 * [How it works](#how-it-works)
+  * [Rule Definition](#rule-definition)
+    * [Static Configuration](#static-configuration)
+    * [Dynamic Configuration](#dynamic-configuration)
+  * [Attach a Rule](#attach-a-rule)
+    * [Attach a Rule with Java API](#attach-a-rule-with-java-api)
+    * [Attach a Rule with Automation](#attach-a-rule-with-automation)
+	* [Attaching a Dynamic Rule from the UI](#attaching-a-dynamic-rule-from-the-ui)
+	* [Detaching a Rule](#detaching-a-rule)
+  * [Checking Rules to Start or End the Retention](#checking-rules-to-start-or-end-the-retention)
+  * [Events Sent by the Plugin](#events-sent-by-the-plugin)
+  * [Enforcing that a Document Under Active Retention Cannot Be Modified](#enforcing-that-a-document-under-active-retention-cannot-be-modified)
+* [User Interface](#user-interface)
+  * [Overriding Default Slots](#overriding-default-slots)
+  * [Deployment](#deployment)
+    * [`nuxeo-retention` folder](#nuxeo-retention-folder)
+    * [`retentionconfiguration` folder](#retentionconfiguration-folder)
+  * [Overriding the UI](#overriging-the-ui)
+    * [Overriding the Actions Vocabularies](#overriding-the-actions-vocabularies)
+* [Tuning the PLugin](*tuning-the-plugin)
+* [TODO, Work in Progess or Paused](#todo-work-in-progess-or-paused)
+* [Build and Deploy](build-and-deploy)
+* [Simple Test](#simple-test)
+* [LICENSE](#license)
+
 
 ## Principles & Concepts
 
@@ -98,7 +122,7 @@ The facet holds the `record` schema:
 
 ## How it works
 
-### Defining Rule
+### Rule Definition
 
 There are two ways to contribute retention rules:
 
@@ -305,15 +329,65 @@ The `rule:beginActions` and `rule:endActions` are expected to store a list of op
 
 To override the action, the widget, the layouts, ..., simply create in Studio the same hierarchy in Designer: a `nuxeo-retention` folder for example, with the element you want to override. To tune the action for example, duplicate the original (copy/paste the content) in your Studio and change the behavior.
 
-#### Overriding the actions vocabularies
+#### Overriding the Actions Vocabularies
 
 In the UI, the create and edit layouts for `RetentionConfiguration` document use vocabularies to improve the user experience when selecting a list of actions. It is possible to add your ow actions, and you probably want to to so since, by default, the plugin only suggests very few, like just `Document.Lock` or `Document.Unlock`.
 
 The vocabulary IDs are `RetentionBegin` and `RetentionEnd`. To override them you can just create a vocabulary of the same name in Studio and set its creation policy to _always_. At startup or hot reload, this vocabulary will then replace the one created by the plugin.
 
-## Build
+<p>&nbsp;</p>
 
-    mvn clean install
+## Tuning the Plugin
+Besides overriding the UI and vocabularies, it is also possible to tune the settings when you plan to handle a lot of document sin a raw. The plugin uses theuses the **B**ulk **A**ction **F**ramework (see [here](https://doc.nuxeo.com/nxdoc/bulk-action-framework/)), which defines bucket sizes, batch sizes etc.
+
+To override the behavior, just declare the same extension point as the one you can find in `retention-action-contrib.xml` and tune the properties. DO not forget to add the `<require>org.nuxeo.ecm.retention.actions<require>` tag to make sure your extension is called after the default one. 
+
+<hr>
+## TODO, Work in Progess or Paused
+
+
+* Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
+* Add doc about operations
+* Add doc about retention-widget:
+  * How to use it
+  * It only displays first rule (in case of list of rules)
+  * Only _dynamic_ rule
+  * Only _end_ actions
+  * TBD in dev - Add and display only if relevant (info not empty):
+    * Retention delay
+    * Retention start
+    * Retention start action
+    * ... (in shot: more about the retention)
+* In RetentionConfiguration, facets, types and states are not used to filter and handle the list of available rules => in "Apply Retention" dialog, filter available rules for the context (doc type, facet, lifecycle state)
+* Add more unit tests
+
+<hr>
+<p>&nbsp;</p>
+
+## Build and Deploy
+
+#### Build
+
+Assuming maven is installed:
+
+```
+cd /path/to/nuxeo-retention
+mvn clean install
+```
+
+#### Deploy
+
+The build creates the marketplace package at `nuxeo-retention/nuxeo-retention-package/target/nuxeo-retention-package-{version}.zip`
+
+Install this package, for example using the `nuxeoctl` command line:
+
+```
+#assuming you are in the bin directory, with the correct permissions
+# Installing version 10.10-SNAPSHOT
+./nuxeoctl mp-install /path/to/nuxeo-retention-package-10.10-SNAPSHIT.zip
+```
+
+<p>&nbsp;</p>
 
 
 ## Simple test:
@@ -350,56 +424,6 @@ POST /Retention.AttachRule
 The first time the document is modified, it will pass under retention active.
 
 <p>&nbsp;</p>
-
-## Tuning the Plugin
-Besides overriding the UI and vocabularies, it is also possible to tune the settings when you plan to handle a lot of document sin a raw. The plugin uses theuses the **B**ulk **A**ction **F**ramework (see [here](https://doc.nuxeo.com/nxdoc/bulk-action-framework/)), which defines bucket sizes, batch sizes etc.
-
-To override the behavior, just declare the same extension point as the one you can find in `retention-action-contrib.xml` and tune the properties. DO not forget to add the `<require>org.nuxeo.ecm.retention.actions<require>` tag to make sure your extension is called after the default one. 
-
-<hr>
-## TODO - Work in Progess or Paused
-
-
-* Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
-* Add doc about operations
-* Add doc about retention-widget:
-  * How to use it
-  * It only displays first rule (in case of list of rules)
-  * Only _dynamic_ rule
-  * Only _end_ actions
-  * TBD in dev - Add and display only if relevant (info not empty):
-    * Retention delay
-    * Retention start
-    * Retention start action
-    * ... (in shot: more about the retention)
-* In RetentionConfiguration, facets, types and states are not used to filter and handle the list of available rules => in "Apply Retention" dialog, filter available rules for the context (doc type, facet, lifecycle state)
-* Add more unit tests
-
-<hr>
-
-## Build and Deploy
-
-#### Build
-
-Assuming maven is installed:
-
-```
-cd /path/to/nuxeo-retention
-mvn clean install
-```
-
-#### Deploy
-
-The build creates the marketplace package at `nuxeo-retention/nuxeo-retention-package/target/nuxeo-retention-package-{version}.zip`
-
-Install this package, for example using the `nuxeoctl` command line:
-
-```
-#assuming you are in the bin directory, with the correct permissions
-# Installing version 10.10-SNAPSHOT
-./nuxeoctl mp-install /path/to/nuxeo-retention-package-10.10-SNAPSHIT.zip
-```
-
 
 ## Resources (Documentation and other links)
 
