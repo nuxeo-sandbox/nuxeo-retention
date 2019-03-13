@@ -35,6 +35,8 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
  */
 public class TestUtils {
 
+    public static final String NXQL_DEFAULT_FILTER = "ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0";
+
     public static DocumentModelList createDocumentsInFolder(CoreSession session, String path, String folderName,
             int count) throws InterruptedException {
         // Create a folder whose documents should all be put under retention
@@ -63,5 +65,11 @@ public class TestUtils {
 
         final boolean allCompleted = workManager.awaitCompletion(100, TimeUnit.SECONDS);
         assertTrue(allCompleted);
+    }
+
+    public static DocumentModelList queryRecordDocuments(CoreSession session) {
+
+        return session.query(
+                "SELECT * From Document WHERE ecm:mixinType = 'Record' AND " + TestUtils.NXQL_DEFAULT_FILTER);
     }
 }

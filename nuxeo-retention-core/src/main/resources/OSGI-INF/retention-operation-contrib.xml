@@ -7,11 +7,13 @@
 		<operation
 			class="org.nuxeo.ecm.retention.operations.AttachRetentionRule" />
 		<operation
+			class="org.nuxeo.ecm.retention.operations.BulkAttachRetentionRule" />
+		<operation
 			class="org.nuxeo.ecm.retention.operations.CreateRetentionRule" />
 		<operation
 			class="org.nuxeo.ecm.retention.operations.RemoveRetentionRules" />
 		<operation
-			class="org.nuxeo.ecm.retention.operations.BatchRemoveRetentionRule" />
+			class="org.nuxeo.ecm.retention.operations.BulkRemoveRetentionRule" />
 	</extension>
 
 </component>

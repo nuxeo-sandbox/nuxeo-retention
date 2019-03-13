@@ -26,15 +26,15 @@ import org.nuxeo.ecm.automation.core.annotations.Param;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = BatchRemoveRetentionRule.ID, category = "Retention", label = "Clear an existing retention rule from the documents returned by the NXQL query. If ruleId is empty, the record facet is removed with all the rules ")
-public class BatchRemoveRetentionRule {
+@Operation(id = BulkRemoveRetentionRule.ID, category = "Retention", label = "Clear an existing retention rule from the documents returned by the NXQL query. If ruleId is empty, the record facet is removed with all the rules ")
+public class BulkRemoveRetentionRule {
 
-    public static final String ID = "Retention.BatchRemoveRule";
+    public static final String ID = "Retention.BulkRemoveRule";
 
     @Param(name = "ruleId", required = false)
     protected String ruleId;
 
-    @Param(name = "nxql", required = false)
+    @Param(name = "nxql", required = true)
     protected String nxql;
 
     @Context
@@ -44,11 +44,7 @@ public class BatchRemoveRetentionRule {
     CoreSession session;
 
     @OperationMethod
-    public void removeRetentionRule() {
-        if(StringUtils.isBlank(ruleId) && StringUtils.isBlank(nxql)) {
-            throw new IllegalArgumentException("One of the parameter (ruleId or nxql) at least must be set");
-        }
-        
+    public void run() {
         if (StringUtils.isNotBlank(ruleId)) {
             retentionService.clearRule(ruleId, nxql);
         } else {

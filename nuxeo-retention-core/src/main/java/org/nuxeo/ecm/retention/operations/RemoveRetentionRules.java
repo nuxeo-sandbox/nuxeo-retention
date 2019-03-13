@@ -43,7 +43,7 @@ public class RemoveRetentionRules {
     CoreSession session;
 
     @OperationMethod(collector = DocumentModelCollector.class)
-    public DocumentModel attachRetentionRule(DocumentModel doc) {
+    public DocumentModel run(DocumentModel doc) {
         if (ruleIds == null || ruleIds.isEmpty()) {
             retentionService.clearRules(doc);
         } else {

@@ -47,7 +47,8 @@ import org.nuxeo.ecm.retention.adapter.Record;
 import org.nuxeo.ecm.retention.adapter.Record.RecordRule;
 import org.nuxeo.ecm.retention.adapter.RetentionRule;
 import org.nuxeo.ecm.retention.operations.AttachRetentionRule;
-import org.nuxeo.ecm.retention.operations.BatchRemoveRetentionRule;
+import org.nuxeo.ecm.retention.operations.BulkAttachRetentionRule;
+import org.nuxeo.ecm.retention.operations.BulkRemoveRetentionRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
@@ -80,10 +81,8 @@ public class RetentionOperationsTest {
     @Test
     public void testAttachRuleWithDoc() throws Exception {
 
-        // we are deploying a very simple static rule
         RetentionRule rule = service.getRetentionRule("SimpleRule", session);
         assertNotNull(rule);
-        assertEquals("P1Y", rule.getRetentionDuration());
 
         DocumentModel doc = session.createDocumentModel("/", "file", "File");
         doc.setPropertyValue("dc:title", "file");
@@ -111,12 +110,10 @@ public class RetentionOperationsTest {
     }
 
     @Test
-    public void testAttachRuleWithNxql() throws Exception {
+    public void testBulkAttachRule() throws Exception {
 
-        // we are deploying a very simple static rule
         RetentionRule rule = service.getRetentionRule("SimpleRule", session);
         assertNotNull(rule);
-        assertEquals("P1Y", rule.getRetentionDuration());
 
         // Create a folder with a document that should not be put under retention
         DocumentModel folder1 = session.createDocumentModel("/", "folder1", "Folder");
@@ -126,15 +123,15 @@ public class RetentionOperationsTest {
         noChangeDoc = session.createDocument(noChangeDoc);
 
         // Create a folder whose documents should all be put under retention
-        DocumentModelList docs = TestUtils.createDocumentsInFolder(session, "/", "folderRetention", 5);
+        int MAX_DOCS = 5;
+        DocumentModelList docs = TestUtils.createDocumentsInFolder(session, "/", "folderRetention", MAX_DOCS);
 
         // Just check all look good before attaching the rule
         noChangeDoc = session.getDocument(noChangeDoc.getRef());
         assertFalse(noChangeDoc.hasFacet("Record"));
-        docs.forEach((oneDoc) -> {
-            oneDoc.refresh();
-            assertFalse(oneDoc.hasFacet("Record"));
-        });
+        
+        docs = TestUtils.queryRecordDocuments(session);
+        assertEquals(0, docs.size());
 
         // Attach the rule using NXQL
         OperationContext ctx = new OperationContext();
@@ -142,24 +139,21 @@ public class RetentionOperationsTest {
         ctx.setCoreSession(session);
         Map<String, Serializable> params = new HashMap<String, Serializable>();
         params.put("ruleId", rule.getId());
-        params.put("nxql",
-                "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' AND ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0");
-
-        automationService.run(ctx, AttachRetentionRule.ID, params);
+        params.put("nxql", "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' AND "
+                + TestUtils.NXQL_DEFAULT_FILTER);
+        automationService.run(ctx, BulkAttachRetentionRule.ID, params);
         TestUtils.waitForWorkers();
 
         noChangeDoc = session.getDocument(noChangeDoc.getRef());
         assertFalse(noChangeDoc.hasFacet("Record"));
 
-        docs.forEach((oneDoc) -> {
-            oneDoc = session.getDocument(oneDoc.getRef());
-            assertTrue(oneDoc.hasFacet("Record"));
-        });
+        docs = TestUtils.queryRecordDocuments(session);
+        assertEquals(MAX_DOCS, docs.size());
 
     }
 
     @Test
-    public void testClearRulesWithNxql() throws Exception {
+    public void testBulkRemoveAllRetentionRules() throws Exception {
 
         RetentionRule rule = service.getRetentionRule("retentionWithDelay", session);
         assertNotNull(rule);
@@ -167,29 +161,28 @@ public class RetentionOperationsTest {
         int MAX_DOCS = 5;
         DocumentModelList docs = TestUtils.createDocumentsInFolder(session, "/", "folderRetention", MAX_DOCS);
 
-        // Attach the rule using NXQL
-        String defaultFilter = " AND ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0";
-        String NXQL_DOCS_IN_FOLDER = "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' "
-                + defaultFilter;
+        // Bulk attach the rule
+        String NXQL_DOCS_IN_FOLDER = "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' AND "
+                + TestUtils.NXQL_DEFAULT_FILTER;
         service.attachRule(rule.getId(), NXQL_DOCS_IN_FOLDER, session);
         TestUtils.waitForWorkers();
 
         // Check it was attached
-        docs = session.query("SELECT * From Document WHERE ecm:mixinType = 'Record' " + defaultFilter);
+        docs = TestUtils.queryRecordDocuments(session);
         assertEquals(MAX_DOCS, docs.size());
 
-        // Now, clear all rules and this should remove the "Record" facet
+        // Now, clear all rules. No ruleId param should remove the "Record" facet
         OperationContext ctx = new OperationContext();
         ctx.setInput(null);
         ctx.setCoreSession(session);
         Map<String, Serializable> params = new HashMap<String, Serializable>();
         params.put("nxql",
                 "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' AND ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0");
-        automationService.run(ctx, BatchRemoveRetentionRule.ID, params);
+        automationService.run(ctx, BulkRemoveRetentionRule.ID, params);
         TestUtils.waitForWorkers();
 
         // Check it was removed
-        docs = session.query("SELECT * From Document WHERE ecm:mixinType = 'Record' " + defaultFilter);
+        docs = TestUtils.queryRecordDocuments(session);
         assertEquals(0, docs.size());
 
     }

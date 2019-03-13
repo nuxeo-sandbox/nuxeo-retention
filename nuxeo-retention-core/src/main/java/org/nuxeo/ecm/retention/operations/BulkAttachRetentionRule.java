@@ -23,16 +23,18 @@ import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
 import org.nuxeo.ecm.automation.core.annotations.Param;
 import org.nuxeo.ecm.core.api.CoreSession;
-import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = AttachRetentionRule.ID, category = "Retention", label = "Attach an existing retention rule to the input document. ruleId is either the unique name of an XML contribution or the UUID of a document with the RetentionRule facet")
-public class AttachRetentionRule {
+@Operation(id = BulkAttachRetentionRule.ID, category = "Retention", label = "Attach an existing retention rule to the documents returned by the NXQL query. ruleId is either the unique name of an XML contribution or the UUID of a document with the RetentionRule facet")
+public class BulkAttachRetentionRule {
 
-    public static final String ID = "Retention.AttachRule";
+    public static final String ID = "Retention.BulkAttachRule";
     
     @Param(name = "ruleId", required = true)
     protected String ruleId;
+
+    @Param(name = "nxql", required = true)
+    protected String nxql;
 
     @Context
     RetentionService retentionService;
@@ -41,8 +43,7 @@ public class AttachRetentionRule {
     CoreSession session;
 
     @OperationMethod
-    public DocumentModel run(DocumentModel doc) {
-        retentionService.attachRule(ruleId, doc);
-        return doc;
+    public void run() {
+        retentionService.attachRule(ruleId, nxql, session);
     }
 }

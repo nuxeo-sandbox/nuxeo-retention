@@ -571,14 +571,13 @@ public class RetentionServiceTest {
         DocumentModelList docs = TestUtils.createDocumentsInFolder(session, "/", "folderRetention", MAX_DOCS);
 
         // Attach the rule using NXQL
-        String defaultFilter = " AND ecm:isTrashed = 0 AND ecm:isVersion = 0 AND ecm:isProxy = 0";
-        String NXQL_DOCS_IN_FOLDER = "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' "
-                + defaultFilter;
+        String NXQL_DOCS_IN_FOLDER = "SELECT * FROM Document WHERE ecm:path STARTSWITH '/folderRetention/' AND "
+                + TestUtils.NXQL_DEFAULT_FILTER;
         service.attachRule(rule.getId(), NXQL_DOCS_IN_FOLDER, session);
         TestUtils.waitForWorkers();
 
         // Check it was attached
-        docs = session.query("SELECT * From Document WHERE ecm:mixinType = 'Record' " + defaultFilter);
+        docs = TestUtils.queryRecordDocuments(session);
         assertEquals(MAX_DOCS, docs.size());
 
         // Now, clear all rules and this should remove the "Record" facet
@@ -586,7 +585,7 @@ public class RetentionServiceTest {
         TestUtils.waitForWorkers();
 
         // Check it was removed
-        docs = session.query("SELECT * From Document WHERE ecm:mixinType = 'Record' " + defaultFilter);
+        docs = TestUtils.queryRecordDocuments(session);
         assertEquals(0, docs.size());
 
     }
