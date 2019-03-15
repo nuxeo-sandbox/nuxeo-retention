@@ -87,11 +87,40 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     public static final String RULES_EP = "rules";
 
+    public static boolean processEventsAndRules = true;
+
     public enum ActionType {
         BEGIN, END
     }
 
     public static Log log = LogFactory.getLog(RetentionComponent.class);
+
+    /*
+     * We dont <code>synchronized</code> because the goal of this flag is mainly import/data setup.
+     */
+    @Override
+    public void stopEventsAndEvaluationRulesProcessing() {
+
+        if (processEventsAndRules) {
+            processEventsAndRules = false;
+            log.warn("Retention Service is disabled: Events are not handled and evaluation of rules is not active.");
+        }
+    }
+
+    @Override
+    public void activateEventsAndEvaluationRulesProcessing() {
+
+        if (!processEventsAndRules) {
+            processEventsAndRules = true;
+            log.warn("Retention Service is re-enabled: Events are now handled and evaluation of rules is active.");
+        }
+
+    }
+
+    @Override
+    public boolean eventsAndEvaluationRulesAreProcessed() {
+        return processEventsAndRules;
+    }
 
     @Override
     public void registerContribution(Object contribution, String extensionPoint, ComponentInstance contributor) {
@@ -115,13 +144,15 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             RetentionRule rule = getRetentionRule(ruleId, session);
             record.addRule(ruleId);
             // start the rule if possible
-            Boolean ruleApplies = rule.getBeginCondition() != null
-                    ? evaluateConditionExpression(initActionContext(record.getDoc(), session),
-                            rule.getBeginCondition().getExpression(), record.getDoc(), null, session)
-                    : true;
-            if (rule.getBeginCondition().getEvent() == null) {
-                if (ruleApplies) {
-                    evalRetentionDatesAndStartOrExpireIfApplies(record, rule, new Date(), false, session);
+            if (eventsAndEvaluationRulesAreProcessed()) {
+                Boolean ruleApplies = rule.getBeginCondition() != null
+                        ? evaluateConditionExpression(initActionContext(record.getDoc(), session),
+                                rule.getBeginCondition().getExpression(), record.getDoc(), null, session)
+                        : true;
+                if (rule.getBeginCondition().getEvent() == null) {
+                    if (ruleApplies) {
+                        evalRetentionDatesAndStartOrExpireIfApplies(record, rule, new Date(), false, session);
+                    }
                 }
             }
             record.save(session);
@@ -204,6 +235,11 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     @Override
     public void evalRules(Record record, Set<String> events, Date dateToCheck, CoreSession session) {
+
+        if (!eventsAndEvaluationRulesAreProcessed()) {
+            return;
+        }
+
         if (record == null) {
             return; // nothing to do
         }
@@ -308,6 +344,10 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
     public void notifyRetentionAboutToExpire(Date dateToCheck) {
         final Date dateRef = dateToCheck != null ? dateToCheck : new Date();
 
+        if (!eventsAndEvaluationRulesAreProcessed()) {
+            return;
+        }
+
         new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
             @Override
             public void run() {
@@ -353,6 +393,10 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
 
     protected void evalRules(Date dateToCheck, String providerName) {
         final Date dateRef = dateToCheck != null ? dateToCheck : new Date();
+
+        if (!eventsAndEvaluationRulesAreProcessed()) {
+            return;
+        }
 
         new UnrestrictedSessionRunner(Framework.getService(RepositoryManager.class).getDefaultRepositoryName()) {
             @Override

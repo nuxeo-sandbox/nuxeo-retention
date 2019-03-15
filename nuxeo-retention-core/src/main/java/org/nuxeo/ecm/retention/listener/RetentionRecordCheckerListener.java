@@ -66,6 +66,13 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
 
     @Override
     public void handleEvent(EventBundle events) {
+        
+        RetentionService retentionService = Framework.getService(RetentionService.class);
+        
+        if(!retentionService.eventsAndEvaluationRulesAreProcessed()) {
+            return;
+        }
+        
         Map<String, Set<String>> docsToCheckAndEvents = new HashMap<String, Set<String>>();
 
         Map<String, Boolean> documentModifiedIgnored = new HashMap<String, Boolean>();
@@ -103,7 +110,7 @@ public class RetentionRecordCheckerListener implements PostCommitFilteringEventL
         }
 
         // ToDo: check how many events max in a bundle
-        Framework.getService(RetentionService.class).evalRules(docsToCheckAndEvents, new Date());
+        retentionService.evalRules(docsToCheckAndEvents, new Date());
 
     }
 

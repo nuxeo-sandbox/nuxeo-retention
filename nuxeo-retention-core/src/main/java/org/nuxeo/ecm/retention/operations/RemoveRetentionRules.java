@@ -28,7 +28,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = RemoveRetentionRules.ID, category = "Retention", label = "Remove a list of retention rules. If ruleIds is empty, removes all the rules")
+@Operation(id = RemoveRetentionRules.ID, category = "Retention", label = "Retention: Remove Rule(s)", description = "Remove a list of retention rules. If ruleIds is empty, removes all the rules")
 public class RemoveRetentionRules {
 
     public static final String ID = "Retention.RemoveRules";
