@@ -180,4 +180,28 @@ public interface RetentionService {
             String beginAction, String[] beginActions, String endAction, String[] endActions,
             String beginCondExpression, String beginCondEvent, String endCondExpression, DocumentModel doc,
             CoreSession session);
+    
+    /**
+     * Global "pause" of the rule handling. Useful when importing data containing already rules/end dates/et.
+     * The pause is global and applies to the whole system, it is not a "per call" or "per document" basis.
+     * 
+     * Restore the handling by calling {@code handEventsAndEvalRules}
+     * 
+     * @since 10.10
+     */
+    void stopEventsAndEvaluationRulesProcessing();
+    
+    /**
+     * Restore the handling of events and rules evaluation that was paused with {@code ignoreEventsAndDoNotEvalRules}
+     * 
+     * @since 10.10
+     */
+    void activateEventsAndEvaluationRulesProcessing();
+    
+    /**
+     * Check the processing of evens and rules evaluation
+     * 
+     * @since 10.10
+     */
+    boolean eventsAndEvaluationRulesAreProcessed();
 }

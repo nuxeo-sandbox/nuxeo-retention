@@ -15,6 +15,7 @@
  *
  * Contributors:
  *     mcedica@nuxeo.com
+ *     Thibaud Arguillere
  */
 package org.nuxeo.ecm.retention.operations;
 
@@ -27,7 +28,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = CreateRetentionRule.ID, category = "Retention", label = "Creates a new retention rule to the input document. Adds the RetentionRule facet if needed. Returns a string, the UUID of the input document.")
+@Operation(id = CreateRetentionRule.ID, category = "Retention", label = "Retention: Create Rule", description = "Creates a new retention rule to the input document. Adds the RetentionRule facet if needed. Returns a string, the UUID of the input document.")
 public class CreateRetentionRule {
 
     public static final String ID = "Retention.CreateRule";

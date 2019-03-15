@@ -73,11 +73,13 @@ import org.nuxeo.ecm.retention.adapter.Record.RecordRule;
 import org.nuxeo.ecm.retention.operations.AttachRetentionRule;
 import org.nuxeo.ecm.retention.operations.CreateRetentionRule;
 import org.nuxeo.ecm.retention.service.RetentionService;
+import org.nuxeo.ecm.retention.service.RetentionService.RETENTION_STATE;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.runtime.test.runner.TransactionalFeature;
+import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
 
@@ -588,6 +590,59 @@ public class RetentionServiceTest {
         docs = TestUtils.queryRecordDocuments(session);
         assertEquals(0, docs.size());
 
+    }
+    
+    @Test
+    public void testServiceActivation() throws Exception {
+        
+        RetentionRule rule = service.getRetentionRule("SimpleRule", session);
+        assertNotNull(rule);
+        
+        // We disable the service
+        service.stopEventsAndEvaluationRulesProcessing();
+
+        DocumentModel doc = session.createDocumentModel("/", "root", "File");
+        doc.setPropertyValue("dc:title", "TEST_RET");
+        doc = session.createDocument(doc);
+        service.attachRule(rule.getId(), doc);
+        session.save();
+        
+        // The rule must of course be attached
+        Record record = doc.getAdapter(Record.class);
+        assertNotNull(record);
+        assertTrue(record.hasRule(rule.getId()));
+        // But it must not be under active retention because the service was disabled
+        assertNull(record.getStatus());
+
+        // Context for disabling/enabling service is to import
+        // So we must set fields and all to avoid the service to
+        // recalculate end dates and all
+        // => We must set some values
+        record.setStatus(RETENTION_STATE.active.name());
+        Calendar aYearAgo = Calendar.getInstance();
+        aYearAgo.add(Calendar.YEAR, -1);
+        aYearAgo.add(Calendar.MONTH, -2);
+        Calendar lastMonth = Calendar.getInstance();
+        lastMonth.add(Calendar.MONTH, -1);
+        record.setMinCutoffAt(aYearAgo);
+        record.setMaxRetentionAt(lastMonth);
+        record.save(session);
+        
+        session.save();
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
+        
+        service.activateEventsAndEvaluationRulesProcessing();
+                
+        DocumentEventContext context = new DocumentEventContext(session, null, doc);
+        Framework.getService(EventService.class).fireEvent(RetentionService.RETENTION_CHECKER_EVENT, context);
+
+        TestUtils.waitForWorkers();
+
+        doc = session.getDocument(doc.getRef());
+        record = doc.getAdapter(Record.class);
+        assertEquals(RETENTION_STATE.expired.name(), record.getStatus());
+        
     }
 
 }

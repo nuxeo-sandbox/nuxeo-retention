@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Contributors:
- *     mcedica@nuxeo.com
+ *     Thibaud Arguillere
  */
 package org.nuxeo.ecm.retention.operations;
 
@@ -26,7 +26,7 @@ import org.nuxeo.ecm.automation.core.annotations.Param;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.retention.service.RetentionService;
 
-@Operation(id = BulkRemoveRetentionRule.ID, category = "Retention", label = "Clear an existing retention rule from the documents returned by the NXQL query. If ruleId is empty, the record facet is removed with all the rules ")
+@Operation(id = BulkRemoveRetentionRule.ID, category = "Retention", label = "Retention: Bulk Remove Rule", description = "Clear an existing retention rule from the documents returned by the NXQL query. If ruleId is empty, the record facet is removed with all the rules ")
 public class BulkRemoveRetentionRule {
 
     public static final String ID = "Retention.BulkRemoveRule";
