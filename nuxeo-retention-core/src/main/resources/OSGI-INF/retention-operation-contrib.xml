@@ -14,6 +14,10 @@
 			class="org.nuxeo.ecm.retention.operations.RemoveRetentionRules" />
 		<operation
 			class="org.nuxeo.ecm.retention.operations.BulkRemoveRetentionRule" />
+		<operation
+			class="org.nuxeo.ecm.retention.operations.DisableService" />
+		<operation
+			class="org.nuxeo.ecm.retention.operations.EnableService" />
 	</extension>
 
 </component>
