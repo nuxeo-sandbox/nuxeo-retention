@@ -185,6 +185,9 @@ public interface RetentionService {
      * Global "pause" of the rule handling. Useful when importing data containing already rules/end dates/et.
      * The pause is global and applies to the whole system, it is not a "per call" or "per document" basis.
      * 
+     * This should be limited to data import, and the imported data <b>must</b> have the fields of each rule
+     * set, especially the cutoff date, the retention period and the max retention data
+     * 
      * Restore the handling by calling {@code handEventsAndEvalRules}
      * 
      * @since 10.10
