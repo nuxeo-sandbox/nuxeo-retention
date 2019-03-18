@@ -1,43 +1,15 @@
 <?xml version="1.0"?>
-<xs:schema targetNamespace="http://www.nuxeo.org/ecm/schemas/retention_config/" 
-  xmlns:xs="http://www.w3.org/2001/XMLSchema" 
-  xmlns:nxs="http://www.nuxeo.org/ecm/schemas/retention_config/" 
-  xmlns:ref="http://www.nuxeo.org/ecm/schemas/core/external-references/">
+<xs:schema
+	targetNamespace="http://www.nuxeo.org/ecm/schemas/retention_config/"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:nxs="http://www.nuxeo.org/ecm/schemas/retention_config/">
 
-  <xs:simpleType name="docTypesList">
-    <xs:list>
-      <xs:simpleType>
-        <xs:restriction base="xs:string" ref:resolver="directoryResolver" ref:directory="RetentionDoctypes" />
-      </xs:simpleType>
-    </xs:list>
-  </xs:simpleType>
+	<xs:element name="delayDays" type="xs:integer" />
+	<xs:element name="delayMonths" type="xs:integer" />
+	<xs:element name="delayYears" type="xs:integer" />
 
-  <xs:simpleType name="facetsList">
-    <xs:list>
-      <xs:simpleType>
-        <xs:restriction base="xs:string" ref:resolver="directoryResolver" ref:directory="RetentionFacets" />
-      </xs:simpleType>
-    </xs:list>
-  </xs:simpleType>
-
-  <xs:simpleType name="statesList">
-    <xs:list>
-      <xs:simpleType>
-        <xs:restriction base="xs:string" ref:resolver="directoryResolver" ref:directory="RetentionStates" />
-      </xs:simpleType>
-    </xs:list>
-  </xs:simpleType>
-
-  <xs:element name="delayDays" type="xs:integer" />
-  <xs:element name="delayMonths" type="xs:integer" />
-  <xs:element name="delayYears" type="xs:integer" />
-
-  <xs:element name="durationDays" type="xs:integer" />
-  <xs:element name="durationMonths" type="xs:integer" />
-  <xs:element name="durationYears" type="xs:integer" />
-
-  <xs:element name="docTypes" type="nxs:docTypesList" />
-  <xs:element name="facets" type="nxs:facetsList" />
-  <xs:element name="states" type="nxs:statesList" />
+	<xs:element name="durationDays" type="xs:integer" />
+	<xs:element name="durationMonths" type="xs:integer" />
+	<xs:element name="durationYears" type="xs:integer" />
 
 </xs:schema>

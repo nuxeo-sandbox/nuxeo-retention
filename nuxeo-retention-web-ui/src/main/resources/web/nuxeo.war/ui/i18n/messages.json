@@ -24,9 +24,6 @@
   "retention.label.endCondition": "End Condition:",
   "retention.label.or": "Or",
 
-  "retention.label.field.docTypes": "Type(s)",
-  "retention.label.field.facets": "Facet(s)",
-  "retention.label.field.states": "State(s)",
   "retention.label.field.days": "Days",
   "retention.label.field.months": "Months",
   "retention.label.field.years": "Years",
