@@ -15,7 +15,7 @@
         return !this.isUnderRetention(doc);
       },
 
-      /* Just checks if not under retention and if user chas write access
+      /* Just checks if not under retention and if user has write access
        *
        */
        canBeSentToRetention: function(document) {
@@ -37,6 +37,60 @@
         return   permissions.indexOf("ReadWrite") > -1
               || permissions.indexOf("Write") > -1
               || permissions.indexOf("Everything") > -1;
+
+      },
+
+      /* Allows for checking based on lifecycle state(s), group(s) membership, and/or facet(s)
+       * Comparison is an OR.
+       * To ignore on param, pass it null or as an empty array.
+       *
+       * Example:
+
+       */
+      canBeSentToRetentionWithParams(document, user, /*array string*/ states, /*array string*/ groups, /*array string*/ facets) {
+
+        // Check basic settings
+        if(!this.canBeSentToRetention(document)) {
+          return false;
+        }
+
+        let statesOk, groupsOk, facetsOk;
+
+        if(!states || !states.length || states.length === 0) {
+          statesOk = true;
+        } else {
+          statesOk = states.indexOf(document.state) >  -1;
+        }
+
+
+        if(!groups || !groups.length || groups.length === 0) {
+          groupsOk = true;
+        } else {
+          groupsOk = false;
+          if(user && user.properties && user.properties.groups) {
+            let userGroups = user.properties.groups;
+            for(let oneGroup of groups) {
+              if(userGroups.indexOf(oneGroup) > -1) {
+                groupsOk = true;
+                break;
+              }
+            }
+          }
+        }
+        
+        if(!facets || !facets.length || facets.length === 0) {
+          facetsOk = true;
+        } else {
+          facetsOk = false;
+          for(let oneFacet of facets) {
+              if(document.facets.indexOf(oneFacet) > 0) {
+              facetsOk = true;
+              break;
+            }
+          }
+        }
+
+        return statesOk && groupsOk && facetsOk;
 
       },
 
