@@ -1,4 +1,6 @@
 {
+  "label.document.type.retentionconfig": "retention - Configuration",
+
   "retention.label.applyRetention": "Appliquer Rétention",
   "retention.label.applyRetentionRule": "Appliquer la règle de rétention",
   "retention.label.availableConfigurations": "Configurations Disponibles",
