@@ -73,32 +73,6 @@
               type="text"></nuxeo-input>
     </nuxeo-card>
 
-    <nuxeo-card heading="[[i18n('retention.label.retentionContext')]]">
-      <nuxeo-directory-suggestion
-              role="widget"
-              value="{{document.properties.retentionconfig:docTypes}}"
-              label="[[i18n('retention.label.field.docTypes')]]"
-              multiple="true"
-              directory-name="RetentionDoctypes"
-              min-chars="0"></nuxeo-directory-suggestion>
-
-      <nuxeo-directory-suggestion
-              role="widget"
-              value="{{document.properties.retentionconfig:facets}}"
-              label="[[i18n('retention.label.field.facets')]]"
-              multiple="true"
-              directory-name="RetentionFacets"
-              min-chars="0"></nuxeo-directory-suggestion>
-
-      <nuxeo-directory-suggestion
-              role="widget" 
-              value="{{document.properties.retentionconfig:states}}"
-              label="[[i18n('retention.label.field.states')]]"
-              multiple="true"
-              directory-name="RetentionStates"
-              min-chars="0"></nuxeo-directory-suggestion>
-    </nuxeo-card>
-
     <nuxeo-card heading="[[i18n('retention.label.retentionDelay')]]">
       <div class="layout horizontal flex">
         <nuxeo-input role="widget"

@@ -14,15 +14,6 @@
 
     <nuxeo-input role="widget" value="{{document.properties.dc:description}}" label="Description" type="text"></nuxeo-input>
 
-    <nuxeo-directory-suggestion role="widget" value="{{document.properties.retentionconfig:docTypes}}" label="Types"
-      multiple="true" directory-name="RetentionDoctypes" min-chars="0"></nuxeo-directory-suggestion>
-
-    <nuxeo-directory-suggestion role="widget" value="{{document.properties.retentionconfig:facets}}" label="Facets"
-      multiple="true" directory-name="RetentionFacets" min-chars="0"></nuxeo-directory-suggestion>
-
-    <nuxeo-directory-suggestion value="{{document.properties.retentionconfig:states}}" label="States" multiple="true"
-      directory-name="RetentionStates" role="widget" min-chars="0"></nuxeo-directory-suggestion>
-
     <label>Retention Delay</label>
     <div class="layout horizontal flex">
       <nuxeo-input role="widget" value="{{document.properties.retentionconfig:delayDays}}" on-input="_delayDuration"
