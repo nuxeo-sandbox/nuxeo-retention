@@ -1,0 +1,176 @@
+<!--
+`retention-widget`
+@group Nuxeo UI
+@element retention-config-widget
+-->
+<!-- WARNING - IMPORTANT
+in case a _list_ of rules were stored, the widget only displays the first one (see _documentChanged())
+-->
+<dom-module id="retention-config-widget">
+  <template>
+    <style include="iron-flex iron-flex-alignment">
+      *[role=widget] {
+        padding: 5px;
+      }
+      
+      /*
+      ** Set back to default values.
+      ** These are overridden in themes/base.html
+      */
+
+      paper-card {
+        padding: 0;
+        border-radius: 2px;
+      }
+
+      paper-card {
+        --paper-card-content: {
+          padding-top: 0;
+        };
+        --paper-card-header-text:{
+          margin-bottom: 0;
+        };
+      } 
+      
+      .chip {
+        background-color: #7e90a5;
+        border-radius: 3px;
+        color: #fff;
+        padding: 0.06em 0.6em;
+        text-transform: uppercase;
+        vertical-align: baseline;
+        white-space: nowrap;
+        margin-left: 0px;
+      } 
+
+      .retentioninfoLabel {
+        border-radius: 3px;
+        vertical-align: baseline;
+        white-space: nowrap;
+        border-style: solid;
+        border-color: white;
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+
+      .retentionAction {
+        border-radius: 3px;
+        color: #7e90a5;
+        padding: 0.06em 0.9em;
+        text-transform: capitalize;
+        vertical-align: baseline;
+        white-space: nowrap;
+        border-style: solid;
+        border-color: #7e90a5;
+      }
+
+      .ruleTitle {
+        font-size: larger;
+        font-weight: bold;
+        color: #7e90a5;
+      }
+    </style>
+
+    <template is="dom-if" if="[[hasFacet(document, 'RetentionRule')]]">
+      <paper-card heading="[[i18n('label.document.type.retentionconfig')]]">
+
+        <div class="card-content layout horizontal">
+          <div class="retentioninfoLabel">[[i18n('retention.label.rule')]]:</div>
+          <div class="retentioninfoLabel ruleTitle" style="margin-left: 0px !important">[[document.title]]</div>
+        </div>
+
+        <template is="dom-if" if="[[_hasBeginPeriod]]">
+          <div class="card-content layout horizontal">
+            <div class="retentioninfoLabel">[[i18n('retention.label.field.delayPeriod')]]:</div>
+            <div class="retentioninfoLabel" style="margin-left: 0px !important">[[document.properties.rule:beginDelayPeriod]]</div>
+          </div>
+        </template>
+
+        <div class="card-content layout horizontal" hidden$="[[!_hasDuration]]">
+          <div class="retentioninfoLabel">[[i18n('retention.label.retentionDuration')]]</div>
+          <div class="chip">[[document.properties.rule:retentionDurationPeriod]]</div>
+
+          <div class="retentioninfoLabel">[[i18n('retention.label.then')]]</div>
+          <template is="dom-repeat" items="[[endActionLabels]]" as="action">
+            <div class="retentionAction">[[action]]</div>
+            <template is="dom-if" if="[[_needArrow(index)]]">
+              <div style="font-size: 40px">&#8594;</div>
+            </template>
+          </template>
+        </div>
+
+      </paper-card>
+    </template>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'retention-config-widget',
+      behaviors: [Nuxeo.LayoutBehavior,Nuxeo.FiltersBehavior],
+      properties: {
+
+        //You can use either @schema or @doctype annotation in your model
+        /**
+         * @schema dublincore
+         */
+        document: {
+          type: Object,
+          observer: "_documentChanged"
+        },
+
+        endActionLabels: {
+          type: Array,
+          value: []
+        },
+        maxActions: {
+          type: Number,
+          value: 0
+        },
+
+        _hasBeginPeriod: {
+          type: Boolean,
+          value: false
+        },
+        _hasDuration: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      // We filtered on "hasFacet("RetentionRule") => we know we have the retention_rule schema
+      _documentChanged: function(newDoc, previousDoc) {
+        if(newDoc) {
+
+          this._hasBeginPeriod = newDoc.properties["rule:beginDelayPeriod"] !== null;
+          this._hasDuration = newDoc.properties["rule:retentionDurationPeriod"] !== null;
+
+          let endActions = newDoc.properties["rule:endActions"];
+
+          if(endActions.length) {
+            let endActionLabels = [];
+            endActions.forEach( (dirEntry) => {
+              endActionLabels.push(dirEntry.properties.label);
+            });
+            this.endActionLabels = endActionLabels;
+            this.maxActions = endActions.length - 1;
+          } else {
+            // Display the name of the automation chain
+            let endAction = newDoc.properties["rule:endAction"];
+            if(endAction) {
+              this.endActionLabels = [endAction];
+              this.maxActions = endActions.length - 1;
+            }
+          }
+
+        }
+      },
+
+      _needArrow: function(idx) {
+        return idx < this.maxActions;
+      }
+
+    });
+
+  </script>
+</dom-module>
