@@ -446,8 +446,7 @@ To override the behavior, just declare the same extension point as the one you c
 
 ## TODO
 
-* Make it look better in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
-* Add doc about operations
+* Make it look better (UI) in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
 * Add doc about retention-widget:
   * TBD in dev - Add and display only if relevant (info not empty):
     * Retention delay
@@ -455,7 +454,15 @@ To override the behavior, just declare the same extension point as the one you c
     * Retention start action
     * ... (in shot: more about the retention)
 * In RetentionConfiguration, facets, types and states are not used to filter and handle the list of available rules => in "Apply Retention" dialog, filter available rules for the context (doc type, facet, lifecycle state)
+* Add an admin dashboard with statistics
+  * Number of doc under active retention/expired retention
+  * Number which expire in the enxt 12 months
+  * ...
+* test adding more than a rule (usecase: "Legal Hold")
 * Add more unit tests
+  * Several rules applied one after the other
+  * All possible condition (event, EL, ...)
+    * Not _all_ possible :-), but covering every field used in the plugin
 
 <hr>
 <p>&nbsp;</p>
