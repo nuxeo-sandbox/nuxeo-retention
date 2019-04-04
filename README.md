@@ -447,6 +447,18 @@ To override the behavior, just declare the same extension point as the one you c
 ## TODO
 
 * Make it look better (UI) in the misc. layouts (create/edit/metadata of RetentionConfg, mainly)
+* AllowChange the retention widget that displays only the first rule: If there are more than 1, display them all
+* Allow UI to edit the rules on a document (not only the configuration)
+ * use case: dynamically ad a  nw rule
+ * Modify current rule because a Legal Hold must be put
+ * . . .
+* Allow for a mechanism where even an admin cannot modify a document under retention
+  * A boolean, maybe, like "Admin can modify", default true
+  * Security policy checks that and forbids modif by anyone when it's false
+  * Even more tuned (maybe for a v2? ;-)) => list groups which _can_ modify a document under retention
+* In all case, allow for legal hold
+  * So a docuent is under retention and a new rule must be added because the document is used in a lawsuit
+  * (this will be tricky if "admin cannot modifi)
 * Add doc about retention-widget:
   * TBD in dev - Add and display only if relevant (info not empty):
     * Retention delay
