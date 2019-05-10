@@ -1,4 +1,7 @@
 {
+  "eventCategory.Retention": "Retention",
+  "eventType.retentionActive": "Retention Active",
+  "eventType.retentionExpired": "Retention Expired",
   "label.document.type.retentionconfig": "Retention Configuration",
 
   "retention.label.summary": "Summary",
