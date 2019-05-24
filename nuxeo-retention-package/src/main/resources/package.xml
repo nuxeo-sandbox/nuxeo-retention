@@ -1,10 +1,11 @@
 <!-- See documentation at http://doc.nuxeo.com/x/HgIz -->
 <package type="addon" name="nuxeo-retention-rule-provider" version="@VERSION@">
-  <title>Nuxeo retention rule provider</title>
+  <title>Nuxeo Document Retention</title>
   <description>
-    <p>Put here an HTML description of your Nuxeo Package.</p>
+    <p>This plugin allows for defining retention rule(s) and attach the rule(s) to any number of documents.
+       A document under active retention cannot be modified or deleted.</p>
   </description>
-  <!-- <home-page>http://doc.nuxeo.com/</home-page> -->
+  <home-page>https://github.com/nuxeo-sandbox/nuxeo-retention</home-page>
   <vendor>Nuxeo</vendor>
   <installer restart="true" />
   <uninstaller restart="true" />
@@ -38,5 +39,5 @@
   <license>Apache License, Version 2.0</license>
   <license-url>http://www.apache.org/licenses/LICENSE-2.0</license-url>
   <!-- Visibility: PRIVATE | MARKETPLACE | DEV | PUBLIC -->
-  <visibility>DEV</visibility>
+  <visibility>PUBLIC</visibility>
 </package>
