@@ -1,4 +1,6 @@
 id,label,obsolete
 "Document.Unlock","label.retention.endaction.unlock",0
+"Document.Notify","label.retention.endaction.notify",0
 "Document.Delete","label.retention.endaction.delete",0
 "Document.Trash","label.retention.endaction.trash",0
+"Document.Archive","label.retention.endaction.archive",0
