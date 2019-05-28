@@ -1,0 +1,6 @@
+id,label,obsolete
+"Obsolete","label.retention.states.obsolete",0
+"Approved","label.retention.states.approved",0
+"Rejected","label.retention.states.rejected",0
+"Archived","label.retention.states.archived",0
+"Quarantined","label.retention.states.quarantined",0
