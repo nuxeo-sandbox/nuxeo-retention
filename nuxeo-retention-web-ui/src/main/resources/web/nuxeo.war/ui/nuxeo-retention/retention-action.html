@@ -34,7 +34,7 @@
               result-formatter="[[retentionRulesResultFormatter]]"></nuxeo-document-suggestion>
 
       <div class="buttons">
-        <paper-button dialog-dismiss>[[i18n('label.action.cancel')]]</paper-button>
+        <paper-button dialog-dismiss>[[i18n('retention.label.cancel')]]</paper-button>
         <paper-button class="primary" dialog-confirm on-click="_apply">[[i18n('retention.label.doApplyRule')]]</paper-button>
       </div>
     </nuxeo-dialog>
@@ -122,8 +122,8 @@
 
       retentionRulesResultFormatter: function(doc) {
 
-        if (!doc || !doc.title || !doc.properties) { 
-          return "Bad result format"; 
+        if (!doc || !doc.title || !doc.properties) {
+          return "Bad result format";
         }
 
         return doc.title;

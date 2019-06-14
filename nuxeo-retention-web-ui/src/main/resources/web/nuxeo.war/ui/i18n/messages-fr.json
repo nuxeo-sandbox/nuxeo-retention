@@ -11,6 +11,7 @@
   "retention.label.applyRetentionRule": "Appliquer la règle de rétention",
   "retention.label.availableConfigurations": "Configurations Disponibles",
   "retention.label.doApplyRule": "OK",
+  "retention.label.cancel": "Annuler",
   "retention.message.retentionApplied": "Document lmis en rétention.",
   "retention.message.retentionFailed": "La mise en rétention a échoué.",
   "retention.label.warningReadOnly": "DOCUMENT EN RÉTENTION",

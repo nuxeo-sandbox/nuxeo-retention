@@ -5,11 +5,12 @@
   "label.document.type.retentionconfig": "Retention Configuration",
 
   "retention.label.summary": "Summary",
-  
+
   "retention.label.applyRetention": "Apply Retention",
   "retention.label.applyRetentionRule": "Apply Retention Rule",
   "retention.label.availableConfigurations": "Available Configurations",
   "retention.label.doApplyRule": "Apply",
+  "retention.label.cancel": "Cancel",
   "retention.message.retentionApplied": "Retention applied",
   "retention.message.retentionFailed": "Retention failed",
   "retention.label.warningReadOnly": "READ-ONLY RECORD",
@@ -43,5 +44,5 @@
   "retention.label.field.beginActions": "Predefined Begin Action(s)",
   "retention.label.field.endAction": "End Action (Automation Chain)",
   "retention.label.field.endActions": "Predefined End Action(s)"
-  
+
 }
