@@ -48,6 +48,16 @@ limitations under the License.
   </template>
 </nuxeo-slot-content>
 
+<nuxeo-slot-content name="retentionForAudio" slot="DOCUMENT_ACTIONS" order="0">
+  <template>
+    <nuxeo-filter document="[[document]]" type="Audio">
+      <template>
+        <retention-action operation="Retention_AddToAudio" document="[[document]]"></retention-action>
+      </template>
+    </nuxeo-filter>
+  </template>
+</nuxeo-slot-content>
+
 <!-- Overriding some default WebUI buttons, so they are not displayed
    when a document is under retention:
        Edit
@@ -94,4 +104,3 @@ limitations under the License.
    </nuxeo-filter>
   </template>
 </nuxeo-slot-content>
-
