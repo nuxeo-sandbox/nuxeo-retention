@@ -1,6 +1,6 @@
 <!-- See documentation at http://doc.nuxeo.com/x/HgIz -->
-<package type="addon" name="nuxeo-retention-rule-provider" version="@VERSION@">
-  <title>Nuxeo Document Retention</title>
+<package type="addon" name="nuxeo-retention-rule-provider-sandbox" version="@VERSION@">
+  <title>Nuxeo Document Retention (Sandbox)</title>
   <description>
     <p>This plugin allows for defining retention rule(s) and attach the rule(s) to any number of documents.
        A document under active retention cannot be modified or deleted.</p>

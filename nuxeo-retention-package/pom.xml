@@ -1,13 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.nuxeo.ecm.retention</groupId>
-		<artifactId>nuxeo-retention</artifactId>
+		<groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+		<artifactId>nuxeo-retention-sandbox</artifactId>
 		<version>10.10-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>nuxeo-retention-package</artifactId>
+	<artifactId>nuxeo-retention-package-sandbox</artifactId>
 	<packaging>zip</packaging>
 	<name>Nuxeo retention package - Nuxeo retention rule provider</name>
 
@@ -22,12 +22,12 @@
 
 		<!-- Additional bundles to be deployed by the MP -->
 		<dependency>
-			<groupId>org.nuxeo.ecm.retention</groupId>
-			<artifactId>nuxeo-retention-core</artifactId>
+			<groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+			<artifactId>nuxeo-retention-core-sandbox</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.nuxeo.ecm.retention</groupId>
-			<artifactId>nuxeo-retention-web-ui</artifactId>
+			<groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+			<artifactId>nuxeo-retention-web-ui-sandbox</artifactId>
 		</dependency>
 	</dependencies>
 

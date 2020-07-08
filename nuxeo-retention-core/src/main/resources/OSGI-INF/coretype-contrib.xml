@@ -1,7 +1,9 @@
-<component name="org.nuxeo.retention.coretype">
+<component name="org.nuxeo.retention.sandbox.coretype">
 	<require>org.nuxeo.ecm.core.CoreExtensions</require>
 	<require>org.nuxeo.ecm.core.schema.TypeService</require>
 	<require>org.nuxeo.ecm.core.LifecycleCoreExtensions</require>
+	<!-- For 11 => Override default retention features -->
+	<!-- <require>org.nuxeo.retention.types</require> -->
 	<extension point="schema"
 		target="org.nuxeo.ecm.core.schema.TypeService">
 		<schema name="record" prefix="record" src="schema/record.xsd" />

@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<component name="org.nuxeo.ecm.retention.vocab" version="1.0">
+<component name="org.nuxeo.ecm.retention.sandbox.vocab" version="1.0">
+	<!-- For 11 => Override default platform retention features -->
+	<!-- <require>org.nuxeo.retention.vocabularies</require> -->
+	
 	<extension point="directories"
 		target="org.nuxeo.ecm.directory.GenericDirectory">
 		<directory extends="template-vocabulary"

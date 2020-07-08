@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<component name="org.nuxeo.ecm.retention.actions">
+<component name="org.nuxeo.ecm.retention.sandbox.actions">
+
+	<!-- For 11 => Override default retention features, in case of conflict -->
+	<!-- <require>org.nuxeo.retention.actions</require> -->
 
 	<extension target="org.nuxeo.ecm.core.bulk" point="actions">
 		<action name="aboutToExpireRetentionRule" bucketSize="100"

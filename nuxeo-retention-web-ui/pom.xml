@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.nuxeo.ecm.retention</groupId>
-    <artifactId>nuxeo-retention</artifactId>
+    <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+    <artifactId>nuxeo-retention-sandbox</artifactId>
     <version>10.10-SNAPSHOT</version>
   </parent>
 
-  <artifactId>nuxeo-retention-web-ui</artifactId>
+  <artifactId>nuxeo-retention-web-ui-sandbox</artifactId>
   <name>Nuxeo Retention :: Web UI</name>
 
 </project>

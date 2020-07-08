@@ -6,8 +6,8 @@
     <version>10.10</version>
   </parent>
 
-  <groupId>org.nuxeo.ecm.retention</groupId>
-  <artifactId>nuxeo-retention</artifactId>
+  <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+  <artifactId>nuxeo-retention-sandbox</artifactId>
   <name>Nuxeo retention</name>
   <version>10.10-SNAPSHOT</version>
   <description>Document retention management service</description>
@@ -76,18 +76,18 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.nuxeo.ecm.retention</groupId>
-        <artifactId>nuxeo-retention-core</artifactId>
+        <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+        <artifactId>nuxeo-retention-core-sandbox</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.nuxeo.ecm.retention</groupId>
-        <artifactId>nuxeo-retention-web-ui</artifactId>
+        <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+        <artifactId>nuxeo-retention-web-ui-sandbox</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.nuxeo.ecm.retention</groupId>
-        <artifactId>nuxeo-retention-package</artifactId>
+        <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+        <artifactId>nuxeo-retention-package-sandbox</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

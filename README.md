@@ -1,4 +1,16 @@
+## nuxeo-retention Sandbox plugin
+
 [![Build Status](https://qa.nuxeo.org/jenkins/buildStatus/icon?job=Sandbox/sandbox_nuxeo-retention-master)](https://qa.nuxeo.org/jenkins/job/Sandbox/job/sandbox_nuxeo-retention-master/)
+
+<hr>
+⚠️ **WARNING** ⚠️
+
+The retention feature implemented [in the platform](https://doc.nuxeo.com/nxdoc/nuxeo-retention-management/) itself  has names and IDs (schemas, vocabularies, ...) that are in conflict with this sandbox plugin. This means **they are totally not compatibles**:
+
+* In 10.10: Do not install the platform plugin
+* In 11.n do not install this sandbox plugin
+
+<hr>
 
 * [Principles and Concepts](#principles-and-concepts)
   * [Rules Definition](#rules-definition)
@@ -492,14 +504,13 @@ mvn clean install
 
 #### Deploy
 
-The build creates the marketplace package at `nuxeo-retention/nuxeo-retention-package/target/nuxeo-retention-package-{version}.zip`
+The build creates the marketplace package at `nuxeo-retention/nuxeo-retention-package/target/nuxeo-retention-package-sandbox-{version}.zip`
 
 Install this package, for example using the `nuxeoctl` command line:
 
 ```
 #assuming you are in the bin directory, with the correct permissions
-# Installing version 10.10-SNAPSHOT
-./nuxeoctl mp-install /path/to/nuxeo-retention-package-10.10-SNAPSHIT.zip
+./nuxeoctl mp-install /path/to/nuxeo-retention-package-sandbox-10.10-SNAPSHOT.zip
 ```
 
 <p>&nbsp;</p>
