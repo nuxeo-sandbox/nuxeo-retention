@@ -5,10 +5,7 @@
 <hr>
 ⚠️ **WARNING** ⚠️
 
-The retention feature implemented [in the platform](https://doc.nuxeo.com/nxdoc/nuxeo-retention-management/) itself  has names and IDs (schemas, vocabularies, ...) that are in conflict with this sandbox plugin. This means **they are totally not compatibles**:
-
-* In 10.10: Do not install the platform plugin
-* In 11.n do not install this sandbox plugin
+The retention feature implemented [in the platform](https://doc.nuxeo.com/nxdoc/nuxeo-retention-management/) itself  has names and IDs (schemas, vocabularies, ...) that are in conflict with this sandbox plugin. This means **they are totally not compatibles: Do not install both plugins on the same server**
 
 <hr>
 
