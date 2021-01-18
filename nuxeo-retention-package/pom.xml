@@ -1,49 +1,47 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.nuxeo.ecm.retention.sandbox</groupId>
-		<artifactId>nuxeo-retention-sandbox</artifactId>
-		<version>10.10-SNAPSHOT</version>
-		<relativePath>../pom.xml</relativePath>
-	</parent>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+    <artifactId>nuxeo-retention-sandbox</artifactId>
+    <version>11.4-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
 
-	<artifactId>nuxeo-retention-package-sandbox</artifactId>
-	<packaging>zip</packaging>
-	<name>Nuxeo retention package - Nuxeo retention rule provider</name>
+  <artifactId>nuxeo-retention-package-sandbox</artifactId>
+  <packaging>zip</packaging>
+  <name>Nuxeo retention package - Nuxeo retention rule provider</name>
 
-	<dependencies>
-		<!-- Base distribution(s) for the MP -->
-		<dependency>
-			<groupId>org.nuxeo.ecm.distribution</groupId>
-			<artifactId>nuxeo-nxr-server</artifactId>
-			<type>zip</type>
-			<scope>provided</scope>
-		</dependency>
+  <dependencies>
+    <!-- Base distribution(s) for the MP -->
+    <dependency>
+      <groupId>org.nuxeo.ecm.distribution</groupId>
+      <artifactId>nuxeo-nxr-server</artifactId>
+      <type>zip</type>
+      <scope>provided</scope>
+    </dependency>
 
-		<!-- Additional bundles to be deployed by the MP -->
-		<dependency>
-			<groupId>org.nuxeo.ecm.retention.sandbox</groupId>
-			<artifactId>nuxeo-retention-core-sandbox</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.nuxeo.ecm.retention.sandbox</groupId>
-			<artifactId>nuxeo-retention-web-ui-sandbox</artifactId>
-		</dependency>
-	</dependencies>
+    <!-- Additional bundles to be deployed by the MP -->
+    <dependency>
+      <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+      <artifactId>nuxeo-retention-core-sandbox</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
+      <artifactId>nuxeo-retention-web-ui-sandbox</artifactId>
+    </dependency>
+  </dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.nuxeo.build</groupId>
-				<artifactId>ant-assembly-maven-plugin</artifactId>
-				<configuration>
-					<buildFiles>
-						<buildFile>${basedir}/src/main/assemble/assembly.xml</buildFile>
-					</buildFiles>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
-
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.nuxeo.build</groupId>
+        <artifactId>ant-assembly-maven-plugin</artifactId>
+        <configuration>
+          <buildFiles>
+            <buildFile>${basedir}/src/main/assemble/assembly.xml</buildFile>
+          </buildFiles>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

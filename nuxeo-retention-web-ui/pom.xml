@@ -5,10 +5,10 @@
   <parent>
     <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
     <artifactId>nuxeo-retention-sandbox</artifactId>
-    <version>10.10-SNAPSHOT</version>
+    <version>11.4-SNAPSHOT</version>
   </parent>
 
   <artifactId>nuxeo-retention-web-ui-sandbox</artifactId>
-  <name>Nuxeo Retention :: Web UI</name>
+  <name>Nuxeo Retention Sandbox Web UI</name>
 
 </project>
