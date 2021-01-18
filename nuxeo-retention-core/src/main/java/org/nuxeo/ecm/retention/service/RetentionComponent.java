@@ -403,7 +403,7 @@ public class RetentionComponent extends DefaultComponent implements RetentionSer
             public void run() {
 
                 // Construct query
-                String query = formatQuery(providerName, dateRef, "yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+                String query = formatQuery(providerName, dateRef, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
                 BulkCommand command = new BulkCommand.Builder(EvaluateRetentionRuleAction.ACTION_NAME,
                         query).param(EvaluateRetentionRuleAction.PARAM_DATE_TO_CHECK_MS, dateRef.getTime())
                               .user("Administrator")

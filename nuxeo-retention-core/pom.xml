@@ -3,10 +3,10 @@
   <parent>
     <groupId>org.nuxeo.ecm.retention.sandbox</groupId>
     <artifactId>nuxeo-retention-sandbox</artifactId>
-    <version>10.10-SNAPSHOT</version>
+    <version>11.4-SNAPSHOT</version>
   </parent>
   <artifactId>nuxeo-retention-core-sandbox</artifactId>
-  <name>Nuxeo retention core</name>
+  <name>Nuxeo Retention Sandbox core</name>
   <description>retention core</description>
   <dependencies>
     <dependency>
@@ -53,7 +53,7 @@
     </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.platform</groupId>
-      <artifactId>nuxeo-platform-notification-api</artifactId>
+      <artifactId>nuxeo-platform-notification</artifactId>
     </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.automation</groupId>

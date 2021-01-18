@@ -37,7 +37,7 @@ import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.ecm.retention.service.RetentionService;
 import org.nuxeo.runtime.api.Framework;
 
-import avro.shaded.com.google.common.collect.Sets;
+import com.google.common.collect.Sets;
 
 /**
  * Listener that checks for retention triggered by an event specified in the rule
