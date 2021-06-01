@@ -1,13 +1,17 @@
+** ⚠️ WARNING ⚠️ ** 
+
+This plugin is now deprecated: please use the official and supported [Nuxeo Retention Addon](https://connect.nuxeo.com/nuxeo/site/marketplace/package/nuxeo-retention). It was built when this addon didn't exist. The sources can be found on [Github](https://github.com/nuxeo/nuxeo-retention).
+
+The retention feature implemented [in the platform](https://doc.nuxeo.com/nxdoc/nuxeo-retention-management/) itself  has names and IDs (schemas, vocabularies, ...) that are in conflict with this sandbox plugin. This means **they are totally not compatibles: Do not install both plugins on the same server**
+
+<hr>
+
 ## nuxeo-retention Sandbox plugin
 
 [![Build Status](https://qa.nuxeo.org/jenkins/buildStatus/icon?job=Sandbox/sandbox_nuxeo-retention-master)](https://qa.nuxeo.org/jenkins/job/Sandbox/job/sandbox_nuxeo-retention-master/)
 
 <hr>
-⚠️ **WARNING** ⚠️
 
-The retention feature implemented [in the platform](https://doc.nuxeo.com/nxdoc/nuxeo-retention-management/) itself  has names and IDs (schemas, vocabularies, ...) that are in conflict with this sandbox plugin. This means **they are totally not compatibles: Do not install both plugins on the same server**
-
-<hr>
 
 * [Principles and Concepts](#principles-and-concepts)
   * [Rules Definition](#rules-definition)
