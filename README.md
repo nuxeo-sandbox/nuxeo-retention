@@ -1,4 +1,4 @@
-** ⚠️ WARNING ⚠️ ** 
+⚠️ WARNING ⚠️
 
 This plugin is now deprecated: please use the official and supported [Nuxeo Retention Addon](https://connect.nuxeo.com/nuxeo/site/marketplace/package/nuxeo-retention). It was built when this addon didn't exist. The sources can be found on [Github](https://github.com/nuxeo/nuxeo-retention).
 
